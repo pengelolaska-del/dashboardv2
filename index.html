@@ -544,7 +544,7 @@ const PALETTE = labels => labels.map((_, i) => COLORS[i % COLORS.length]);
 // ======================================================
 async function init() {
   // Deteksi apakah SCRIPT_URL sudah diisi
-  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
+  if (SCRIPT_URL.includes('1Hf-WHoX9xcndXfSY-yQ1gUjgOgtLRc9zhw0P6AYkW54')) {
     showSetupBanner();
     return;
   }
@@ -597,7 +597,7 @@ function showSetupBanner() {
         <li>Jalankan fungsi <code class="bg-amber-100 px-1 rounded">initSheets()</code> sekali</li>
         <li>Deploy → New deployment → Web App → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong></li>
         <li>Salin URL deploy, buka file <code class="bg-amber-100 px-1 rounded">index.html</code> ini dengan text editor</li>
-        <li>Ganti <code class="bg-amber-100 px-1 rounded">GANTI_DENGAN_SCRIPT_ID_ANDA</code> dengan URL tadi</li>
+        <li>Ganti <code class="bg-amber-100 px-1 rounded">1Hf-WHoX9xcndXfSY-yQ1gUjgOgtLRc9zhw0P6AYkW54</code> dengan URL tadi</li>
         <li>Simpan dan refresh halaman ini</li>
       </ol>
     </div>`;
@@ -1213,7 +1213,7 @@ document.getElementById('btn-verify-token').addEventListener('click', async () =
   const btn    = document.getElementById('btn-verify-token');
   const status = document.getElementById('token-status');
   if (!token) { Swal.fire('Error', 'Token tidak boleh kosong.', 'error'); return; }
-  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
+  if (SCRIPT_URL.includes(1Hf-WHoX9xcndXfSY-yQ1gUjgOgtLRc9zhw0P6AYkW54')) {
     Swal.fire('Setup Diperlukan', 'SCRIPT_URL belum diisi. Lihat panduan di tab Eksekutif.', 'warning');
     return;
   }
