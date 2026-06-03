@@ -352,7 +352,7 @@
         <div class="bg-white rounded-xl p-4 shadow-sm mb-4 flex items-center gap-3 flex-wrap">
           <label class="text-sm font-medium text-navy">Periode Upload:</label>
           <select id="up-tahun" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
-            <option value="2026">2026</option><option value="2025">2025</option>
+            <!-- diisi dinamis oleh JS -->
           </select>
           <select id="up-bulan" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
             <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
@@ -464,7 +464,7 @@
 // ======================================================
 // KONFIGURASI — GANTI DENGAN URL APPS SCRIPT ANDA
 // ======================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTeOX7rhKg3BOp0JEx1q5TAfZLHZEFSBn7btZeIJz-HNGMmD7R3NvryGwXoQD0P0EsYw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/GANTI_DENGAN_SCRIPT_ID_ANDA/exec';
 const CHUNK_SIZE = 500;
 
 // ======================================================
@@ -964,8 +964,61 @@ document.getElementById('btn-prev').addEventListener('click', () => loadDetail(s
 document.getElementById('btn-next').addEventListener('click', () => loadDetail(state.detailPage + 1));
 
 // ======================================================
-// UPLOAD
+// UPLOAD — validasi kolom CSV sebelum dikirim ke backend
 // ======================================================
+const REQUIRED_COLS_RUP = [
+  'Nama Instansi', 'Nama Satuan Kerja', 'Tahun Anggaran',
+  'Cara Pengadaan', 'Metode Pengadaan', 'Jenis Pengadaan',
+  'Nama Paket', 'Kode RUP', 'Sumber Dana',
+  'Produk Dalam Negeri', 'Total Nilai (Rp)',
+];
+
+const REQUIRED_COLS_REALISASI = [
+  'Nama Instansi', 'Nama Satuan Kerja', 'Kode Paket', 'Kode RUP',
+  'Tahun Anggaran', 'Sumber Transaksi', 'Sumber Dana',
+  'Nama Penyedia', 'Metode Pengadaan', 'Jenis Pengadaan',
+  'Nama Paket', 'Status Paket', 'Total Nilai (Rp)', 'Nilai PDN (Rp)',
+];
+
+/**
+ * Validasi kolom header CSV.
+ * @param {Object[]} rows   - hasil parseCSV
+ * @param {string[]} required - daftar nama kolom wajib
+ * @param {string}  label  - label jenis file untuk pesan error
+ * @throws Error dengan daftar kolom yang kurang (tidak menghentikan eksekusi sendiri — caller yang melempar)
+ */
+function validateColumns(rows, required, label) {
+  if (!rows || rows.length === 0) throw new Error('File CSV kosong atau format tidak dikenali.');
+  const actualKeys = Object.keys(rows[0]);
+  const missing = required.filter(col => !actualKeys.includes(col));
+  if (missing.length > 0) {
+    const listHtml = missing.map(c => `<li><code>${c}</code></li>`).join('');
+    throw new Error(
+      `File <b>${label}</b> tidak memiliki kolom berikut:<ul class="mt-1 text-left list-disc list-inside">${listHtml}</ul>` +
+      `<small class="text-slate-500">Pastikan file yang diunggah adalah ekspor langsung dari SIRUP/SPSE tanpa mengubah nama kolom.</small>`
+    );
+  }
+}
+
+// ======================================================
+// UPLOAD — inisialisasi dropdown tahun dinamis
+// ======================================================
+function populateUploadYears() {
+  const sel = document.getElementById('up-tahun');
+  const now = new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = now; y >= now - 3; y--) {
+    const opt = new Option(String(y), String(y));
+    if (y === now) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  // Set bulan ke bulan saat ini
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+  const selBulan = document.getElementById('up-bulan');
+  if (selBulan) selBulan.value = currentMonth;
+}
+populateUploadYears();
+
 let rupFile = null, realFile = null;
 
 function setupDropZone(dropId, inputId, labelId, onFile) {
@@ -998,69 +1051,160 @@ setupDropZone('drop-real', 'file-real', 'label-real', file => {
 });
 
 function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
+  // Normalisasi line ending Windows (CRLF → LF) dan Mac lama (CR → LF)
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalized.split('\n');
+
+  // Buang baris kosong di akhir
+  while (lines.length > 0 && !lines[lines.length - 1].trim()) lines.pop();
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
-  return lines.slice(1).map(line => {
-    const vals = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+
+  // Auto-deteksi delimiter: hitung koma vs titik koma di baris header
+  const headerLine = lines[0];
+  const commaCount     = (headerLine.match(/,/g)  || []).length;
+  const semicolonCount = (headerLine.match(/;/g)  || []).length;
+  const delim = semicolonCount > commaCount ? ';' : ',';
+
+  // Parser satu baris — menghormati quoted fields (RFC 4180)
+  function parseLine(line) {
+    const result = [];
+    let i = 0;
+    while (i <= line.length) {
+      if (i === line.length) { result.push(''); break; }
+      if (line[i] === '"') {
+        let field = '';
+        i++;
+        while (i < line.length) {
+          if (line[i] === '"') {
+            if (line[i + 1] === '"') { field += '"'; i += 2; }
+            else { i++; break; }
+          } else { field += line[i++]; }
+        }
+        result.push(field.trim());
+        if (line[i] === delim) i++;
+      } else {
+        const end = line.indexOf(delim, i);
+        if (end === -1) { result.push(line.slice(i).trim()); break; }
+        else { result.push(line.slice(i, end).trim()); i = end + 1; }
+      }
+    }
+    return result;
+  }
+
+  const headers = parseLine(headerLine);
+  const rows = [];
+  for (let li = 1; li < lines.length; li++) {
+    const line = lines[li];
+    if (!line.trim()) continue;
+    const vals = parseLine(line);
     const obj  = {};
-    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
-    return obj;
-  });
+    headers.forEach((h, i) => { obj[h] = vals[i] !== undefined ? vals[i] : ''; });
+    rows.push(obj);
+  }
+  return rows;
 }
 
 async function uploadChunked(action, rows, periode, namaFile, progFill, progPct, progLabel, progWrap) {
   document.getElementById(progWrap).classList.remove('hidden');
+  document.getElementById(progFill).style.width = '0%';
+  document.getElementById(progPct).textContent  = '0%';
+
   const chunks = [];
   for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
 
   let processed = 0;
+  let lastRes = null;
   for (let ci = 0; ci < chunks.length; ci++) {
-    document.getElementById(progLabel).textContent = `Chunk ${ci+1}/${chunks.length}...`;
-    const res = await api({ action, token: state.adminToken, periode, data: chunks[ci], nama_file: namaFile });
-    if (res.status !== 'success') throw new Error(res.message);
+    const isLastChunk = ci === chunks.length - 1;
+    document.getElementById(progLabel).textContent =
+      chunks.length > 1 ? `Mengirim chunk ${ci+1}/${chunks.length}...` : 'Mengunggah...';
+    const res = await api({
+      action, token: state.adminToken, periode,
+      data: chunks[ci], nama_file: namaFile,
+      is_last_chunk: isLastChunk,   // hanya jalankan matching engine di chunk terakhir
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Upload gagal');
     processed += chunks[ci].length;
     const pctVal = Math.round(processed / rows.length * 100);
     document.getElementById(progFill).style.width = pctVal + '%';
     document.getElementById(progPct).textContent  = pctVal + '%';
+    if (isLastChunk) lastRes = res;
   }
-  return processed;
+
+  document.getElementById(progLabel).textContent = 'Selesai';
+  // Sembunyikan progress bar setelah 2 detik
+  setTimeout(() => {
+    document.getElementById(progWrap).classList.add('hidden');
+    document.getElementById(progFill).style.width = '0%';
+  }, 2000);
+
+  return { processed, lastRes };
 }
 
 document.getElementById('btn-upload-rup').addEventListener('click', async () => {
   if (!rupFile) return;
-  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
+  const tahun  = document.getElementById('up-tahun').value;
+  const bulan  = document.getElementById('up-bulan').value;
+  if (!tahun || !bulan) { Swal.fire('Error', 'Pilih tahun dan bulan terlebih dahulu.', 'error'); return; }
+  const periode = tahun + '-' + bulan;
   const btn     = document.getElementById('btn-upload-rup');
   btn.disabled  = true;
+  btn.textContent = 'Mengunggah...';
   try {
     const text = await rupFile.text();
     const rows = parseCSV(text);
-    const n    = await uploadChunked('uploadRUP', rows, periode, rupFile.name,
+    validateColumns(rows, REQUIRED_COLS_RUP, 'data_rup.csv');
+    if (rows.length > 20000) throw new Error(`Jumlah baris (${rows.length}) melebihi batas 20.000.`);
+    const { processed } = await uploadChunked('uploadRUP', rows, periode, rupFile.name,
       'prog-rup-fill','prog-rup-pct','prog-rup-label','prog-rup-wrap');
-    Swal.fire('✅ Berhasil', `Upload RUP selesai: ${n} record diproses.`, 'success');
-    rupFile = null; document.getElementById('label-rup').textContent = 'Klik atau drag data_rup_*.csv';
+    Swal.fire('Berhasil', `Upload RUP selesai: ${fmt(processed)} record diproses untuk periode ${periode}.`, 'success');
+    rupFile = null;
+    document.getElementById('label-rup').innerHTML = 'Klik atau drag <code>data_rup_*.csv</code>';
+    document.getElementById('btn-upload-rup').disabled = true;
   } catch(e) {
-    Swal.fire('❌ Error', e.message, 'error');
-  } finally { btn.disabled = false; }
+    Swal.fire({ icon: 'error', title: 'Upload Gagal', html: e.message });
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Upload RUP';
+  }
 });
 
 document.getElementById('btn-upload-real').addEventListener('click', async () => {
   if (!realFile) return;
-  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
+  const tahun  = document.getElementById('up-tahun').value;
+  const bulan  = document.getElementById('up-bulan').value;
+  if (!tahun || !bulan) { Swal.fire('Error', 'Pilih tahun dan bulan terlebih dahulu.', 'error'); return; }
+  const periode = tahun + '-' + bulan;
   const btn     = document.getElementById('btn-upload-real');
   btn.disabled  = true;
+  btn.textContent = 'Mengunggah...';
   try {
-    Swal.fire({ title: 'Memproses...', html: 'Upload + matching engine berjalan. Mohon tunggu.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const text = await realFile.text();
     const rows = parseCSV(text);
-    const n    = await uploadChunked('uploadRealisasi', rows, periode, realFile.name,
+    validateColumns(rows, REQUIRED_COLS_REALISASI, 'data_realisasi.csv');
+    if (rows.length > 20000) throw new Error(`Jumlah baris (${rows.length}) melebihi batas 20.000.`);
+    const { processed, lastRes } = await uploadChunked('uploadRealisasi', rows, periode, realFile.name,
       'prog-real-fill','prog-real-pct','prog-real-label','prog-real-wrap');
-    Swal.fire('✅ Berhasil', `Upload Realisasi & matching selesai: ${n} record diproses.`, 'success');
-    realFile = null; document.getElementById('label-real').textContent = 'Klik atau drag data_realisasi_*.csv';
-    await init(); // refresh periode list
+    const d = lastRes?.data || {};
+    const detail = d.matched !== undefined
+      ? `<br><small>Matched: <b>${fmt(d.matched)}</b> | Unmatched: <b>${fmt(d.unmatched)}</b> | Orphan: <b>${fmt(d.orphan)}</b></small>`
+      : '';
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      html: `Upload Realisasi & matching selesai: <b>${fmt(processed)}</b> record diproses untuk periode <b>${periode}</b>.${detail}`,
+    });
+    realFile = null;
+    document.getElementById('label-real').innerHTML = 'Klik atau drag <code>data_realisasi_*.csv</code>';
+    document.getElementById('btn-upload-real').disabled = true;
+    document.getElementById('nav-kualitas').classList.remove('hidden');
+    await init(); // refresh daftar periode di filter
   } catch(e) {
-    Swal.fire('❌ Error', e.message, 'error');
-  } finally { btn.disabled = false; }
+    Swal.fire({ icon: 'error', title: 'Upload Gagal', html: e.message });
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Upload Realisasi';
+  }
 });
 
 // Token verification
