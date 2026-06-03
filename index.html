@@ -1,312 +1,1131 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Monitoring Pengadaan — BPBJ Kota Surakarta</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-  </style>
-</head>
-<body class="text-slate-800 antialiased">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Monitoring Pengadaan — BPBJ Kota Surakarta</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy:   #1E3A5F;
+    --blue:   #0070C0;
+    --sky:    #E8F4FD;
+    --green:  #16A34A;
+    --yellow: #CA8A04;
+    --red:    #DC2626;
+    --gray:   #64748B;
+    --bg:     #F0F4F8;
+  }
+  * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+  body { background: var(--bg); color: #1E293B; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
 
-  <header class="bg-[#1E3A5F] text-white shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="bg-white p-1.5 rounded-md shadow-inner">
-          <span class="text-[#1E3A5F] font-extrabold text-xl tracking-tight">BPBJ</span>
-        </div>
-        <div>
-          <h1 class="text-base font-bold leading-tight">Monitoring Pengadaan Barang/Jasa</h1>
-          <p class="text-xs text-slate-300">Kota Surakarta</p>
-        </div>
-      </div>
-      <div class="flex items-center space-x-4">
-        <select id="filter-periode" class="bg-slate-700 text-white text-sm rounded-lg block p-2 border border-slate-600 focus:ring-blue-500 focus:border-blue-500">
-          <option value="2026">Tahun 2026</option>
-          <option value="2025">Tahun 2025</option>
-        </select>
-        <button id="btn-refresh" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-lg transition shadow-sm">
-          Refresh Data
-        </button>
-      </div>
+  /* Sidebar */
+  #sidebar { width: 240px; min-height: 100vh; background: var(--navy); transition: transform .3s; }
+  #sidebar.collapsed { transform: translateX(-240px); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 8px; cursor: pointer; color: #94A3B8; transition: all .15s; font-size: 13.5px; font-weight: 500; }
+  .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .nav-item.active { background: var(--blue); color: #fff; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* Cards */
+  .kpi-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  .kpi-val { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+  .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+
+  /* Section */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+  .data-table td { padding: 9px 12px; border-bottom: 1px solid #F1F5F9; }
+  .data-table tr:hover td { background: #F8FAFC; }
+  .data-table tr:nth-child(even) td { background: #FAFBFC; }
+  .data-table tr:nth-child(even):hover td { background: #F1F5F9; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green  { background: #DCFCE7; color: var(--green); }
+  .badge-yellow { background: #FEF9C3; color: var(--yellow); }
+  .badge-gray   { background: #F1F5F9; color: var(--gray); }
+  .badge-blue   { background: #DBEAFE; color: var(--blue); }
+  .badge-red    { background: #FEE2E2; color: var(--red); }
+
+  /* Upload box */
+  .upload-box { border: 2px dashed #CBD5E1; border-radius: 12px; padding: 32px; text-align: center; transition: border-color .2s; cursor: pointer; }
+  .upload-box:hover, .upload-box.drag { border-color: var(--blue); background: var(--sky); }
+
+  /* Progress */
+  .progress-bar { height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+
+  /* Chart container */
+  .chart-wrap { position: relative; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+  /* Responsive */
+  @media (max-width: 1023px) { #sidebar { position: fixed; z-index: 50; } }
+  @media (max-width: 767px)  { .kpi-grid { grid-template-columns: 1fr 1fr !important; } }
+</style>
+</head>
+<body class="flex">
+
+<!-- ===================== SIDEBAR ===================== -->
+<div id="sidebar" class="flex-shrink-0 flex flex-col py-4 px-3 gap-1">
+  <div class="px-3 mb-4">
+    <div class="text-white font-bold text-sm leading-tight">BPBJ</div>
+    <div class="text-blue-300 text-xs">Kota Surakarta</div>
+    <div class="mt-3 text-xs text-slate-400">Dashboard Monitoring Pengadaan</div>
+  </div>
+
+  <nav id="nav" class="flex flex-col gap-0.5 flex-1">
+    <div class="nav-item active" data-section="eksekutif">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h8M4 18h8"/></svg>
+      Eksekutif
+    </div>
+    <div class="nav-item" data-section="opd">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3M9 7h6M9 11h6M9 15h4"/></svg>
+      Performa OPD
+    </div>
+    <div class="nav-item" data-section="metode">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Metode & Jenis
+    </div>
+    <div class="nav-item" data-section="sumber">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Sumber Dana
+    </div>
+    <div class="nav-item" data-section="status">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Status Paket
+    </div>
+    <div class="nav-item" data-section="penyedia">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Top Penyedia
+    </div>
+    <div class="nav-item" data-section="efisiensi">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      Efisiensi
+    </div>
+    <div class="nav-item" data-section="tren">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+      Tren Bulanan
+    </div>
+    <div class="nav-item" data-section="detail">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      Detail Paket
+    </div>
+    <hr class="border-slate-700 my-2"/>
+    <div class="nav-item" data-section="upload">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      Upload Data
+    </div>
+    <div class="nav-item hidden" id="nav-kualitas" data-section="kualitas">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Kualitas Data
+    </div>
+  </nav>
+
+  <div class="px-3 mt-2">
+    <div id="period-badge" class="text-xs text-slate-500">Memuat data...</div>
+  </div>
+</div>
+
+<!-- ===================== MAIN ===================== -->
+<div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+
+  <!-- Topbar -->
+  <header class="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-40">
+    <button id="toggle-sidebar" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 lg:hidden">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <div class="flex-1 flex items-center gap-3 flex-wrap">
+      <span class="font-semibold text-navy text-sm hidden sm:block">Dashboard Monitoring Pengadaan</span>
+      <!-- Filter -->
+      <select id="filter-tahun" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="">Semua Tahun</option>
+      </select>
+      <select id="filter-bulan" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="">Semua Bulan</option>
+        <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+        <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+        <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+        <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+      </select>
+      <select id="filter-opd" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 max-w-xs">
+        <option value="">Semua OPD</option>
+      </select>
+      <button id="btn-apply" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-medium">Terapkan</button>
+      <button id="btn-reset" class="text-xs border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50">Reset</button>
+    </div>
+    <div class="flex gap-2">
+      <button id="btn-export-excel" class="text-xs border border-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 flex items-center gap-1" title="Export Excel">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Excel
+      </button>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-    
-    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-        <div>
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pagu RUP</span>
-          <h3 id="kpi-pagu" class="text-2xl font-extrabold text-slate-900 mt-1">Rp 0</h3>
-        </div>
-        <div class="text-xs text-slate-500 mt-4 pt-2 border-t border-slate-100" id="kpi-paket-count">0 Paket RUP Terdata</div>
-      </div>
+  <!-- Content -->
+  <main class="flex-1 p-4 lg:p-6 overflow-y-auto">
 
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-        <div>
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Nilai Kontrak</span>
-          <h3 id="kpi-kontrak" class="text-2xl font-extrabold text-blue-600 mt-1">Rp 0</h3>
-        </div>
-        <div class="text-xs text-slate-500 mt-4 pt-2 border-t border-slate-100" id="kpi-realisasi-count">0 Paket Realisasi Sukses</div>
+    <!-- ===== EKSEKUTIF ===== -->
+    <section id="sec-eksekutif" class="section active">
+      <h2 class="text-lg font-bold text-navy mb-4">Ringkasan Eksekutif</h2>
+      <div class="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6" id="kpi-cards">
+        <!-- diisi JS -->
+        <div class="kpi-card col-span-2 lg:col-span-4 text-center text-slate-400 py-8">Memuat data...</div>
       </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-        <div>
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Efisiensi</span>
-          <h3 id="kpi-efisiensi" class="text-2xl font-extrabold text-emerald-600 mt-1">Rp 0</h3>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-4">Distribusi Metode Pengadaan (RUP)</h3>
+          <div style="height:220px"><canvas id="chart-metode-eksekutif"></canvas></div>
         </div>
-        <div class="text-xs text-emerald-600 mt-4 pt-2 border-t border-slate-100 font-medium" id="kpi-persen-efisiensi">Rata-rata Efisiensi: 0%</div>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-        <div>
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Nilai PDN</span>
-          <h3 id="kpi-pdn" class="text-2xl font-extrabold text-indigo-600 mt-1">Rp 0</h3>
-        </div>
-        <div class="text-xs text-slate-500 mt-4 pt-2 border-t border-slate-100">Penggunaan Produk Dalam Negeri</div>
-      </div>
-    </section>
-
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
-        <h4 class="text-sm font-bold text-slate-700 mb-4 tracking-tight">Tren Efisiensi Berdasarkan Satuan Kerja (Top OPD)</h4>
-        <div class="h-64 relative">
-          <canvas id="chart-opd"></canvas>
-        </div>
-      </div>
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h4 class="text-sm font-bold text-slate-700 mb-4 tracking-tight">Status & Metode Matching Paket</h4>
-        <div class="h-64 relative flex items-center justify-center">
-          <canvas id="chart-matching"></canvas>
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-4">Status Paket Realisasi</h3>
+          <div style="height:220px"><canvas id="chart-status-eksekutif"></canvas></div>
         </div>
       </div>
     </section>
 
-    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h3 class="text-base font-bold text-slate-900">Daftar Detail Paket Pengadaan</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Sinkronisasi data RUP dan Realisasi Sistem E-Katalog</p>
-        </div>
-        <div class="flex items-center space-x-3 self-end sm:self-center">
-          <button id="btn-export-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg transition flex items-center space-x-1.5 shadow-sm">
-            <span>Unduh Excel (.xlsx)</span>
-          </button>
-        </div>
+    <!-- ===== PERFORMA OPD ===== -->
+    <section id="sec-opd" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Performa OPD</h2>
+      <div class="chart-wrap mb-4">
+        <h3 class="font-semibold text-sm text-navy mb-3">Top 10 OPD — Nilai Pagu</h3>
+        <div style="height:280px"><canvas id="chart-opd-bar"></canvas></div>
       </div>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="data-table" id="tbl-opd">
           <thead>
-            <tr class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100 text-[11px] uppercase tracking-wider">
-              <th class="p-4 pl-6">Satuan Kerja</th>
-              <th class="p-4">Paket RUP</th>
-              <th class="p-4">Paket Realisasi</th>
-              <th class="p-4 text-right">Pagu RUP</th>
-              <th class="p-4 text-right">Nilai Kontrak</th>
-              <th class="p-4 text-right">Nilai PDN</th>
-              <th class="p-4 text-center">Status</th>
+            <tr>
+              <th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th>
+              <th>Efisiensi</th><th>% Efisiensi</th><th>Jml Paket</th><th>Matched</th>
             </tr>
           </thead>
-          <tbody id="table-body" class="divide-y divide-slate-100 text-slate-600 font-medium text-xs">
-            <tr>
-              <td colspan="7" class="p-8 text-center text-slate-400">Memuat data transaksi pengadaan...</td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
     </section>
 
+    <!-- ===== METODE & JENIS ===== -->
+    <section id="sec-metode" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Metode &amp; Jenis Pengadaan</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Metode Pengadaan (RUP)</h3>
+          <div style="height:240px"><canvas id="chart-metode-rup"></canvas></div>
+        </div>
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Jenis Pengadaan (RUP)</h3>
+          <div style="height:240px"><canvas id="chart-jenis-rup"></canvas></div>
+        </div>
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Metode Pengadaan (Realisasi)</h3>
+          <div style="height:240px"><canvas id="chart-metode-real"></canvas></div>
+        </div>
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Jenis Pengadaan (Realisasi)</h3>
+          <div style="height:240px"><canvas id="chart-jenis-real"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SUMBER DANA ===== -->
+    <section id="sec-sumber" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Sumber Dana &amp; Transaksi</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Sumber Dana Realisasi</h3>
+          <div style="height:260px"><canvas id="chart-sumber-dana"></canvas></div>
+        </div>
+        <div class="chart-wrap">
+          <h3 class="font-semibold text-sm text-navy mb-3">Sumber Transaksi</h3>
+          <div style="height:260px"><canvas id="chart-sumber-transaksi"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== STATUS ===== -->
+    <section id="sec-status" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Status Paket</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="status-kpi-cards"></div>
+      <div class="chart-wrap max-w-sm mx-auto">
+        <h3 class="font-semibold text-sm text-navy mb-3 text-center">Distribusi Status</h3>
+        <div style="height:280px"><canvas id="chart-status-pie"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ===== TOP PENYEDIA ===== -->
+    <section id="sec-penyedia" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Top 10 Penyedia</h2>
+      <div class="chart-wrap mb-4">
+        <div style="height:300px"><canvas id="chart-penyedia"></canvas></div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="data-table" id="tbl-penyedia">
+          <thead><tr><th>#</th><th>Nama Penyedia</th><th>Jumlah Transaksi</th><th>Total Nilai Kontrak</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== EFISIENSI ===== -->
+    <section id="sec-efisiensi" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Analisis Efisiensi per OPD</h2>
+      <div class="chart-wrap mb-4">
+        <div style="height:400px"><canvas id="chart-efisiensi"></canvas></div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="data-table" id="tbl-efisiensi">
+          <thead><tr><th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi (Rp)</th><th>% Efisiensi</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== TREN ===== -->
+    <section id="sec-tren" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Tren Bulanan</h2>
+      <div class="chart-wrap mb-4">
+        <h3 class="font-semibold text-sm text-navy mb-3">Pagu vs Kontrak per Periode</h3>
+        <div style="height:300px"><canvas id="chart-tren"></canvas></div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="data-table" id="tbl-tren">
+          <thead><tr><th>Periode</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi</th><th>% Efisiensi</th><th>Jumlah Paket RUP</th><th>Jumlah Realisasi</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== DETAIL PAKET ===== -->
+    <section id="sec-detail" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Detail Paket</h2>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <input id="detail-search" type="text" placeholder="Cari nama paket, satker, kode RUP..." class="text-sm border border-slate-200 rounded-lg px-3 py-2 flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+        <button id="btn-detail-search" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Cari</button>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="data-table" id="tbl-detail">
+          <thead><tr><th>#</th><th>Satker</th><th>Nama Paket</th><th>Pagu</th><th>Kontrak</th><th>Efisiensi</th><th>Metode</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between mt-3 text-sm text-slate-500" id="detail-pagination">
+        <span id="detail-info"></span>
+        <div class="flex gap-2">
+          <button id="btn-prev" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40">‹ Sebelumnya</button>
+          <button id="btn-next" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40">Berikutnya ›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== UPLOAD ===== -->
+    <section id="sec-upload" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Upload Data Bulanan</h2>
+      <!-- Token -->
+      <div class="bg-white rounded-xl p-4 shadow-sm mb-4">
+        <div class="flex items-center gap-3 flex-wrap">
+          <label class="text-sm font-medium text-navy">Token Admin:</label>
+          <input id="admin-token" type="password" placeholder="Masukkan token akses..."
+            class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+          <button id="btn-verify-token" class="text-sm bg-navy text-white px-4 py-2 rounded-lg hover:bg-blue-900">Verifikasi</button>
+          <span id="token-status" class="text-xs"></span>
+        </div>
+      </div>
+
+      <div id="upload-panel" class="hidden">
+        <!-- Pilih Periode -->
+        <div class="bg-white rounded-xl p-4 shadow-sm mb-4 flex items-center gap-3 flex-wrap">
+          <label class="text-sm font-medium text-navy">Periode Upload:</label>
+          <select id="up-tahun" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
+            <option value="2026">2026</option><option value="2025">2025</option>
+          </select>
+          <select id="up-bulan" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
+            <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+            <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+            <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+            <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <!-- Upload RUP -->
+          <div class="bg-white rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-navy text-sm">1. Upload RUP</h3>
+              <span class="badge badge-blue">Langkah 1</span>
+            </div>
+            <div class="upload-box" id="drop-rup" onclick="document.getElementById('file-rup').click()">
+              <svg class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm text-slate-500" id="label-rup">Klik atau drag <code>data_rup_*.csv</code></p>
+              <p class="text-xs text-slate-400 mt-1">Maks 10 MB · Max 20.000 baris</p>
+            </div>
+            <input type="file" id="file-rup" accept=".csv" class="hidden"/>
+            <div class="mt-3 hidden" id="prog-rup-wrap">
+              <div class="flex justify-between text-xs text-slate-500 mb-1">
+                <span id="prog-rup-label">Mengunggah...</span>
+                <span id="prog-rup-pct">0%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-rup-fill" style="width:0%"></div></div>
+            </div>
+            <button id="btn-upload-rup" class="mt-3 w-full text-sm bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-40" disabled>Upload RUP</button>
+          </div>
+
+          <!-- Upload Realisasi -->
+          <div class="bg-white rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-navy text-sm">2. Upload Realisasi</h3>
+              <span class="badge badge-green">Langkah 2</span>
+            </div>
+            <div class="upload-box" id="drop-real" onclick="document.getElementById('file-real').click()">
+              <svg class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm text-slate-500" id="label-real">Klik atau drag <code>data_realisasi_*.csv</code></p>
+              <p class="text-xs text-slate-400 mt-1">Maks 10 MB · Max 20.000 baris</p>
+            </div>
+            <input type="file" id="file-real" accept=".csv" class="hidden"/>
+            <div class="mt-3 hidden" id="prog-real-wrap">
+              <div class="flex justify-between text-xs text-slate-500 mb-1">
+                <span id="prog-real-label">Mengunggah...</span>
+                <span id="prog-real-pct">0%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-real-fill" style="width:0%"></div></div>
+            </div>
+            <button id="btn-upload-real" class="mt-3 w-full text-sm bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium disabled:opacity-40" disabled>Upload Realisasi</button>
+          </div>
+        </div>
+
+        <!-- Hapus Periode -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-red-100">
+          <h3 class="font-semibold text-red-700 text-sm mb-2">⚠ Hapus Data Periode</h3>
+          <p class="text-xs text-slate-500 mb-3">Menghapus seluruh data (RUP, Realisasi, Matching) untuk periode tertentu. Tidak dapat dibatalkan.</p>
+          <div class="flex gap-2 flex-wrap">
+            <input id="del-periode" type="text" placeholder="YYYY-MM misal 2026-05"
+              class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-red-300"/>
+            <button id="btn-delete-periode" class="text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Hapus Periode</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== KUALITAS DATA (admin) ===== -->
+    <section id="sec-kualitas" class="section">
+      <h2 class="text-lg font-bold text-navy mb-4">Laporan Kualitas Data</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="kualitas-kpi"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold text-sm text-navy mb-2">Unmatched RUP (tidak ada pasangan realisasi)</h3>
+          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-64 overflow-y-auto">
+            <table class="data-table" id="tbl-unmatched-rup">
+              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Pagu</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-semibold text-sm text-navy mb-2">Unmatched Realisasi (tidak ada pasangan RUP)</h3>
+          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-64 overflow-y-auto">
+            <table class="data-table" id="tbl-unmatched-real">
+              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Nilai Kontrak</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <h3 class="font-semibold text-sm text-navy mb-2">Orphan (tidak dapat dihubungkan sama sekali)</h3>
+        <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-48 overflow-y-auto">
+          <table class="data-table" id="tbl-orphan">
+            <thead><tr><th>Satker</th><th>Kode Paket</th><th>Nilai Kontrak</th><th>Metode</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
+</div>
 
-  <script>
-    // URL Web App Google Apps Script Hasil Deploy Terkini
-    const API_URL = "https://script.google.com/macros/s/AKfycbzTeOX7rhKg3BOp0JEx1q5TAfZLHZEFSBn7btZeIJz-HNGMmD7R3NvryGwXoQD0P0EsYw/exec";
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+// ======================================================
+// KONFIGURASI — GANTI DENGAN URL APPS SCRIPT ANDA
+// ======================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/GANTI_DENGAN_SCRIPT_ID_ANDA/exec';
+const CHUNK_SIZE = 500;
 
-    // Global Instance Chart
-    let chartOpdInstance = null;
-    let chartMatchingInstance = null;
+// ======================================================
+// STATE
+// ======================================================
+let state = {
+  periodes: [],
+  latestPeriode: '',
+  satkerList: [],
+  adminToken: '',
+  isAdmin: false,
+  filter: { tahun: '', bulan: '', kode_satker: '' },
+  charts: {},
+  detailPage: 1,
+  detailSearch: '',
+};
 
-    // Helper Format Rupiah
-    function formatRupiah(number) {
-      if (number === null || number === undefined) return 'Rp 0';
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+// ======================================================
+// HELPERS
+// ======================================================
+const IDR = n => {
+  const num = Number(n) || 0;
+  if (Math.abs(num) >= 1e12) return 'Rp ' + (num/1e12).toFixed(2) + ' T';
+  if (Math.abs(num) >= 1e9)  return 'Rp ' + (num/1e9).toFixed(2)  + ' M';
+  if (Math.abs(num) >= 1e6)  return 'Rp ' + (num/1e6).toFixed(2)  + ' jt';
+  return 'Rp ' + num.toLocaleString('id-ID');
+};
+const IDRfull = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
+const pct  = n => (Number(n)||0).toFixed(2) + '%';
+const fmt  = n => (Number(n)||0).toLocaleString('id-ID');
+
+async function api(payload) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+function getPeriode() {
+  const t = state.filter.tahun;
+  const b = state.filter.bulan;
+  if (t && b) return `${t}-${b}`;
+  if (t) return t; // partial — backend filter by tahun saja
+  return state.latestPeriode;
+}
+
+function destroyChart(id) {
+  if (state.charts[id]) { state.charts[id].destroy(); delete state.charts[id]; }
+}
+
+function mkChart(id, type, labels, datasets, opts = {}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  state.charts[id] = new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: opts.legendPos || 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      scales: (type === 'bar' || type === 'horizontalBar') ? {
+        x: { ticks: { font: { size: 11 } } },
+        y: { ticks: { font: { size: 11 } } },
+      } : {},
+      ...opts.extra,
     }
+  });
+}
 
-    // Master API Call Handler (Menggunakan text/plain bypass CORS preflight)
-    async function api(payload) {
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
-        return await response.json();
-      } catch (error) {
-        console.error("Kesalahan API Terdeteksi:", error);
-        Swal.fire('Koneksi Gagal', 'Sistem tidak dapat terhubung dengan repositori data Spreadsheet.', 'error');
-        throw error;
-      }
-    }
+const COLORS = ['#0070C0','#16A34A','#CA8A04','#DC2626','#7C3AED','#0891B2','#EA580C','#059669','#9333EA','#0284C7'];
+const PALETTE = labels => labels.map((_, i) => COLORS[i % COLORS.length]);
 
-    // Inisialisasi & Ambil Parameter Periode
-    function getPeriode() {
-      return document.getElementById('filter-periode').value;
-    }
+// ======================================================
+// INIT
+// ======================================================
+async function init() {
+  try {
+    const res = await api({ action: 'listPeriode' });
+    if (res.status !== 'success') { showError('Gagal memuat data: ' + res.message); return; }
+    const { periodes, latest_periode, satker_list } = res.data;
+    state.periodes     = periodes;
+    state.latestPeriode= latest_periode;
+    state.satkerList   = satker_list;
 
-    // Render Keseluruhan Komponen Dashboard
-    async function renderDashboard() {
-      const p = getPeriode();
-      
-      try {
-        // 1. Load Data Utama KPI
-        const kpiRes = await api({ action: 'kpiDashboard', periode: p });
-        if (kpiRes && kpiRes.status === 'success') {
-          const d = kpiRes.data;
-          document.getElementById('kpi-pagu').innerText = formatRupiah(d.total_pagu);
-          document.getElementById('kpi-kontrak').innerText = formatRupiah(d.total_kontrak);
-          document.getElementById('kpi-efisiensi').innerText = formatRupiah(d.total_efisiensi);
-          document.getElementById('kpi-pdn').innerText = formatRupiah(d.total_pdn || d.total_nilai_pdn || 0);
-          document.getElementById('kpi-persen-efisiensi').innerText = `Rata-rata Efisiensi: ${d.persen_efisiensi?.toFixed(2) || 0}%`;
-          document.getElementById('kpi-paket-count').innerText = `${d.total_paket_rup || 0} Paket RUP Terdata`;
-          document.getElementById('kpi-realisasi-count').innerText = `${d.total_paket_realisasi || 0} Paket Realisasi Terintegrasi`;
-        }
+    // Isi filter tahun
+    const tahunSet = [...new Set(periodes.map(p => p.split('-')[0]))];
+    const selTahun = document.getElementById('filter-tahun');
+    tahunSet.forEach(t => { const o = new Option(t, t); selTahun.appendChild(o); });
+    if (tahunSet.length) { selTahun.value = tahunSet[0]; state.filter.tahun = tahunSet[0]; }
 
-        // 2. Load Visualisasi Grafik Top OPD
-        const opdRes = await api({ action: 'dashboardOPD', periode: p });
-        if (opdRes && opdRes.status === 'success') {
-          const items = opdRes.data || [];
-          const labels = items.slice(0, 7).map(item => item.nama_satker.substring(0, 20) + '...');
-          const efisiensiValues = items.slice(0, 7).map(item => item.total_efisiensi);
+    // Isi filter bulan sesuai tahun terpilih
+    buildBulanOptions();
 
-          if (chartOpdInstance) chartOpdInstance.destroy();
-          const ctxOpd = document.getElementById('chart-opd').getContext('2d');
-          chartOpdInstance = new Chart(ctxOpd, {
-            type: 'bar',
-            data: {
-              labels: labels,
-              datasets: [{
-                label: 'Nilai Efisiensi (Rp)',
-                data: efisiensiValues,
-                backgroundColor: '#16A34A',
-                borderRadius: 6
-              }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-          });
-        }
+    // Isi filter OPD
+    buildOPDOptions();
 
-        // 3. Load Grafik Rasio Matching
-        const statusRes = await api({ action: 'dashboardStatus', periode: p });
-        if (statusRes && statusRes.status === 'success') {
-          const d = statusRes.data;
-          if (chartMatchingInstance) chartMatchingInstance.destroy();
-          const ctxMatch = document.getElementById('chart-matching').getContext('2d');
-          chartMatchingInstance = new Chart(ctxMatch, {
-            type: 'doughnut',
-            data: {
-              labels: ['Matched', 'Unmatched'],
-              datasets: [{
-                data: [d.matched || 0, d.unmatched || 0],
-                backgroundColor: ['#1E3A5F', '#DC2626']
-              }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-          });
-        }
+    document.getElementById('period-badge').textContent = 'Periode: ' + (latest_periode || '-');
 
-        // 4. Populate Detail Tabel Transaksi Kontrak Paket
-        const tableRes = await api({ action: 'detailPaket', periode: p, page: 1, per_page: 50 });
-        const tBody = document.getElementById('table-body');
-        tBody.innerHTML = '';
+    loadSection('eksekutif');
+  } catch(e) {
+    showError('Koneksi ke backend gagal. Pastikan SCRIPT_URL sudah benar dan backend sudah di-deploy.');
+  }
+}
 
-        if (tableRes && tableRes.status === 'success' && tableRes.data.items.length > 0) {
-          tableRes.data.items.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50 transition";
-            tr.innerHTML = `
-              <td class="p-4 pl-6 font-semibold text-slate-800 max-w-[200px] truncate">${r.nama_satker || '-'}</td>
-              <td class="p-4 max-w-[250px] truncate">${r.nama_paket_rup || '-'}</td>
-              <td class="p-4 max-w-[250px] truncate text-slate-500">${r.nama_paket_realisasi || '<em class="text-slate-400">Belum dipasangkan</em>'}</td>
-              <td class="p-4 text-right">${formatRupiah(r.pagu_rup)}</td>
-              <td class="p-4 text-right text-blue-600">${formatRupiah(r.nilai_kontrak)}</td>
-              <td class="p-4 text-right text-indigo-600">${formatRupiah(r.total_nilai_pdn || 0)}</td>
-              <td class="p-4 text-center">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${r.status_matching === 'MATCHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
-                  ${r.status_matching || 'UNMATCHED'}
-                </span>
-              </td>
-            `;
-            tBody.appendChild(tr);
-          });
-        } else {
-          tBody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">Tidak ada riwayat rincian data paket pada periode ini.</td></tr>`;
-        }
+function buildBulanOptions() {
+  const t = state.filter.tahun;
+  const selBulan = document.getElementById('filter-bulan');
+  const available = state.periodes.filter(p => !t || p.startsWith(t)).map(p => p.split('-')[1]);
+  Array.from(selBulan.options).forEach((o, i) => {
+    if (i === 0) return; // "Semua Bulan"
+    o.disabled = available.length > 0 && !available.includes(o.value);
+  });
+  // Set bulan terbaru
+  if (available.length > 0) {
+    const latest = available.sort().reverse()[0];
+    selBulan.value = latest;
+    state.filter.bulan = latest;
+  }
+}
 
-      } catch (err) {
-        console.error("Gagal melakukan render komponen:", err);
-      }
-    }
+function buildOPDOptions() {
+  const selOPD = document.getElementById('filter-opd');
+  selOPD.innerHTML = '<option value="">Semua OPD</option>';
+  state.satkerList.forEach(s => {
+    const o = new Option(s.nama_satker, s.kode_satker);
+    selOPD.appendChild(o);
+  });
+}
 
-    // Penanganan Handler Ekspor Dokumen Kerja Excel (.xlsx) Sesuai PRD v2.2
-    document.getElementById('btn-export-excel').addEventListener('click', async () => {
-      const p = getPeriode();
-      Swal.fire({ title: 'Mengekstrak Data...', text: 'Mohon tunggu komponen lembar kerja sedang disiapkan.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+// ======================================================
+// NAVIGATION
+// ======================================================
+function loadSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name)?.classList.add('active');
+  document.querySelector(`[data-section="${name}"]`)?.classList.add('active');
+  window.location.hash = name;
 
-      try {
-        const res = await api({ action: 'detailPaket', periode: p, page: 1, per_page: 20000 });
-        const items = res.data?.items || [];
-        Swal.close();
+  switch(name) {
+    case 'eksekutif': loadEksekutif(); break;
+    case 'opd':       loadOPD(); break;
+    case 'metode':    loadMetode(); break;
+    case 'sumber':    loadSumber(); break;
+    case 'status':    loadStatus(); break;
+    case 'penyedia':  loadPenyedia(); break;
+    case 'efisiensi': loadEfisiensi(); break;
+    case 'tren':      loadTren(); break;
+    case 'detail':    loadDetail(); break;
+    case 'kualitas':  loadKualitas(); break;
+  }
+}
 
-        if (items.length === 0) {
-          Swal.fire('Data Kosong', 'Tidak ada baris data yang tersedia untuk diekspor.', 'warning');
-          return;
-        }
+document.getElementById('nav').addEventListener('click', e => {
+  const item = e.target.closest('.nav-item');
+  if (!item) return;
+  loadSection(item.dataset.section);
+  if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('collapsed');
+});
 
-        // Mapping Data Column Header Sesuai Aturan Normalisasi PRD v2.2
-        const ws_data = [
-          ['Satker', 'Nama Paket RUP', 'Nama Paket Realisasi', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi', '% Efisiensi', 'Total Nilai PDN', 'Metode Matching', 'Status'],
-          ...items.map(r => [
-            r.nama_satker, 
-            r.nama_paket_rup, 
-            r.nama_paket_realisasi,
-            r.pagu_rup, 
-            r.nilai_kontrak, 
-            r.efisiensi, 
-            r.persen_efisiensi,
-            r.total_nilai_pdn || 0, 
-            r.metode_matching, 
-            r.status_matching
-          ])
-        ];
+document.getElementById('toggle-sidebar').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        XLSX.utils.book_append_sheet(wb, ws, 'Detail Monitoring');
-        XLSX.writeFile(wb, `BPBJ_Surakarta_Monitoring_${p}.xlsx`);
-      } catch (err) {
-        Swal.close();
-        Swal.fire('Ekspor Gagal', 'Sistem gagal menyusun file spreadsheet excel.', 'error');
-      }
-    });
+document.getElementById('btn-apply').addEventListener('click', () => {
+  state.filter.tahun      = document.getElementById('filter-tahun').value;
+  state.filter.bulan      = document.getElementById('filter-bulan').value;
+  state.filter.kode_satker= document.getElementById('filter-opd').value;
+  const active = document.querySelector('.nav-item.active')?.dataset.section || 'eksekutif';
+  loadSection(active);
+});
 
-    // Event Listeners Kontrol Filter Utama
-    document.getElementById('btn-refresh').addEventListener('click', renderDashboard);
-    document.getElementById('filter-periode').addEventListener('change', renderDashboard);
+document.getElementById('btn-reset').addEventListener('click', () => {
+  state.filter = { tahun: '', bulan: '', kode_satker: '' };
+  document.getElementById('filter-tahun').value = '';
+  document.getElementById('filter-bulan').value = '';
+  document.getElementById('filter-opd').value = '';
+  state.latestPeriode && (state.filter.tahun = state.latestPeriode.split('-')[0]);
+  state.latestPeriode && (state.filter.bulan = state.latestPeriode.split('-')[1]);
+  const active = document.querySelector('.nav-item.active')?.dataset.section || 'eksekutif';
+  loadSection(active);
+});
 
-    // Initial Dashboard Run Saat Dokumen Ready
-    window.addEventListener('DOMContentLoaded', renderDashboard);
-  </script>
+document.getElementById('filter-tahun').addEventListener('change', e => {
+  state.filter.tahun = e.target.value;
+  buildBulanOptions();
+});
+
+// ======================================================
+// EKSEKUTIF
+// ======================================================
+async function loadEksekutif() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const [kpiRes, metRes, statRes] = await Promise.all([
+    api({ action: 'kpiDashboard', periode: p, kode_satker: ks || undefined }),
+    api({ action: 'dashboardMetode', periode: p, kode_satker: ks || undefined }),
+    api({ action: 'dashboardStatus', periode: p, kode_satker: ks || undefined }),
+  ]);
+
+  // KPI Cards
+  const kpi  = kpiRes.data || {};
+  const cards = [
+    { label: 'Total Pagu RUP',   val: IDR(kpi.total_pagu),      icon: '💰', color: 'bg-blue-50', sub: fmt(kpi.jumlah_paket_rup) + ' paket' },
+    { label: 'Total Kontrak',    val: IDR(kpi.total_kontrak),    icon: '📄', color: 'bg-green-50', sub: fmt(kpi.jumlah_paket_realisasi) + ' transaksi' },
+    { label: 'Efisiensi',        val: IDR(kpi.total_efisiensi),  icon: '📈', color: 'bg-yellow-50', sub: pct(kpi.persen_efisiensi) + ' dari pagu' },
+    { label: 'Paket Matched',    val: fmt(kpi.jumlah_matched),   icon: '✅', color: 'bg-purple-50', sub: 'dari ' + fmt(kpi.jumlah_paket_realisasi) + ' realisasi' },
+  ];
+  document.getElementById('kpi-cards').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.color}">
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="kpi-label mb-1">${c.label}</div>
+          <div class="kpi-val">${c.val}</div>
+          <div class="text-xs text-slate-500 mt-1">${c.sub}</div>
+        </div>
+        <div class="text-2xl">${c.icon}</div>
+      </div>
+    </div>`).join('');
+
+  // Chart metode
+  const metode = (metRes.data?.metode_rup || []).slice(0, 6);
+  mkChart('chart-metode-eksekutif', 'doughnut',
+    metode.map(d => d.label), [{
+      data: metode.map(d => d.value),
+      backgroundColor: PALETTE(metode),
+      borderWidth: 2,
+    }]
+  );
+
+  // Chart status
+  const st = statRes.data || {};
+  mkChart('chart-status-eksekutif', 'doughnut',
+    ['Selesai', 'Sedang Berjalan', 'Belum Berproses'],
+    [{ data: [st.selesai||0, st.sedang_berjalan||0, st.belum_berproses||0],
+       backgroundColor: ['#16A34A','#CA8A04','#94A3B8'], borderWidth: 2 }]
+  );
+}
+
+// ======================================================
+// OPD
+// ======================================================
+async function loadOPD() {
+  const p  = getPeriode();
+  const res = await api({ action: 'dashboardOPD', periode: p });
+  const data = res.data || [];
+
+  // Bar chart top 10
+  const top10 = data.slice(0, 10);
+  mkChart('chart-opd-bar', 'bar',
+    top10.map(d => d.nama_satker.length > 20 ? d.nama_satker.slice(0,20)+'…' : d.nama_satker),
+    [
+      { label: 'Pagu', data: top10.map(d => d.total_pagu), backgroundColor: '#BFDBFE' },
+      { label: 'Kontrak', data: top10.map(d => d.total_kontrak), backgroundColor: '#0070C0' },
+    ],
+    { extra: { scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { callback: v => IDR(v), font: { size: 10 } } } } } }
+  );
+
+  // Tabel
+  const tbody = document.querySelector('#tbl-opd tbody');
+  tbody.innerHTML = data.map((d, i) => `
+    <tr>
+      <td class="mono text-xs">${i+1}</td>
+      <td class="font-medium">${d.nama_satker}</td>
+      <td class="mono">${IDRfull(d.total_pagu)}</td>
+      <td class="mono">${IDRfull(d.total_kontrak)}</td>
+      <td class="mono ${d.efisiensi < 0 ? 'text-red-600' : 'text-green-700'}">${IDRfull(d.efisiensi)}</td>
+      <td><span class="badge ${d.persen_efisiensi < 0 ? 'badge-red' : d.persen_efisiensi > 50 ? 'badge-green' : 'badge-yellow'}">${pct(d.persen_efisiensi)}</span></td>
+      <td class="mono">${fmt(d.jumlah_paket_rup)}</td>
+      <td class="mono">${fmt(d.jumlah_matched)}</td>
+    </tr>`).join('');
+}
+
+// ======================================================
+// METODE & JENIS
+// ======================================================
+async function loadMetode() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const res = await api({ action: 'dashboardMetode', periode: p, kode_satker: ks || undefined });
+  const d = res.data || {};
+
+  const draw = (id, data) => {
+    const items = (data || []).slice(0, 8);
+    mkChart(id, 'bar',
+      items.map(x => x.label.length > 22 ? x.label.slice(0,22)+'…' : x.label),
+      [{ label: 'Jumlah Paket', data: items.map(x => x.value), backgroundColor: PALETTE(items) }],
+      { extra: { plugins: { legend: { display: false } } } }
+    );
+  };
+  draw('chart-metode-rup',  d.metode_rup);
+  draw('chart-jenis-rup',   d.jenis_rup);
+  draw('chart-metode-real', d.metode_real);
+  draw('chart-jenis-real',  d.jenis_real);
+}
+
+// ======================================================
+// SUMBER
+// ======================================================
+async function loadSumber() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const res = await api({ action: 'dashboardSumber', periode: p, kode_satker: ks || undefined });
+  const d = res.data || {};
+
+  const mkDonut = (id, data) => {
+    const items = (data || []).slice(0, 8);
+    mkChart(id, 'doughnut',
+      items.map(x => x.label),
+      [{ data: items.map(x => x.value), backgroundColor: PALETTE(items), borderWidth: 2 }]
+    );
+  };
+  mkDonut('chart-sumber-dana',       d.sumber_dana);
+  mkDonut('chart-sumber-transaksi',  d.sumber_transaksi);
+}
+
+// ======================================================
+// STATUS
+// ======================================================
+async function loadStatus() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const res = await api({ action: 'dashboardStatus', periode: p, kode_satker: ks || undefined });
+  const d = res.data || {};
+
+  document.getElementById('status-kpi-cards').innerHTML = [
+    { label: 'Selesai', val: fmt(d.selesai), color: 'bg-green-50', badge: 'badge-green' },
+    { label: 'Sedang Berjalan', val: fmt(d.sedang_berjalan), color: 'bg-yellow-50', badge: 'badge-yellow' },
+    { label: 'Belum Berproses', val: fmt(d.belum_berproses), color: 'bg-slate-50', badge: 'badge-gray' },
+  ].map(c => `<div class="kpi-card ${c.color}"><div class="kpi-label mb-1">${c.label}</div><div class="kpi-val">${c.val}</div></div>`).join('');
+
+  mkChart('chart-status-pie', 'pie',
+    ['Selesai', 'Sedang Berjalan', 'Belum Berproses'],
+    [{ data: [d.selesai||0, d.sedang_berjalan||0, d.belum_berproses||0],
+       backgroundColor: ['#16A34A','#CA8A04','#94A3B8'], borderWidth: 2 }]
+  );
+}
+
+// ======================================================
+// TOP PENYEDIA
+// ======================================================
+async function loadPenyedia() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const res = await api({ action: 'dashboardPenyedia', periode: p, kode_satker: ks || undefined });
+  const data = res.data || [];
+
+  mkChart('chart-penyedia', 'bar',
+    data.map(d => d.nama_penyedia.length > 25 ? d.nama_penyedia.slice(0,25)+'…' : d.nama_penyedia),
+    [{ label: 'Total Nilai Kontrak', data: data.map(d => d.total_nilai), backgroundColor: PALETTE(data) }],
+    { extra: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => IDR(v) } } } } }
+  );
+
+  document.querySelector('#tbl-penyedia tbody').innerHTML = data.map((d, i) => `
+    <tr><td class="mono">${i+1}</td><td>${d.nama_penyedia}</td>
+    <td class="mono text-center">${fmt(d.jumlah)}</td>
+    <td class="mono">${IDRfull(d.total_nilai)}</td></tr>`).join('');
+}
+
+// ======================================================
+// EFISIENSI
+// ======================================================
+async function loadEfisiensi() {
+  const p  = getPeriode();
+  const ks = state.filter.kode_satker;
+  const res = await api({ action: 'dashboardEfisiensi', periode: p, kode_satker: ks || undefined });
+  const data = (res.data || []).slice(0, 20);
+
+  const colors = data.map(d => d.efisiensi < 0 ? '#FCA5A5' : '#6EE7B7');
+  mkChart('chart-efisiensi', 'bar',
+    data.map(d => d.nama_satker.length > 22 ? d.nama_satker.slice(0,22)+'…' : d.nama_satker),
+    [{ label: 'Efisiensi (Rp)', data: data.map(d => d.efisiensi), backgroundColor: colors }],
+    { extra: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => IDR(v) } } } } }
+  );
+
+  document.querySelector('#tbl-efisiensi tbody').innerHTML = data.map((d, i) => `
+    <tr>
+      <td class="mono">${i+1}</td>
+      <td>${d.nama_satker}</td>
+      <td class="mono">${IDRfull(d.total_pagu)}</td>
+      <td class="mono">${IDRfull(d.total_kontrak)}</td>
+      <td class="mono ${d.efisiensi < 0 ? 'text-red-600 font-bold' : 'text-green-700'}">${IDRfull(d.efisiensi)}</td>
+      <td><span class="badge ${d.persen_efisiensi < 0 ? 'badge-red' : d.persen_efisiensi > 50 ? 'badge-green' : 'badge-yellow'}">${pct(d.persen_efisiensi)}</span></td>
+    </tr>`).join('');
+}
+
+// ======================================================
+// TREN
+// ======================================================
+async function loadTren() {
+  const res  = await api({ action: 'dashboardTren' });
+  const data = res.data || [];
+
+  mkChart('chart-tren', 'line',
+    data.map(d => d.periode),
+    [
+      { label: 'Total Pagu', data: data.map(d => d.total_pagu), borderColor: '#0070C0', backgroundColor: 'rgba(0,112,192,.1)', tension: 0.3, fill: true },
+      { label: 'Total Kontrak', data: data.map(d => d.total_kontrak), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.08)', tension: 0.3, fill: true },
+    ],
+    { extra: { scales: { y: { ticks: { callback: v => IDR(v) } } } } }
+  );
+
+  document.querySelector('#tbl-tren tbody').innerHTML = data.map(d => `
+    <tr>
+      <td class="font-semibold mono">${d.periode}</td>
+      <td class="mono">${IDRfull(d.total_pagu)}</td>
+      <td class="mono">${IDRfull(d.total_kontrak)}</td>
+      <td class="mono ${Number(d.total_efisiensi) < 0 ? 'text-red-600' : 'text-green-700'}">${IDRfull(d.total_efisiensi)}</td>
+      <td><span class="badge ${Number(d.persen_efisiensi) < 0 ? 'badge-red' : 'badge-green'}">${pct(d.persen_efisiensi)}</span></td>
+      <td class="mono text-center">${fmt(d.jumlah_paket_rup)}</td>
+      <td class="mono text-center">${fmt(d.jumlah_paket_realisasi)}</td>
+    </tr>`).join('');
+}
+
+// ======================================================
+// DETAIL PAKET
+// ======================================================
+async function loadDetail(page = 1) {
+  state.detailPage = page;
+  const p   = getPeriode();
+  const ks  = state.filter.kode_satker;
+  const res = await api({
+    action: 'detailPaket', periode: p, kode_satker: ks || undefined,
+    page, per_page: 50, search: state.detailSearch,
+  });
+  const d = res.data || {};
+  const items = d.items || [];
+
+  const statusBadge = s => {
+    if (!s) return '<span class="badge badge-gray">-</span>';
+    if (s === 'MATCHED') return '<span class="badge badge-green">MATCHED</span>';
+    if (s === 'ORPHAN')  return '<span class="badge badge-red">ORPHAN</span>';
+    return '<span class="badge badge-yellow">UNMATCHED</span>';
+  };
+
+  document.querySelector('#tbl-detail tbody').innerHTML = items.map((r, i) => `
+    <tr>
+      <td class="mono text-xs">${(page-1)*50+i+1}</td>
+      <td class="text-xs">${r.nama_satker || '-'}</td>
+      <td class="max-w-xs truncate text-xs" title="${r.nama_paket_rup || r.nama_paket_realisasi || '-'}">${(r.nama_paket_rup || r.nama_paket_realisasi || '-').slice(0,60)}</td>
+      <td class="mono text-xs">${r.pagu_rup ? IDRfull(r.pagu_rup) : '-'}</td>
+      <td class="mono text-xs">${r.nilai_kontrak ? IDRfull(r.nilai_kontrak) : '-'}</td>
+      <td class="mono text-xs ${Number(r.efisiensi) < 0 ? 'text-red-600' : ''}">${r.efisiensi ? IDRfull(r.efisiensi) : '-'}</td>
+      <td class="text-xs">${r.metode_matching || '-'}</td>
+      <td>${statusBadge(r.status_matching)}</td>
+    </tr>`).join('');
+
+  document.getElementById('detail-info').textContent =
+    `Menampilkan ${(page-1)*50+1}–${Math.min(page*50, d.total)} dari ${fmt(d.total)} paket`;
+
+  document.getElementById('btn-prev').disabled = page <= 1;
+  document.getElementById('btn-next').disabled = page >= d.total_pages;
+}
+
+document.getElementById('btn-detail-search').addEventListener('click', () => {
+  state.detailSearch = document.getElementById('detail-search').value;
+  loadDetail(1);
+});
+document.getElementById('detail-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { state.detailSearch = e.target.value; loadDetail(1); }
+});
+document.getElementById('btn-prev').addEventListener('click', () => loadDetail(state.detailPage - 1));
+document.getElementById('btn-next').addEventListener('click', () => loadDetail(state.detailPage + 1));
+
+// ======================================================
+// UPLOAD
+// ======================================================
+let rupFile = null, realFile = null;
+
+function setupDropZone(dropId, inputId, labelId, onFile) {
+  const drop  = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); });
+}
+
+setupDropZone('drop-rup', 'file-rup', 'label-rup', file => {
+  if (!file.name.endsWith('.csv')) { Swal.fire('Error', 'File harus berformat .csv', 'error'); return; }
+  if (file.size > 10 * 1024 * 1024) { Swal.fire('Error', 'Ukuran file melebihi 10 MB', 'error'); return; }
+  rupFile = file;
+  document.getElementById('label-rup').textContent = '✅ ' + file.name;
+  document.getElementById('btn-upload-rup').disabled = false;
+});
+
+setupDropZone('drop-real', 'file-real', 'label-real', file => {
+  if (!file.name.endsWith('.csv')) { Swal.fire('Error', 'File harus berformat .csv', 'error'); return; }
+  if (file.size > 10 * 1024 * 1024) { Swal.fire('Error', 'Ukuran file melebihi 10 MB', 'error'); return; }
+  realFile = file;
+  document.getElementById('label-real').textContent = '✅ ' + file.name;
+  document.getElementById('btn-upload-real').disabled = false;
+});
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+  return lines.slice(1).map(line => {
+    const vals = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+    const obj  = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+    return obj;
+  });
+}
+
+async function uploadChunked(action, rows, periode, namaFile, progFill, progPct, progLabel, progWrap) {
+  document.getElementById(progWrap).classList.remove('hidden');
+  const chunks = [];
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
+
+  let processed = 0;
+  for (let ci = 0; ci < chunks.length; ci++) {
+    document.getElementById(progLabel).textContent = `Chunk ${ci+1}/${chunks.length}...`;
+    const res = await api({ action, token: state.adminToken, periode, data: chunks[ci], nama_file: namaFile });
+    if (res.status !== 'success') throw new Error(res.message);
+    processed += chunks[ci].length;
+    const pctVal = Math.round(processed / rows.length * 100);
+    document.getElementById(progFill).style.width = pctVal + '%';
+    document.getElementById(progPct).textContent  = pctVal + '%';
+  }
+  return processed;
+}
+
+document.getElementById('btn-upload-rup').addEventListener('click', async () => {
+  if (!rupFile) return;
+  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
+  const btn     = document.getElementById('btn-upload-rup');
+  btn.disabled  = true;
+  try {
+    const text = await rupFile.text();
+    const rows = parseCSV(text);
+    const n    = await uploadChunked('uploadRUP', rows, periode, rupFile.name,
+      'prog-rup-fill','prog-rup-pct','prog-rup-label','prog-rup-wrap');
+    Swal.fire('✅ Berhasil', `Upload RUP selesai: ${n} record diproses.`, 'success');
+    rupFile = null; document.getElementById('label-rup').textContent = 'Klik atau drag data_rup_*.csv';
+  } catch(e) {
+    Swal.fire('❌ Error', e.message, 'error');
+  } finally { btn.disabled = false; }
+});
+
+document.getElementById('btn-upload-real').addEventListener('click', async () => {
+  if (!realFile) return;
+  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
+  const btn     = document.getElementById('btn-upload-real');
+  btn.disabled  = true;
+  try {
+    Swal.fire({ title: 'Memproses...', html: 'Upload + matching engine berjalan. Mohon tunggu.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const text = await realFile.text();
+    const rows = parseCSV(text);
+    const n    = await uploadChunked('uploadRealisasi', rows, periode, realFile.name,
+      'prog-real-fill','prog-real-pct','prog-real-label','prog-real-wrap');
+    Swal.fire('✅ Berhasil', `Upload Realisasi & matching selesai: ${n} record diproses.`, 'success');
+    realFile = null; document.getElementById('label-real').textContent = 'Klik atau drag data_realisasi_*.csv';
+    await init(); // refresh periode list
+  } catch(e) {
+    Swal.fire('❌ Error', e.message, 'error');
+  } finally { btn.disabled = false; }
+});
+
+// Token verification
+document.getElementById('btn-verify-token').addEventListener('click', async () => {
+  const token = document.getElementById('admin-token').value.trim();
+  if (!token) { Swal.fire('Error', 'Token tidak boleh kosong.', 'error'); return; }
+  // Test dengan unmatchedData — jika 401 berarti salah
+  const res = await api({ action: 'unmatchedData', token, periode: state.latestPeriode });
+  if (res.code === 401) {
+    document.getElementById('token-status').innerHTML = '<span class="text-red-500">❌ Token salah</span>';
+    return;
+  }
+  state.adminToken = token;
+  state.isAdmin    = true;
+  document.getElementById('token-status').innerHTML = '<span class="text-green-600">✅ Token valid</span>';
+  document.getElementById('upload-panel').classList.remove('hidden');
+  document.getElementById('nav-kualitas').classList.remove('hidden');
+});
+
+// Hapus Periode
+document.getElementById('btn-delete-periode').addEventListener('click', async () => {
+  const p = document.getElementById('del-periode').value.trim();
+  if (!p) { Swal.fire('Error', 'Masukkan periode dalam format YYYY-MM', 'error'); return; }
+  const conf = await Swal.fire({ title: `Hapus data ${p}?`, text: 'Data tidak dapat dipulihkan!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#DC2626', confirmButtonText: 'Ya, Hapus!' });
+  if (!conf.isConfirmed) return;
+  const res = await api({ action: 'deletePeriode', token: state.adminToken, periode: p });
+  if (res.status === 'success') Swal.fire('✅ Berhasil', res.message, 'success');
+  else Swal.fire('❌ Error', res.message, 'error');
+});
+
+// ======================================================
+// KUALITAS DATA
+// ======================================================
+async function loadKualitas() {
+  if (!state.isAdmin) { Swal.fire('Akses Ditolak', 'Harap login sebagai admin terlebih dahulu.', 'warning'); return; }
+  const p   = getPeriode();
+  const res = await api({ action: 'unmatchedData', token: state.adminToken, periode: p });
+  const d   = res.data || {};
+
+  document.getElementById('kualitas-kpi').innerHTML = [
+    { label: 'Matching Rate', val: pct(d.matching_rate), color: 'bg-green-50' },
+    { label: 'Total Realisasi', val: fmt(d.total_realisasi), color: 'bg-blue-50' },
+    { label: 'Total Matched', val: fmt(d.total_matched), color: 'bg-purple-50' },
+  ].map(c => `<div class="kpi-card ${c.color}"><div class="kpi-label mb-1">${c.label}</div><div class="kpi-val">${c.val}</div></div>`).join('');
+
+  const fill = (tbodySelector, rows, cols) => {
+    document.querySelector(tbodySelector + ' tbody').innerHTML =
+      rows.length === 0 ? '<tr><td colspan="99" class="text-center text-slate-400 py-4">Tidak ada data</td></tr>'
+      : rows.map(r => `<tr>${cols.map(c => `<td class="text-xs">${c(r)}</td>`).join('')}</tr>`).join('');
+  };
+
+  fill('#tbl-unmatched-rup', d.unmatched_rup || [], [
+    r => r.nama_satker, r => (r.nama_paket_rup||'-'), r => IDRfull(r.pagu_rup),
+  ]);
+  fill('#tbl-unmatched-real', d.unmatched_realisasi || [], [
+    r => r.nama_satker, r => (r.nama_paket_realisasi||'-'), r => IDRfull(r.nilai_kontrak),
+  ]);
+  fill('#tbl-orphan', d.orphan || [], [
+    r => r.nama_satker, r => r.kode_paket, r => IDRfull(r.nilai_kontrak), r => r.metode_matching,
+  ]);
+}
+
+// ======================================================
+// EXPORT EXCEL
+// ======================================================
+document.getElementById('btn-export-excel').addEventListener('click', async () => {
+  const p   = getPeriode();
+  const ks  = state.filter.kode_satker;
+  const res = await api({ action: 'detailPaket', periode: p, kode_satker: ks || undefined, page: 1, per_page: 20000 });
+  const items = res.data?.items || [];
+
+  const ws_data = [
+    ['Satker','Nama Paket RUP','Nama Paket Realisasi','Pagu','Nilai Kontrak','Efisiensi','% Efisiensi','Metode Matching','Status'],
+    ...items.map(r => [
+      r.nama_satker, r.nama_paket_rup, r.nama_paket_realisasi,
+      r.pagu_rup, r.nilai_kontrak, r.efisiensi, r.persen_efisiensi,
+      r.metode_matching, r.status_matching,
+    ])
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Detail Paket');
+  XLSX.writeFile(wb, `BPBJ_Surakarta_${p || 'semua'}.xlsx`);
+});
+
+// ======================================================
+// ERROR HELPER
+// ======================================================
+function showError(msg) {
+  document.getElementById('kpi-cards').innerHTML =
+    `<div class="kpi-card col-span-4 text-center text-red-500 py-6">${msg}</div>`;
+}
+
+// ======================================================
+// START
+// ======================================================
+init();
+</script>
 </body>
 </html>
