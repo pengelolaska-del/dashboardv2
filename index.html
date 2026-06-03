@@ -543,32 +543,64 @@ const PALETTE = labels => labels.map((_, i) => COLORS[i % COLORS.length]);
 // INIT
 // ======================================================
 async function init() {
+  // Deteksi apakah SCRIPT_URL sudah diisi
+  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
+    showSetupBanner();
+    return;
+  }
+  showLoading(true);
   try {
     const res = await api({ action: 'listPeriode' });
-    if (res.status !== 'success') { showError('Gagal memuat data: ' + res.message); return; }
+    showLoading(false);
+    if (res.status !== 'success') { showError('Gagal memuat data dari backend: ' + res.message); return; }
     const { periodes, latest_periode, satker_list } = res.data;
-    state.periodes     = periodes;
-    state.latestPeriode= latest_periode;
-    state.satkerList   = satker_list;
+    state.periodes      = periodes;
+    state.latestPeriode = latest_periode;
+    state.satkerList    = satker_list;
 
     // Isi filter tahun
     const tahunSet = [...new Set(periodes.map(p => p.split('-')[0]))];
     const selTahun = document.getElementById('filter-tahun');
+    // Hapus opsi lama kecuali placeholder
+    while (selTahun.options.length > 1) selTahun.remove(1);
     tahunSet.forEach(t => { const o = new Option(t, t); selTahun.appendChild(o); });
     if (tahunSet.length) { selTahun.value = tahunSet[0]; state.filter.tahun = tahunSet[0]; }
 
-    // Isi filter bulan sesuai tahun terpilih
     buildBulanOptions();
-
-    // Isi filter OPD
     buildOPDOptions();
 
     document.getElementById('period-badge').textContent = 'Periode: ' + (latest_periode || '-');
-
     loadSection('eksekutif');
   } catch(e) {
-    showError('Koneksi ke backend gagal. Pastikan SCRIPT_URL sudah benar dan backend sudah di-deploy.');
+    showLoading(false);
+    showError('Koneksi ke backend gagal.<br><small>Periksa apakah SCRIPT_URL sudah benar dan Apps Script sudah di-deploy sebagai Web App (akses: Anyone).</small>');
   }
+}
+
+function showLoading(on) {
+  document.getElementById('kpi-cards').innerHTML = on
+    ? `<div class="kpi-card col-span-2 lg:col-span-4 text-center py-10">
+         <div class="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+         <div class="text-slate-500 text-sm">Menghubungkan ke backend...</div>
+       </div>`
+    : '';
+}
+
+function showSetupBanner() {
+  document.getElementById('kpi-cards').innerHTML = `
+    <div class="kpi-card col-span-2 lg:col-span-4 bg-amber-50 border border-amber-200 py-8 px-6">
+      <h3 class="font-bold text-amber-800 text-base mb-3">⚙️ Setup Diperlukan</h3>
+      <p class="text-amber-700 text-sm mb-4">Aplikasi belum terhubung ke backend. Ikuti langkah berikut:</p>
+      <ol class="text-sm text-amber-800 space-y-2 list-decimal list-inside">
+        <li>Buka <strong>Google Sheets</strong> baru → Extensions → Apps Script</li>
+        <li>Paste isi file <code class="bg-amber-100 px-1 rounded">Code.gs</code> dan ganti <code>ADMIN_TOKEN</code></li>
+        <li>Jalankan fungsi <code class="bg-amber-100 px-1 rounded">initSheets()</code> sekali</li>
+        <li>Deploy → New deployment → Web App → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong></li>
+        <li>Salin URL deploy, buka file <code class="bg-amber-100 px-1 rounded">index.html</code> ini dengan text editor</li>
+        <li>Ganti <code class="bg-amber-100 px-1 rounded">GANTI_DENGAN_SCRIPT_ID_ANDA</code> dengan URL tadi</li>
+        <li>Simpan dan refresh halaman ini</li>
+      </ol>
+    </div>`;
 }
 
 function buildBulanOptions() {
@@ -1033,19 +1065,34 @@ document.getElementById('btn-upload-real').addEventListener('click', async () =>
 
 // Token verification
 document.getElementById('btn-verify-token').addEventListener('click', async () => {
-  const token = document.getElementById('admin-token').value.trim();
+  const token  = document.getElementById('admin-token').value.trim();
+  const btn    = document.getElementById('btn-verify-token');
+  const status = document.getElementById('token-status');
   if (!token) { Swal.fire('Error', 'Token tidak boleh kosong.', 'error'); return; }
-  // Test dengan unmatchedData — jika 401 berarti salah
-  const res = await api({ action: 'unmatchedData', token, periode: state.latestPeriode });
-  if (res.code === 401) {
-    document.getElementById('token-status').innerHTML = '<span class="text-red-500">❌ Token salah</span>';
+  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
+    Swal.fire('Setup Diperlukan', 'SCRIPT_URL belum diisi. Lihat panduan di tab Eksekutif.', 'warning');
     return;
   }
-  state.adminToken = token;
-  state.isAdmin    = true;
-  document.getElementById('token-status').innerHTML = '<span class="text-green-600">✅ Token valid</span>';
-  document.getElementById('upload-panel').classList.remove('hidden');
-  document.getElementById('nav-kualitas').classList.remove('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+  status.innerHTML = '<span class="text-slate-400">⏳ Memverifikasi...</span>';
+  try {
+    const res = await api({ action: 'verifyToken', token });
+    if (res.status === 'success' && res.data?.valid) {
+      state.adminToken = token;
+      state.isAdmin    = true;
+      status.innerHTML = '<span class="text-green-600 font-medium">✅ Token valid — akses admin aktif</span>';
+      document.getElementById('upload-panel').classList.remove('hidden');
+      document.getElementById('nav-kualitas').classList.remove('hidden');
+    } else {
+      status.innerHTML = '<span class="text-red-500">❌ Token salah</span>';
+    }
+  } catch(e) {
+    status.innerHTML = '<span class="text-red-500">❌ Gagal terhubung ke backend</span>';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Verifikasi';
+  }
 });
 
 // Hapus Periode
