@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard Monitoring Pengadaan — BPBJ Kota Surakarta</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: '#1E3A5F',
+        }
+      }
+    }
+  }
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -281,7 +292,7 @@
               <span id="token-status" class="text-xs"></span>
             </div>
           </div>
-          <div id="admin-info" class="hidden flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          <div id="admin-info" class="hidden items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2" style="display:none">
             <span class="text-green-600 text-xs">✅</span>
             <span class="text-xs text-green-700 font-medium" id="admin-name-display">Admin</span>
             <button onclick="logoutAdmin()" class="text-xs text-slate-400 hover:text-red-500 ml-1">Keluar</button>
@@ -491,7 +502,7 @@
       </div>
 
       <!-- Modal Tambah/Edit User -->
-      <div id="modal-user" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+      <div id="modal-user" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" style="display:none">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="flex items-center justify-between px-6 py-4 border-b">
             <h3 class="font-bold text-navy" id="modal-user-title">Tambah User Baru</h3>
@@ -537,7 +548,7 @@
       </div>
 
       <!-- Modal Token Reveal -->
-      <div id="modal-token-reveal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+      <div id="modal-token-reveal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" style="display:none">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="px-6 py-5">
             <div class="text-center mb-4">
@@ -1004,7 +1015,7 @@ document.getElementById('btn-verify-token').addEventListener('click',async()=>{
       const name=res.data?.nama||'Admin';
       status.innerHTML='';
       document.getElementById('admin-name-display').textContent=name+` (${res.data?.role||'admin'})`;
-      document.getElementById('admin-info').classList.remove('hidden');
+      document.getElementById('admin-info').style.display='flex';
       document.getElementById('upload-panel').classList.remove('hidden');
       document.getElementById('nav-kualitas').classList.remove('hidden');
       if(state.isSuperAdmin) document.getElementById('nav-users').classList.remove('hidden');
@@ -1020,7 +1031,7 @@ function logoutAdmin() {
   state.adminToken=''; state.isAdmin=false; state.isSuperAdmin=false;
   document.getElementById('admin-token').value='';
   document.getElementById('token-status').innerHTML='';
-  document.getElementById('admin-info').classList.add('hidden');
+  document.getElementById('admin-info').style.display='none';
   document.getElementById('upload-panel').classList.add('hidden');
   document.getElementById('nav-kualitas').classList.add('hidden');
   document.getElementById('nav-users').classList.add('hidden');
@@ -1074,7 +1085,7 @@ document.getElementById('btn-add-user').addEventListener('click',()=>{
   document.getElementById('modal-role').value='admin';
   document.getElementById('modal-catatan').value='';
   document.getElementById('modal-regen-wrap').classList.add('hidden');
-  document.getElementById('modal-user').classList.remove('hidden');
+  document.getElementById('modal-user').style.display='flex';
 });
 
 function openEditUser(user) {
@@ -1088,10 +1099,10 @@ function openEditUser(user) {
   document.getElementById('modal-catatan').value=user.catatan||'';
   document.getElementById('modal-regen-wrap').classList.remove('hidden');
   document.getElementById('modal-regen').checked=false;
-  document.getElementById('modal-user').classList.remove('hidden');
+  document.getElementById('modal-user').style.display='flex';
 }
 
-function closeUserModal(){document.getElementById('modal-user').classList.add('hidden');editingUserId=null;}
+function closeUserModal(){document.getElementById('modal-user').style.display='none';editingUserId=null;}
 
 async function saveUser() {
   const btn=document.getElementById('btn-save-user');
@@ -1131,8 +1142,8 @@ async function deleteUser(userId,nama) {
   else Swal.fire('❌ Error',res.message,'error');
 }
 
-function showTokenReveal(token){document.getElementById('token-reveal-value').textContent=token;document.getElementById('modal-token-reveal').classList.remove('hidden');}
-function closeTokenReveal(){document.getElementById('modal-token-reveal').classList.add('hidden');document.getElementById('token-reveal-value').textContent='—';}
+function showTokenReveal(token){document.getElementById('token-reveal-value').textContent=token;document.getElementById('modal-token-reveal').style.display='flex';}
+function closeTokenReveal(){document.getElementById('modal-token-reveal').style.display='none';document.getElementById('token-reveal-value').textContent='—';}
 function copyToken(){const t=document.getElementById('token-reveal-value').textContent;navigator.clipboard.writeText(t).then(()=>Swal.fire({icon:'success',title:'Tersalin!',text:'Token telah disalin ke clipboard.',timer:1500,showConfirmButton:false}));}
 
 function showError(msg){document.getElementById('kpi-cards').innerHTML=`<div class="kpi-card col-span-4 text-center text-red-500 py-6">${msg}</div>`;}
