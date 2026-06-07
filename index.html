@@ -970,17 +970,43 @@ document.getElementById('btn-upload-real').addEventListener('click',async()=>{
   if(!realFile)return;
   const periode=document.getElementById('up-tahun').value+'-'+document.getElementById('up-bulan').value;
   const btn=document.getElementById('btn-upload-real');
-  btn.disabled=true; btn.textContent='Memproses...';
-  Swal.fire({title:'Upload + Matching',html:'Mengunggah data dan menjalankan matching engine...<br><small class="text-slate-400">Proses ini memerlukan waktu 30–60 detik</small>',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  btn.disabled=true;
+
   try {
     const text=await realFile.text(), rows=parseCSV(text);
+
+    // STEP 1: Upload data realisasi (chunked)
+    btn.textContent='📤 Mengupload data...';
     const n=await uploadChunked('uploadRealisasi',rows,periode,realFile.name,'prog-real-fill','prog-real-pct','prog-real-label','prog-real-wrap');
-    Swal.fire({icon:'success',title:'✅ Selesai!',html:`<b>${n.toLocaleString('id')}</b> record realisasi diproses.<br>Matching engine telah berjalan.`,confirmButtonColor:'#16A34A'});
+
+    // STEP 2: Jalankan matching engine (request terpisah)
+    btn.textContent='⚙️ Menjalankan matching...';
+    Swal.fire({
+      title:'⚙️ Matching Engine',
+      html:`Upload selesai: <b>${n.toLocaleString('id')}</b> record.<br><br>Menjalankan matching engine...<br><small class="text-slate-400">Proses ini 30–90 detik, jangan tutup halaman</small>`,
+      allowOutsideClick:false, didOpen:()=>Swal.showLoading()
+    });
+
+    const matchRes = await api({action:'runMatching', token:state.adminToken, periode});
+    if(matchRes.status!=='success') throw new Error('Matching gagal: '+(matchRes.message||'unknown'));
+
+    const md = matchRes.data||{};
+    Swal.fire({
+      icon:'success', title:'✅ Selesai!',
+      html:`<b>${n.toLocaleString('id')}</b> record realisasi diupload.<br>
+            <b>${md.matched||0}</b> paket matched &nbsp;·&nbsp;
+            <b>${md.unmatched||0}</b> unmatched &nbsp;·&nbsp;
+            <b>${md.orphan||0}</b> orphan`,
+      confirmButtonColor:'#16A34A'
+    });
+
     realFile=null;
-    document.getElementById('drop-real-content').innerHTML=`<svg class="w-9 h-9 mx-auto text-green-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="text-sm font-medium text-green-600">Realisasi berhasil diupload</p>`;
+    document.getElementById('drop-real-content').innerHTML=`<svg class="w-9 h-9 mx-auto text-green-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="text-sm font-medium text-green-600">Realisasi berhasil diupload</p><p class="text-xs text-slate-400 mt-1">Matched: ${md.matched||0} paket</p>`;
     document.getElementById('drop-real').className='upload-zone has-file';
     document.getElementById('real-validation').classList.add('hidden');
-    setStep(3); loadUploadHistory(); await init();
+    setStep(3);
+    await loadUploadHistory();
+    await init();
   } catch(e){Swal.fire({icon:'error',title:'❌ Gagal',text:e.message});}
   finally{btn.disabled=false;btn.innerHTML='⬆ Upload Realisasi + Matching';}
 });
@@ -989,16 +1015,56 @@ async function loadUploadHistory() {
   const periode=document.getElementById('up-tahun').value+'-'+document.getElementById('up-bulan').value;
   const wrap=document.getElementById('upload-history-wrap');
   if(!state.adminToken){wrap.innerHTML='<p class="text-xs text-slate-400 text-center py-4">Login untuk melihat riwayat.</p>';return;}
+  wrap.innerHTML='<p class="text-xs text-slate-400 text-center py-3">⏳ Memuat riwayat...</p>';
   try {
     const res=await api({action:'uploadHistory',token:state.adminToken,periode});
     const logs=res.data||[];
-    if(logs.length===0){wrap.innerHTML=`<p class="text-xs text-slate-400 text-center py-4">Belum ada riwayat untuk periode <strong>${periode}</strong>.</p>`;return;}
-    wrap.innerHTML=`<table class="data-table"><thead><tr><th>Jenis</th><th>Nama File</th><th>Record</th><th>Diupload Oleh</th><th>Waktu</th><th>Status</th></tr></thead><tbody>${logs.map(l=>`<tr><td><span class="badge ${l.jenis_data==='RUP'?'badge-blue':'badge-green'}">${l.jenis_data}</span></td><td class="text-xs font-mono text-slate-600">${l.nama_file}</td><td class="text-right font-semibold">${(l.jumlah_record||0).toLocaleString('id')}</td><td class="text-xs">${l.uploaded_by}</td><td class="text-xs text-slate-500">${l.uploaded_at?new Date(l.uploaded_at).toLocaleString('id'):'-'}</td><td><span class="badge ${l.status==='SUCCESS'?'badge-green':'badge-red'}">${l.status}</span></td></tr>`).join('')}</tbody></table>`;
-  } catch(e){wrap.innerHTML='<p class="text-xs text-red-500 text-center py-4">Gagal memuat riwayat.</p>';}
+    if(logs.length===0){
+      wrap.innerHTML=`<div class="text-center py-5">
+        <div class="text-2xl mb-2">📭</div>
+        <p class="text-sm text-slate-500">Belum ada data yang diupload untuk periode <strong>${periode}</strong>.</p>
+        <p class="text-xs text-slate-400 mt-1">Upload RUP dan Realisasi menggunakan form di atas.</p>
+      </div>`;
+      return;
+    }
+    // Cek apakah RUP dan Realisasi sudah ada
+    const hasRUP  = logs.some(l=>l.jenis_data==='RUP');
+    const hasReal = logs.some(l=>l.jenis_data==='REALISASI');
+    const statusBanner = hasRUP && hasReal
+      ? `<div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3 text-xs text-green-700">
+           ✅ RUP dan Realisasi sudah diupload untuk periode <strong>${periode}</strong>. Tidak perlu upload ulang.
+         </div>`
+      : `<div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-xs text-amber-700">
+           ⚠️ ${!hasRUP?'RUP belum diupload. ':''} ${!hasReal?'Realisasi belum diupload.':''}
+         </div>`;
+    wrap.innerHTML=statusBanner+`
+      <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead><tr>
+          <th>Jenis</th><th>Nama File</th><th>Record</th>
+          <th>Diupload Oleh</th><th>Waktu</th><th>Status</th><th>Keterangan</th>
+        </tr></thead>
+        <tbody>${logs.map(l=>`<tr>
+          <td><span class="badge ${l.jenis_data==='RUP'?'badge-blue':'badge-green'}">${l.jenis_data}</span></td>
+          <td class="text-xs font-mono text-slate-600 max-w-xs truncate" title="${l.nama_file}">${l.nama_file}</td>
+          <td class="text-right font-semibold mono">${(Number(l.jumlah_record)||0).toLocaleString('id')}</td>
+          <td class="text-xs">${l.uploaded_by||'-'}</td>
+          <td class="text-xs text-slate-500">${l.uploaded_at?new Date(l.uploaded_at).toLocaleString('id-ID'):'-'}</td>
+          <td><span class="badge ${l.status==='SUCCESS'?'badge-green':l.status==='PARTIAL'?'badge-yellow':'badge-red'}">${l.status}</span></td>
+          <td class="text-xs text-slate-400 max-w-xs truncate" title="${l.catatan||''}">${l.catatan||'-'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      </div>`;
+    // Auto-update step indicator berdasarkan history
+    if(hasRUP && !hasReal) setStep(2);
+    if(hasRUP && hasReal)  setStep(3);
+  } catch(e){
+    wrap.innerHTML=`<p class="text-xs text-red-500 text-center py-4">❌ Gagal memuat riwayat: ${e.message}</p>`;
+  }
 }
 
-document.getElementById('up-tahun').addEventListener('change',loadUploadHistory);
-document.getElementById('up-bulan').addEventListener('change',loadUploadHistory);
+document.getElementById('up-tahun').addEventListener('change', ()=>{ if(state.adminToken) loadUploadHistory(); });
+document.getElementById('up-bulan').addEventListener('change', ()=>{ if(state.adminToken) loadUploadHistory(); });
 
 // Token verify
 document.getElementById('btn-verify-token').addEventListener('click',async()=>{
@@ -1019,11 +1085,12 @@ document.getElementById('btn-verify-token').addEventListener('click',async()=>{
       document.getElementById('upload-panel').classList.remove('hidden');
       document.getElementById('nav-kualitas').classList.remove('hidden');
       if(state.isSuperAdmin) document.getElementById('nav-users').classList.remove('hidden');
-      setStep(1); loadUploadHistory();
+      // Load riwayat — step indicator diset otomatis berdasarkan history
+      await loadUploadHistory();
     } else {
       status.innerHTML='<span class="text-red-500">❌ Token salah atau tidak aktif</span>';
     }
-  } catch(e){status.innerHTML='<span class="text-red-500">❌ Gagal terhubung</span>';}
+  } catch(e){status.innerHTML='<span class="text-red-500">❌ Gagal terhubung: '+e.message+'</span>';}
   finally{btn.disabled=false;btn.textContent='Verifikasi';}
 });
 
