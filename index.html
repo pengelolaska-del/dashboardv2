@@ -629,6 +629,23 @@ function mkChart(id, type, labels, datasets, opts={}) {
 }
 
 // ===== INIT =====
+// Normalisasi periode dari backend (antisipasi Date string dari Sheets)
+function normalizePeriodeStr(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  // Coba parse sebagai Date
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      return y+'-'+m;
+    }
+  } catch(e) {}
+  return s;
+}
+
 async function init() {
   if (SCRIPT_URL.includes('GANTI_')) { showSetupBanner(); return; }
   showLoading(true);
@@ -636,7 +653,10 @@ async function init() {
     const res = await api({ action:'listPeriode' });
     showLoading(false);
     if (res.status!=='success') { showError('Gagal memuat data: '+res.message); return; }
-    const { periodes, latest_periode, satker_list } = res.data;
+    const { periodes: rawPeriodes, latest_periode: rawLatest, satker_list } = res.data;
+    // Normalisasi semua periode agar tidak tampil sebagai timestamp
+    const periodes      = (rawPeriodes||[]).map(normalizePeriodeStr).filter(Boolean);
+    const latest_periode = normalizePeriodeStr(rawLatest);
     state.periodes=periodes; state.latestPeriode=latest_periode; state.satkerList=satker_list;
     const tahunSet = [...new Set(periodes.map(p=>p.split('-')[0]))];
     const selTahun = document.getElementById('filter-tahun');
@@ -666,11 +686,25 @@ function showSetupBanner() {
 }
 
 function buildBulanOptions() {
-  const t=state.filter.tahun;
-  const available = state.periodes.filter(p=>!t||p.startsWith(t)).map(p=>p.split('-')[1]);
+  const t = state.filter.tahun;
+  // Filter periode yang sesuai tahun, lalu ambil bulannya
+  const available = state.periodes
+    .filter(p => p && (!t || p.startsWith(t)))
+    .map(p => { const parts = normalizePeriodeStr(p).split('-'); return parts[1]; })
+    .filter(Boolean);
   const selBulan = document.getElementById('filter-bulan');
-  Array.from(selBulan.options).forEach((o,i)=>{ if(i===0) return; o.disabled=available.length>0&&!available.includes(o.value); });
-  if (available.length>0) { const latest=available.sort().reverse()[0]; selBulan.value=latest; state.filter.bulan=latest; }
+  // Reset: semua opsi aktif dulu
+  Array.from(selBulan.options).forEach((o, i) => {
+    if (i === 0) return;
+    o.disabled = available.length > 0 && !available.includes(o.value);
+    o.style.color = (available.length > 0 && !available.includes(o.value)) ? '#CBD5E1' : '';
+  });
+  // Pilih bulan terbaru yang tersedia
+  if (available.length > 0) {
+    const latest = available.sort().reverse()[0];
+    selBulan.value = latest;
+    state.filter.bulan = latest;
+  }
 }
 
 function buildOPDOptions() {
