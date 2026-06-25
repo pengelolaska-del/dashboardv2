@@ -1,360 +1,238 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard Monitoring Pengadaan — BPBJ Kota Surakarta</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard Pengadaan — BPBJ Kota Surakarta</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
 <style>
-  :root {
-    --navy:   #1E3A5F;
-    --blue:   #0070C0;
-    --sky:    #E8F4FD;
-    --green:  #16A34A;
-    --yellow: #CA8A04;
-    --red:    #DC2626;
-    --gray:   #64748B;
-    --bg:     #F0F4F8;
-  }
-  * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-  body { background: var(--bg); color: #1E293B; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-
-  /* Sidebar */
-  #sidebar { width: 240px; min-height: 100vh; background: var(--navy); transition: transform .3s; }
-  #sidebar.collapsed { transform: translateX(-240px); }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 8px; cursor: pointer; color: #94A3B8; transition: all .15s; font-size: 13.5px; font-weight: 500; }
-  .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
-  .nav-item.active { background: var(--blue); color: #fff; }
-  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-  /* Cards */
-  .kpi-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-  .kpi-val { font-size: 22px; font-weight: 800; color: var(--navy); }
-  .kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
-  .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-
-  /* Section */
-  .section { display: none; }
-  .section.active { display: block; }
-
-  /* Table */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
-  .data-table td { padding: 9px 12px; border-bottom: 1px solid #F1F5F9; }
-  .data-table tr:hover td { background: #F8FAFC; }
-  .data-table tr:nth-child(even) td { background: #FAFBFC; }
-  .data-table tr:nth-child(even):hover td { background: #F1F5F9; }
-
-  /* Badge */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-green  { background: #DCFCE7; color: var(--green); }
-  .badge-yellow { background: #FEF9C3; color: var(--yellow); }
-  .badge-gray   { background: #F1F5F9; color: var(--gray); }
-  .badge-blue   { background: #DBEAFE; color: var(--blue); }
-  .badge-red    { background: #FEE2E2; color: var(--red); }
-
-  /* Upload box */
-  .upload-box { border: 2px dashed #CBD5E1; border-radius: 12px; padding: 32px; text-align: center; transition: border-color .2s; cursor: pointer; }
-  .upload-box:hover, .upload-box.drag { border-color: var(--blue); background: var(--sky); }
-
-  /* Progress */
-  .progress-bar { height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s; }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-
-  /* Chart container */
-  .chart-wrap { position: relative; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-
-  /* Responsive */
-  @media (max-width: 1023px) { #sidebar { position: fixed; z-index: 50; } }
-  @media (max-width: 767px)  { .kpi-grid { grid-template-columns: 1fr 1fr !important; } }
+:root{--navy:#1E3A5F;--blue:#0070C0;--green:#16A34A;--yellow:#CA8A04;--red:#DC2626;--gray:#64748B;--bg:#F0F4F8}
+*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box}
+body{background:var(--bg);color:#1E293B}
+.mono{font-family:'JetBrains Mono',monospace}
+#sidebar{width:232px;min-height:100vh;background:var(--navy);flex-shrink:0;transition:transform .25s}
+#sidebar.hide{transform:translateX(-232px);position:fixed;z-index:50}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:8px;cursor:pointer;color:#94A3B8;transition:all .15s;font-size:13px;font-weight:500;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.09);color:#fff}
+.nav-item.active{background:var(--blue);color:#fff}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.kpi-val{font-size:21px;font-weight:800;color:var(--navy)}
+.kpi-lbl{font-size:11px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.chart-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{background:var(--navy);color:#fff;padding:9px 11px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0}
+table.dt td{padding:8px 11px;border-bottom:1px solid #F1F5F9}
+table.dt tr:hover td{background:#F8FAFC}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700}
+.bg-green{background:#DCFCE7;color:var(--green)}
+.bg-yellow{background:#FEF9C3;color:var(--yellow)}
+.bg-gray{background:#F1F5F9;color:var(--gray)}
+.bg-blue{background:#DBEAFE;color:var(--blue)}
+.bg-red{background:#FEE2E2;color:var(--red)}
+.drop-area{border:2px dashed #CBD5E1;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.drop-area:hover,.drop-area.drag{border-color:var(--blue);background:#EFF6FF}
+.progress-bar{height:6px;background:#E2E8F0;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .3s}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+@media(max-width:1023px){#sidebar{position:fixed;z-index:50}}
 </style>
 </head>
 <body class="flex">
 
-<!-- ===================== SIDEBAR ===================== -->
-<div id="sidebar" class="flex-shrink-0 flex flex-col py-4 px-3 gap-1">
-  <div class="px-3 mb-4">
-    <div class="text-white font-bold text-sm leading-tight">BPBJ</div>
-    <div class="text-blue-300 text-xs">Kota Surakarta</div>
-    <div class="mt-3 text-xs text-slate-400">Dashboard Monitoring Pengadaan</div>
+<!-- SIDEBAR -->
+<div id="sidebar" class="flex flex-col py-4 px-2.5 gap-0.5">
+  <div class="px-3 mb-3">
+    <div class="text-white font-bold text-sm">BPBJ Kota Surakarta</div>
+    <div class="text-blue-300 text-xs mt-0.5">Dashboard Monitoring Pengadaan</div>
+    <div id="period-badge" class="mt-2 text-xs text-slate-400">—</div>
   </div>
-
-  <nav id="nav" class="flex flex-col gap-0.5 flex-1">
-    <div class="nav-item active" data-section="eksekutif">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h8M4 18h8"/></svg>
-      Eksekutif
+  <nav id="nav">
+    <div class="nav-item active" data-s="eksekutif">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Eksekutif
     </div>
-    <div class="nav-item" data-section="opd">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3M9 7h6M9 11h6M9 15h4"/></svg>
-      Performa OPD
+    <div class="nav-item" data-s="opd">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3M9 7h6M9 11h6M9 15h4"/></svg>Performa OPD
     </div>
-    <div class="nav-item" data-section="metode">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      Metode & Jenis
+    <div class="nav-item" data-s="metode">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Metode &amp; Jenis
     </div>
-    <div class="nav-item" data-section="sumber">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Sumber Dana
+    <div class="nav-item" data-s="sumber">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Sumber Dana
     </div>
-    <div class="nav-item" data-section="status">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Status Paket
+    <div class="nav-item" data-s="status">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Status Paket
     </div>
-    <div class="nav-item" data-section="penyedia">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      Top Penyedia
+    <div class="nav-item" data-s="penyedia">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Top Penyedia
     </div>
-    <div class="nav-item" data-section="efisiensi">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-      Efisiensi
+    <div class="nav-item" data-s="efisiensi">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Efisiensi
     </div>
-    <div class="nav-item" data-section="tren">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
-      Tren Bulanan
+    <div class="nav-item" data-s="tren">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>Tren Bulanan
     </div>
-    <div class="nav-item" data-section="detail">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-      Detail Paket
+    <div class="nav-item" data-s="detail">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Detail Paket
     </div>
-    <hr class="border-slate-700 my-2"/>
-    <div class="nav-item" data-section="upload">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-      Upload Data
+    <hr class="border-slate-700 my-2 mx-1"/>
+    <div class="nav-item" data-s="upload">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>Upload Data
     </div>
-    <div class="nav-item hidden" id="nav-kualitas" data-section="kualitas">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      Kualitas Data
+    <div class="nav-item hidden" id="nav-kualitas" data-s="kualitas">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Kualitas Data
     </div>
   </nav>
-
-  <div class="px-3 mt-2">
-    <div id="period-badge" class="text-xs text-slate-500">Memuat data...</div>
-  </div>
 </div>
 
-<!-- ===================== MAIN ===================== -->
+<!-- MAIN -->
 <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
 
   <!-- Topbar -->
-  <header class="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-40">
-    <button id="toggle-sidebar" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 lg:hidden">
-      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  <header class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center gap-3 sticky top-0 z-40 flex-wrap">
+    <button id="btn-toggle" class="p-1.5 rounded-lg hover:bg-slate-100 lg:hidden">
+      <svg class="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <div class="flex-1 flex items-center gap-3 flex-wrap">
-      <span class="font-semibold text-navy text-sm hidden sm:block">Dashboard Monitoring Pengadaan</span>
-      <!-- Filter -->
-      <select id="filter-tahun" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-        <option value="">Semua Tahun</option>
-      </select>
-      <select id="filter-bulan" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+    <span class="font-semibold text-sm text-slate-700 hidden sm:block">Dashboard Monitoring Pengadaan Barang/Jasa</span>
+    <div class="flex-1 flex items-center gap-2 flex-wrap">
+      <select id="f-tahun" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"></select>
+      <select id="f-bulan" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
         <option value="">Semua Bulan</option>
         <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
         <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
         <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
         <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
       </select>
-      <select id="filter-opd" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 max-w-xs">
+      <select id="f-opd" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-400">
         <option value="">Semua OPD</option>
       </select>
-      <button id="btn-apply" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-medium">Terapkan</button>
-      <button id="btn-reset" class="text-xs border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50">Reset</button>
+      <button id="btn-apply" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-semibold">Terapkan</button>
+      <button id="btn-reset"  class="text-xs border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50">Reset</button>
     </div>
-    <div class="flex gap-2">
-      <button id="btn-export-excel" class="text-xs border border-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 flex items-center gap-1" title="Export Excel">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Excel
-      </button>
-    </div>
+    <button id="btn-export" class="text-xs border border-slate-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 flex items-center gap-1">
+      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Excel
+    </button>
   </header>
 
   <!-- Content -->
-  <main class="flex-1 p-4 lg:p-6 overflow-y-auto">
+  <main class="flex-1 p-4 lg:p-5">
 
-    <!-- ===== EKSEKUTIF ===== -->
+    <!-- EKSEKUTIF -->
     <section id="sec-eksekutif" class="section active">
-      <h2 class="text-lg font-bold text-navy mb-4">Ringkasan Eksekutif</h2>
-      <div class="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6" id="kpi-cards">
-        <!-- diisi JS -->
-        <div class="kpi-card col-span-2 lg:col-span-4 text-center text-slate-400 py-8">Memuat data...</div>
+      <h2 class="text-base font-bold text-navy mb-3">Ringkasan Eksekutif</h2>
+      <div id="kpi-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="card col-span-2 lg:col-span-4 text-center py-10 text-slate-400 text-sm" id="kpi-placeholder">
+          <div class="inline-block w-6 h-6 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-2" style="border-width:3px"></div><br>Menghubungkan ke backend...
+        </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-4">Distribusi Metode Pengadaan (RUP)</h3>
-          <div style="height:220px"><canvas id="chart-metode-eksekutif"></canvas></div>
-        </div>
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-4">Status Paket Realisasi</h3>
-          <div style="height:220px"><canvas id="chart-status-eksekutif"></canvas></div>
-        </div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-3">Metode Pengadaan (RUP)</h3><div style="height:210px"><canvas id="c-metode-eks"></canvas></div></div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-3">Status Paket Realisasi</h3><div style="height:210px"><canvas id="c-status-eks"></canvas></div></div>
       </div>
     </section>
 
-    <!-- ===== PERFORMA OPD ===== -->
+    <!-- OPD -->
     <section id="sec-opd" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Performa OPD</h2>
-      <div class="chart-wrap mb-4">
-        <h3 class="font-semibold text-sm text-navy mb-3">Top 10 OPD — Nilai Pagu</h3>
-        <div style="height:280px"><canvas id="chart-opd-bar"></canvas></div>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="data-table" id="tbl-opd">
-          <thead>
-            <tr>
-              <th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th>
-              <th>Efisiensi</th><th>% Efisiensi</th><th>Jml Paket</th><th>Matched</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2 class="text-base font-bold text-navy mb-3">Performa OPD</h2>
+      <div class="chart-card mb-4"><h3 class="font-semibold text-sm text-navy mb-2">Top 10 Pagu Tertinggi</h3><div style="height:260px"><canvas id="c-opd-bar"></canvas></div></div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-opd"><thead><tr><th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi</th><th>% Efi</th><th>Jml RUP</th><th>Matched</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <!-- ===== METODE & JENIS ===== -->
+    <!-- METODE -->
     <section id="sec-metode" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Metode &amp; Jenis Pengadaan</h2>
+      <h2 class="text-base font-bold text-navy mb-3">Metode &amp; Jenis Pengadaan</h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Metode Pengadaan (RUP)</h3>
-          <div style="height:240px"><canvas id="chart-metode-rup"></canvas></div>
-        </div>
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Jenis Pengadaan (RUP)</h3>
-          <div style="height:240px"><canvas id="chart-jenis-rup"></canvas></div>
-        </div>
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Metode Pengadaan (Realisasi)</h3>
-          <div style="height:240px"><canvas id="chart-metode-real"></canvas></div>
-        </div>
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Jenis Pengadaan (Realisasi)</h3>
-          <div style="height:240px"><canvas id="chart-jenis-real"></canvas></div>
-        </div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Metode Pengadaan RUP</h3><div style="height:230px"><canvas id="c-mtd-rup"></canvas></div></div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Jenis Pengadaan RUP</h3><div style="height:230px"><canvas id="c-jns-rup"></canvas></div></div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Metode Pengadaan Realisasi</h3><div style="height:230px"><canvas id="c-mtd-rel"></canvas></div></div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Jenis Pengadaan Realisasi</h3><div style="height:230px"><canvas id="c-jns-rel"></canvas></div></div>
       </div>
     </section>
 
-    <!-- ===== SUMBER DANA ===== -->
+    <!-- SUMBER -->
     <section id="sec-sumber" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Sumber Dana &amp; Transaksi</h2>
+      <h2 class="text-base font-bold text-navy mb-3">Sumber Dana &amp; Transaksi</h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Sumber Dana Realisasi</h3>
-          <div style="height:260px"><canvas id="chart-sumber-dana"></canvas></div>
-        </div>
-        <div class="chart-wrap">
-          <h3 class="font-semibold text-sm text-navy mb-3">Sumber Transaksi</h3>
-          <div style="height:260px"><canvas id="chart-sumber-transaksi"></canvas></div>
-        </div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Sumber Dana</h3><div style="height:250px"><canvas id="c-sumber-dana"></canvas></div></div>
+        <div class="chart-card"><h3 class="font-semibold text-sm text-navy mb-2">Sumber Transaksi</h3><div style="height:250px"><canvas id="c-sumber-tr"></canvas></div></div>
       </div>
     </section>
 
-    <!-- ===== STATUS ===== -->
+    <!-- STATUS -->
     <section id="sec-status" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Status Paket</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="status-kpi-cards"></div>
-      <div class="chart-wrap max-w-sm mx-auto">
-        <h3 class="font-semibold text-sm text-navy mb-3 text-center">Distribusi Status</h3>
-        <div style="height:280px"><canvas id="chart-status-pie"></canvas></div>
-      </div>
+      <h2 class="text-base font-bold text-navy mb-3">Status Paket</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="status-kpi"></div>
+      <div class="chart-card max-w-sm mx-auto"><div style="height:280px"><canvas id="c-status-pie"></canvas></div></div>
     </section>
 
-    <!-- ===== TOP PENYEDIA ===== -->
+    <!-- PENYEDIA -->
     <section id="sec-penyedia" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Top 10 Penyedia</h2>
-      <div class="chart-wrap mb-4">
-        <div style="height:300px"><canvas id="chart-penyedia"></canvas></div>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="data-table" id="tbl-penyedia">
-          <thead><tr><th>#</th><th>Nama Penyedia</th><th>Jumlah Transaksi</th><th>Total Nilai Kontrak</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2 class="text-base font-bold text-navy mb-3">Top 10 Penyedia</h2>
+      <div class="chart-card mb-4"><div style="height:280px"><canvas id="c-penyedia"></canvas></div></div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-penyedia"><thead><tr><th>#</th><th>Nama Penyedia</th><th>Jml Transaksi</th><th>Total Kontrak</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <!-- ===== EFISIENSI ===== -->
+    <!-- EFISIENSI -->
     <section id="sec-efisiensi" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Analisis Efisiensi per OPD</h2>
-      <div class="chart-wrap mb-4">
-        <div style="height:400px"><canvas id="chart-efisiensi"></canvas></div>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="data-table" id="tbl-efisiensi">
-          <thead><tr><th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi (Rp)</th><th>% Efisiensi</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2 class="text-base font-bold text-navy mb-3">Analisis Efisiensi per OPD</h2>
+      <div class="chart-card mb-4"><div style="height:380px"><canvas id="c-efi"></canvas></div></div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-efi"><thead><tr><th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi (Rp)</th><th>% Efi</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <!-- ===== TREN ===== -->
+    <!-- TREN -->
     <section id="sec-tren" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Tren Bulanan</h2>
-      <div class="chart-wrap mb-4">
-        <h3 class="font-semibold text-sm text-navy mb-3">Pagu vs Kontrak per Periode</h3>
-        <div style="height:300px"><canvas id="chart-tren"></canvas></div>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="data-table" id="tbl-tren">
-          <thead><tr><th>Periode</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi</th><th>% Efisiensi</th><th>Jumlah Paket RUP</th><th>Jumlah Realisasi</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <h2 class="text-base font-bold text-navy mb-3">Tren Bulanan</h2>
+      <div class="chart-card mb-4"><div style="height:280px"><canvas id="c-tren"></canvas></div></div>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-tren"><thead><tr><th>Periode</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi</th><th>% Efi</th><th>Jml RUP</th><th>Jml Realisasi</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <!-- ===== DETAIL PAKET ===== -->
+    <!-- DETAIL -->
     <section id="sec-detail" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Detail Paket</h2>
+      <h2 class="text-base font-bold text-navy mb-3">Detail Paket</h2>
       <div class="flex gap-2 mb-3 flex-wrap">
-        <input id="detail-search" type="text" placeholder="Cari nama paket, satker, kode RUP..." class="text-sm border border-slate-200 rounded-lg px-3 py-2 flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
-        <button id="btn-detail-search" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Cari</button>
+        <input id="detail-q" type="text" placeholder="Cari nama paket, satker, kode RUP..." class="text-sm border border-slate-200 rounded-lg px-3 py-2 flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+        <button id="btn-detail-cari" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">Cari</button>
       </div>
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="data-table" id="tbl-detail">
-          <thead><tr><th>#</th><th>Satker</th><th>Nama Paket</th><th>Pagu</th><th>Kontrak</th><th>Efisiensi</th><th>Metode</th><th>Status</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <table class="dt" id="t-detail"><thead><tr><th>#</th><th>Satker</th><th>Nama Paket</th><th>Pagu</th><th>Kontrak</th><th>Efisiensi</th><th>Metode</th><th>Status</th></tr></thead><tbody></tbody></table>
       </div>
-      <div class="flex items-center justify-between mt-3 text-sm text-slate-500" id="detail-pagination">
+      <div class="flex items-center justify-between mt-3 text-xs text-slate-500">
         <span id="detail-info"></span>
         <div class="flex gap-2">
-          <button id="btn-prev" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40">‹ Sebelumnya</button>
-          <button id="btn-next" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40">Berikutnya ›</button>
+          <button id="btn-prev" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50">‹ Prev</button>
+          <button id="btn-next" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50">Next ›</button>
         </div>
       </div>
     </section>
 
-    <!-- ===== UPLOAD ===== -->
+    <!-- UPLOAD -->
     <section id="sec-upload" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Upload Data Bulanan</h2>
+      <h2 class="text-base font-bold text-navy mb-3">Upload Data Bulanan</h2>
+
       <!-- Token -->
-      <div class="bg-white rounded-xl p-4 shadow-sm mb-4">
-        <div class="flex items-center gap-3 flex-wrap">
-          <label class="text-sm font-medium text-navy">Token Admin:</label>
-          <input id="admin-token" type="password" placeholder="Masukkan token akses..."
-            class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
-          <button id="btn-verify-token" class="text-sm bg-navy text-white px-4 py-2 rounded-lg hover:bg-blue-900">Verifikasi</button>
+      <div class="card mb-4">
+        <p class="text-xs font-semibold text-navy mb-2">Token Admin</p>
+        <div class="flex items-center gap-2 flex-wrap">
+          <input id="inp-token" type="password" placeholder="Masukkan token akses admin..." class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+          <button id="btn-verify" class="text-sm bg-navy text-white px-4 py-2 rounded-lg hover:opacity-90 font-medium" style="background:var(--navy)">Verifikasi</button>
           <span id="token-status" class="text-xs"></span>
         </div>
       </div>
 
-      <div id="upload-panel" class="hidden">
-        <!-- Pilih Periode -->
-        <div class="bg-white rounded-xl p-4 shadow-sm mb-4 flex items-center gap-3 flex-wrap">
-          <label class="text-sm font-medium text-navy">Periode Upload:</label>
-          <select id="up-tahun" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
+      <div id="upload-panel" class="hidden space-y-4">
+        <!-- Pilih periode -->
+        <div class="card flex items-center gap-3 flex-wrap">
+          <span class="text-xs font-semibold text-navy">Periode Upload:</span>
+          <select id="up-tahun" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="2026">2026</option><option value="2025">2025</option>
           </select>
-          <select id="up-bulan" class="text-sm border border-slate-200 rounded-lg px-3 py-2">
+          <select id="up-bulan" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
             <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
             <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
@@ -362,307 +240,220 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <!-- Upload RUP -->
-          <div class="bg-white rounded-xl p-4 shadow-sm">
+        <!-- Upload 2 file -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- RUP -->
+          <div class="card">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-navy text-sm">1. Upload RUP</h3>
-              <span class="badge badge-blue">Langkah 1</span>
+              <p class="font-semibold text-sm text-navy">1. Upload Data RUP</p>
+              <span class="badge bg-blue">Langkah 1</span>
             </div>
-            <div class="upload-box" id="drop-rup" onclick="document.getElementById('file-rup').click()">
-              <svg class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-              <p class="text-sm text-slate-500" id="label-rup">Klik atau drag <code>data_rup_*.csv</code></p>
-              <p class="text-xs text-slate-400 mt-1">Maks 10 MB · Max 20.000 baris</p>
+            <p class="text-xs text-slate-400 mb-2">File: <code>data_rup_YYYYMMDD.csv</code></p>
+            <div class="drop-area" id="drop-rup" onclick="document.getElementById('file-rup').click()">
+              <svg class="w-8 h-8 mx-auto text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm text-slate-400" id="lbl-rup">Klik atau drag file di sini</p>
+              <p class="text-xs text-slate-300 mt-1">Format .csv · Maks 10 MB</p>
             </div>
             <input type="file" id="file-rup" accept=".csv" class="hidden"/>
-            <div class="mt-3 hidden" id="prog-rup-wrap">
-              <div class="flex justify-between text-xs text-slate-500 mb-1">
-                <span id="prog-rup-label">Mengunggah...</span>
-                <span id="prog-rup-pct">0%</span>
-              </div>
+            <div class="hidden mt-3" id="prog-rup-wrap">
+              <div class="flex justify-between text-xs text-slate-500 mb-1"><span id="prog-rup-lbl">Mengunggah...</span><span id="prog-rup-pct">0%</span></div>
               <div class="progress-bar"><div class="progress-fill" id="prog-rup-fill" style="width:0%"></div></div>
             </div>
-            <button id="btn-upload-rup" class="mt-3 w-full text-sm bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-40" disabled>Upload RUP</button>
+            <button id="btn-rup" disabled class="mt-3 w-full text-sm bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-40">↑ Upload RUP</button>
           </div>
-
-          <!-- Upload Realisasi -->
-          <div class="bg-white rounded-xl p-4 shadow-sm">
+          <!-- Realisasi -->
+          <div class="card">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-navy text-sm">2. Upload Realisasi</h3>
-              <span class="badge badge-green">Langkah 2</span>
+              <p class="font-semibold text-sm text-navy">2. Upload Data Realisasi</p>
+              <span class="badge bg-green">Langkah 2</span>
             </div>
-            <div class="upload-box" id="drop-real" onclick="document.getElementById('file-real').click()">
-              <svg class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-              <p class="text-sm text-slate-500" id="label-real">Klik atau drag <code>data_realisasi_*.csv</code></p>
-              <p class="text-xs text-slate-400 mt-1">Maks 10 MB · Max 20.000 baris</p>
+            <p class="text-xs text-slate-400 mb-2">File: <code>data_realisasi_YYYYMMDD.csv</code></p>
+            <div class="drop-area" id="drop-real" onclick="document.getElementById('file-real').click()">
+              <svg class="w-8 h-8 mx-auto text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm text-slate-400" id="lbl-real">Klik atau drag file di sini</p>
+              <p class="text-xs text-slate-300 mt-1">Format .csv · Maks 10 MB</p>
             </div>
             <input type="file" id="file-real" accept=".csv" class="hidden"/>
-            <div class="mt-3 hidden" id="prog-real-wrap">
-              <div class="flex justify-between text-xs text-slate-500 mb-1">
-                <span id="prog-real-label">Mengunggah...</span>
-                <span id="prog-real-pct">0%</span>
-              </div>
+            <p class="text-xs text-amber-600 mt-2">⚡ Matching engine otomatis berjalan setelah upload selesai.</p>
+            <div class="hidden mt-3" id="prog-real-wrap">
+              <div class="flex justify-between text-xs text-slate-500 mb-1"><span id="prog-real-lbl">Mengunggah...</span><span id="prog-real-pct">0%</span></div>
               <div class="progress-bar"><div class="progress-fill" id="prog-real-fill" style="width:0%"></div></div>
             </div>
-            <button id="btn-upload-real" class="mt-3 w-full text-sm bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium disabled:opacity-40" disabled>Upload Realisasi</button>
-          </div>
-        </div>
-
-        <!-- Hapus Periode -->
-        <div class="bg-white rounded-xl p-4 shadow-sm border border-red-100">
-          <h3 class="font-semibold text-red-700 text-sm mb-2">⚠ Hapus Data Periode</h3>
-          <p class="text-xs text-slate-500 mb-3">Menghapus seluruh data (RUP, Realisasi, Matching) untuk periode tertentu. Tidak dapat dibatalkan.</p>
-          <div class="flex gap-2 flex-wrap">
-            <input id="del-periode" type="text" placeholder="YYYY-MM misal 2026-05"
-              class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-red-300"/>
-            <button id="btn-delete-periode" class="text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Hapus Periode</button>
+            <button id="btn-real" disabled class="mt-3 w-full text-sm bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-semibold disabled:opacity-40">↑ Upload Realisasi + Matching</button>
           </div>
         </div>
 
         <!-- Riwayat Upload -->
-        <div class="mt-4">
+        <div class="card">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="font-semibold text-navy text-sm">Riwayat Upload Periode Ini</h3>
-            <button id="btn-refresh-log" onclick="loadUploadLog()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
+            <p class="font-semibold text-sm text-navy">Riwayat Upload Periode Ini</p>
+            <button onclick="loadLog()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
           </div>
-          <div id="upload-log-warning" class="hidden mb-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
-            ⚠ Realisasi belum diupload.
-          </div>
-          <div id="upload-log-info" class="hidden mb-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800">
-            ✅ RUP dan Realisasi sudah terupload untuk periode ini.
-          </div>
-          <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-            <table class="data-table" id="tbl-upload-log">
-              <thead>
-                <tr>
-                  <th>JENIS</th><th>NAMA FILE</th><th>RECORD</th>
-                  <th>DIUPLOAD OLEH</th><th>WAKTU</th><th>STATUS</th><th>KETERANGAN</th>
-                </tr>
-              </thead>
-              <tbody><tr><td colspan="7" class="text-center text-slate-400 py-4 text-xs">Memuat log...</td></tr></tbody>
+          <div id="log-warning" class="hidden mb-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">⚠ Realisasi belum diupload untuk periode ini.</div>
+          <div id="log-ok"      class="hidden mb-2 px-3 py-2 bg-green-50  border border-green-200  rounded-lg text-xs text-green-800">✅ RUP dan Realisasi sudah diupload untuk periode ini.</div>
+          <div class="overflow-x-auto">
+            <table class="dt" id="t-log">
+              <thead><tr><th>JENIS</th><th>NAMA FILE</th><th>RECORD</th><th>WAKTU</th><th>STATUS</th><th>KETERANGAN</th></tr></thead>
+              <tbody><tr><td colspan="6" class="text-center text-slate-400 py-4">Memuat...</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Hapus Periode -->
+        <div class="card border border-red-100">
+          <p class="font-semibold text-red-700 text-sm mb-1">⚠ Hapus Data Periode</p>
+          <p class="text-xs text-slate-500 mb-3">Menghapus seluruh data RUP, Realisasi, Matching untuk periode tertentu. Tidak dapat dibatalkan.</p>
+          <div class="flex gap-2 flex-wrap">
+            <input id="del-periode" type="text" placeholder="YYYY-MM, cth: 2026-05" class="text-sm border border-slate-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-red-300"/>
+            <button id="btn-del" class="text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium">Hapus Periode</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== KUALITAS DATA (admin) ===== -->
+    <!-- KUALITAS -->
     <section id="sec-kualitas" class="section">
-      <h2 class="text-lg font-bold text-navy mb-4">Laporan Kualitas Data</h2>
+      <h2 class="text-base font-bold text-navy mb-3">Laporan Kualitas Data</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="kualitas-kpi"></div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div>
-          <h3 class="font-semibold text-sm text-navy mb-2">Unmatched RUP (tidak ada pasangan realisasi)</h3>
-          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-64 overflow-y-auto">
-            <table class="data-table" id="tbl-unmatched-rup">
-              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Pagu</th></tr></thead>
-              <tbody></tbody>
-            </table>
+          <p class="text-sm font-semibold text-navy mb-1">Unmatched RUP (tanpa pasangan realisasi)</p>
+          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-56 overflow-y-auto">
+            <table class="dt" id="t-um-rup"><thead><tr><th>Satker</th><th>Nama Paket</th><th>Pagu</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
         <div>
-          <h3 class="font-semibold text-sm text-navy mb-2">Unmatched Realisasi (tidak ada pasangan RUP)</h3>
-          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-64 overflow-y-auto">
-            <table class="data-table" id="tbl-unmatched-real">
-              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Nilai Kontrak</th></tr></thead>
-              <tbody></tbody>
-            </table>
+          <p class="text-sm font-semibold text-navy mb-1">Unmatched Realisasi (tanpa pasangan RUP)</p>
+          <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-56 overflow-y-auto">
+            <table class="dt" id="t-um-real"><thead><tr><th>Satker</th><th>Nama Paket</th><th>Kontrak</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </div>
-      <div class="mt-4">
-        <h3 class="font-semibold text-sm text-navy mb-2">Orphan (tidak dapat dihubungkan sama sekali)</h3>
-        <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-48 overflow-y-auto">
-          <table class="data-table" id="tbl-orphan">
-            <thead><tr><th>Satker</th><th>Kode Paket</th><th>Nilai Kontrak</th><th>Metode</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+      <p class="text-sm font-semibold text-navy mb-1">Orphan (tidak dapat dicocokkan)</p>
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto max-h-44 overflow-y-auto">
+        <table class="dt" id="t-orphan"><thead><tr><th>Satker</th><th>Kode Paket</th><th>Kontrak</th><th>Sumber</th></tr></thead><tbody></tbody></table>
       </div>
     </section>
 
   </main>
 </div>
 
-<!-- ===================== JAVASCRIPT ===================== -->
 <script>
 // ======================================================
-// KONFIGURASI — GANTI DENGAN URL APPS SCRIPT ANDA
+// KONFIGURASI
 // ======================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeCK8-Bq9EnG-TUsNsLr7kytM84ndqpCuKhqVNo1IR2iF-1tnKTtcZYN_dIIrWZDq7rA/exec';
 const CHUNK_SIZE = 500;
+const COLORS = ['#0070C0','#16A34A','#CA8A04','#DC2626','#7C3AED','#0891B2','#EA580C','#059669','#9333EA','#0284C7'];
 
-// ======================================================
-// STATE
-// ======================================================
-let state = {
-  periodes: [],
-  latestPeriode: '',
-  satkerList: [],
-  adminToken: '',
-  isAdmin: false,
-  filter: { tahun: '', bulan: '', kode_satker: '' },
-  charts: {},
-  detailPage: 1,
-  detailSearch: '',
+const S = {
+  periodes:[], latestPeriode:'', satkerList:[],
+  adminToken:'', isAdmin:false,
+  filter:{ tahun:'', bulan:'', opd:'' },
+  charts:{}, detailPage:1, detailQ:'',
 };
 
 // ======================================================
-// HELPERS
+// FORMAT HELPERS
 // ======================================================
 const IDR = n => {
-  const num = Number(n) || 0;
-  if (Math.abs(num) >= 1e12) return 'Rp ' + (num/1e12).toFixed(2) + ' T';
-  if (Math.abs(num) >= 1e9)  return 'Rp ' + (num/1e9).toFixed(2)  + ' M';
-  if (Math.abs(num) >= 1e6)  return 'Rp ' + (num/1e6).toFixed(2)  + ' jt';
-  return 'Rp ' + num.toLocaleString('id-ID');
+  const v = Math.abs(Number(n)||0);
+  const pfx = Number(n)<0 ? '-' : '';
+  if(v>=1e12) return pfx+'Rp '+(v/1e12).toFixed(2)+' T';
+  if(v>=1e9)  return pfx+'Rp '+(v/1e9).toFixed(2)+' M';
+  if(v>=1e6)  return pfx+'Rp '+(v/1e6).toFixed(1)+' jt';
+  return pfx+'Rp '+v.toLocaleString('id-ID');
 };
-const IDRfull = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
-const pct  = n => (Number(n)||0).toFixed(2) + '%';
+const IDRf = n => 'Rp '+(Number(n)||0).toLocaleString('id-ID');
+const pct  = n => (Number(n)||0).toFixed(2)+'%';
 const fmt  = n => (Number(n)||0).toLocaleString('id-ID');
+const pal  = arr => arr.map((_,i)=>COLORS[i%COLORS.length]);
 
+// ======================================================
+// API
+// ======================================================
 async function api(payload) {
   const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
     body: JSON.stringify(payload),
   });
-  return res.json();
+  if (!res.ok) throw new Error('HTTP '+res.status);
+  const json = await res.json();
+  return json;
 }
 
 function getPeriode() {
-  const t = state.filter.tahun;
-  const b = state.filter.bulan;
-  if (t && b) return `${t}-${b}`;
-  if (t) return t; // partial — backend filter by tahun saja
-  return state.latestPeriode;
+  const {tahun, bulan} = S.filter;
+  if(tahun && bulan) return tahun+'-'+bulan;
+  return S.latestPeriode;
 }
 
-function destroyChart(id) {
-  if (state.charts[id]) { state.charts[id].destroy(); delete state.charts[id]; }
+function killChart(id) {
+  if(S.charts[id]){ S.charts[id].destroy(); delete S.charts[id]; }
 }
-
-function mkChart(id, type, labels, datasets, opts = {}) {
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  state.charts[id] = new Chart(ctx, {
-    type,
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: opts.legendPos || 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
-      scales: (type === 'bar' || type === 'horizontalBar') ? {
-        x: { ticks: { font: { size: 11 } } },
-        y: { ticks: { font: { size: 11 } } },
+function mkChart(id, type, labels, datasets, opts={}) {
+  killChart(id);
+  const ctx = document.getElementById(id); if(!ctx) return;
+  S.charts[id] = new Chart(ctx, {
+    type, data:{labels, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position: opts.legend||'bottom', labels:{font:{size:11},boxWidth:11} } },
+      scales: (type==='bar'||type==='line') ? {
+        x:{ticks:{font:{size:10}}},
+        y:{ticks:{callback: opts.yFmt||(v=>v), font:{size:10}}},
+        ...(opts.indexAxis==='y' ? {x:{ticks:{callback:opts.yFmt||(v=>v),font:{size:10}}},y:{ticks:{font:{size:10}}}} : {}),
       } : {},
+      indexAxis: opts.indexAxis||'x',
       ...opts.extra,
     }
   });
 }
 
-const COLORS = ['#0070C0','#16A34A','#CA8A04','#DC2626','#7C3AED','#0891B2','#EA580C','#059669','#9333EA','#0284C7'];
-const PALETTE = labels => labels.map((_, i) => COLORS[i % COLORS.length]);
-
 // ======================================================
 // INIT
 // ======================================================
 async function init() {
-  // Deteksi apakah SCRIPT_URL sudah diisi
-  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
-    showSetupBanner();
-    return;
-  }
-  showLoading(true);
   try {
-    const res = await api({ action: 'listPeriode' });
-    showLoading(false);
-    if (res.status !== 'success') { showError('Gagal memuat data dari backend: ' + res.message); return; }
-    const { periodes, latest_periode, satker_list } = res.data;
-    state.periodes      = periodes;
-    state.latestPeriode = latest_periode;
-    state.satkerList    = satker_list;
+    const res = await api({action:'listPeriode'});
+    if(res.status!=='success') { showErr('Backend error: '+res.message); return; }
+    const {periodes, latest_periode, satker_list} = res.data;
+    S.periodes = periodes; S.latestPeriode = latest_periode; S.satkerList = satker_list;
 
-    // Isi filter tahun
-    const tahunSet = [...new Set(periodes.map(p => p.split('-')[0]))];
-    const selTahun = document.getElementById('filter-tahun');
-    // Hapus opsi lama kecuali placeholder
-    while (selTahun.options.length > 1) selTahun.remove(1);
-    tahunSet.forEach(t => { const o = new Option(t, t); selTahun.appendChild(o); });
-    if (tahunSet.length) { selTahun.value = tahunSet[0]; state.filter.tahun = tahunSet[0]; }
+    // Filter tahun
+    const tahunSet = [...new Set(periodes.map(p=>String(p).split('-')[0]))].sort().reverse();
+    const selT = document.getElementById('f-tahun');
+    selT.innerHTML = '<option value="">Semua Tahun</option>' + tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if(tahunSet.length){ selT.value=tahunSet[0]; S.filter.tahun=tahunSet[0]; }
 
-    buildBulanOptions();
-    buildOPDOptions();
+    // Filter bulan
+    if(latest_periode){ const b=String(latest_periode).split('-')[1]; document.getElementById('f-bulan').value=b; S.filter.bulan=b; }
 
-    document.getElementById('period-badge').textContent = 'Periode: ' + (latest_periode || '-');
-    loadSection('eksekutif');
+    // Filter OPD
+    const selO = document.getElementById('f-opd');
+    satker_list.forEach(s=>{ const o=new Option(s.nama_satker, s.kode_satker); selO.appendChild(o); });
+
+    document.getElementById('period-badge').textContent = 'Periode: '+(latest_periode||'—');
+    goSection('eksekutif');
   } catch(e) {
-    showLoading(false);
-    showError('Koneksi ke backend gagal.<br><small>Periksa apakah SCRIPT_URL sudah benar dan Apps Script sudah di-deploy sebagai Web App (akses: Anyone).</small>');
+    showErr('Gagal terhubung ke backend.<br><small>'+e.message+'</small>');
   }
 }
 
-function showLoading(on) {
-  document.getElementById('kpi-cards').innerHTML = on
-    ? `<div class="kpi-card col-span-2 lg:col-span-4 text-center py-10">
-         <div class="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-         <div class="text-slate-500 text-sm">Menghubungkan ke backend...</div>
-       </div>`
-    : '';
-}
-
-function showSetupBanner() {
-  document.getElementById('kpi-cards').innerHTML = `
-    <div class="kpi-card col-span-2 lg:col-span-4 bg-amber-50 border border-amber-200 py-8 px-6">
-      <h3 class="font-bold text-amber-800 text-base mb-3">⚙️ Setup Diperlukan</h3>
-      <p class="text-amber-700 text-sm mb-4">Aplikasi belum terhubung ke backend. Ikuti langkah berikut:</p>
-      <ol class="text-sm text-amber-800 space-y-2 list-decimal list-inside">
-        <li>Buka <strong>Google Sheets</strong> baru → Extensions → Apps Script</li>
-        <li>Paste isi file <code class="bg-amber-100 px-1 rounded">Code.gs</code> dan ganti <code>ADMIN_TOKEN</code></li>
-        <li>Jalankan fungsi <code class="bg-amber-100 px-1 rounded">initSheets()</code> sekali</li>
-        <li>Deploy → New deployment → Web App → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong></li>
-        <li>Salin URL deploy, buka file <code class="bg-amber-100 px-1 rounded">index.html</code> ini dengan text editor</li>
-        <li>Ganti <code class="bg-amber-100 px-1 rounded">GANTI_DENGAN_SCRIPT_ID_ANDA</code> dengan URL tadi</li>
-        <li>Simpan dan refresh halaman ini</li>
-      </ol>
-    </div>`;
-}
-
-function buildBulanOptions() {
-  const t = state.filter.tahun;
-  const selBulan = document.getElementById('filter-bulan');
-  const available = state.periodes.filter(p => !t || p.startsWith(t)).map(p => p.split('-')[1]);
-  Array.from(selBulan.options).forEach((o, i) => {
-    if (i === 0) return; // "Semua Bulan"
-    o.disabled = available.length > 0 && !available.includes(o.value);
-  });
-  // Set bulan terbaru
-  if (available.length > 0) {
-    const latest = available.sort().reverse()[0];
-    selBulan.value = latest;
-    state.filter.bulan = latest;
-  }
-}
-
-function buildOPDOptions() {
-  const selOPD = document.getElementById('filter-opd');
-  selOPD.innerHTML = '<option value="">Semua OPD</option>';
-  state.satkerList.forEach(s => {
-    const o = new Option(s.nama_satker, s.kode_satker);
-    selOPD.appendChild(o);
-  });
+function showErr(msg) {
+  document.getElementById('kpi-grid').innerHTML =
+    `<div class="card col-span-2 lg:col-span-4 text-center py-8 text-red-500 text-sm" style="background:#FFF5F5">${msg}</div>`;
 }
 
 // ======================================================
-// NAVIGATION
+// NAVIGASI
 // ======================================================
-function loadSection(name) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('sec-' + name)?.classList.add('active');
-  document.querySelector(`[data-section="${name}"]`)?.classList.add('active');
-  window.location.hash = name;
-
+function goSection(name) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+name)?.classList.add('active');
+  document.querySelector(`[data-s="${name}"]`)?.classList.add('active');
   switch(name) {
     case 'eksekutif': loadEksekutif(); break;
     case 'opd':       loadOPD(); break;
@@ -672,605 +463,408 @@ function loadSection(name) {
     case 'penyedia':  loadPenyedia(); break;
     case 'efisiensi': loadEfisiensi(); break;
     case 'tren':      loadTren(); break;
-    case 'detail':    loadDetail(); break;
+    case 'detail':    loadDetail(1); break;
     case 'kualitas':  loadKualitas(); break;
   }
 }
 
 document.getElementById('nav').addEventListener('click', e => {
   const item = e.target.closest('.nav-item');
-  if (!item) return;
-  loadSection(item.dataset.section);
-  if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('collapsed');
+  if(item?.dataset.s) {
+    goSection(item.dataset.s);
+    if(window.innerWidth<1024) document.getElementById('sidebar').classList.add('hide');
+  }
 });
-
-document.getElementById('toggle-sidebar').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('collapsed');
-});
-
+document.getElementById('btn-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('hide'));
 document.getElementById('btn-apply').addEventListener('click', () => {
-  state.filter.tahun      = document.getElementById('filter-tahun').value;
-  state.filter.bulan      = document.getElementById('filter-bulan').value;
-  state.filter.kode_satker= document.getElementById('filter-opd').value;
-  const active = document.querySelector('.nav-item.active')?.dataset.section || 'eksekutif';
-  loadSection(active);
+  S.filter.tahun = document.getElementById('f-tahun').value;
+  S.filter.bulan = document.getElementById('f-bulan').value;
+  S.filter.opd   = document.getElementById('f-opd').value;
+  const active   = document.querySelector('.nav-item.active')?.dataset.s||'eksekutif';
+  goSection(active);
 });
-
 document.getElementById('btn-reset').addEventListener('click', () => {
-  state.filter = { tahun: '', bulan: '', kode_satker: '' };
-  document.getElementById('filter-tahun').value = '';
-  document.getElementById('filter-bulan').value = '';
-  document.getElementById('filter-opd').value = '';
-  state.latestPeriode && (state.filter.tahun = state.latestPeriode.split('-')[0]);
-  state.latestPeriode && (state.filter.bulan = state.latestPeriode.split('-')[1]);
-  const active = document.querySelector('.nav-item.active')?.dataset.section || 'eksekutif';
-  loadSection(active);
-});
-
-document.getElementById('filter-tahun').addEventListener('change', e => {
-  state.filter.tahun = e.target.value;
-  buildBulanOptions();
+  S.filter = { tahun: S.latestPeriode?.split('-')[0]||'', bulan: S.latestPeriode?.split('-')[1]||'', opd:'' };
+  document.getElementById('f-tahun').value = S.filter.tahun;
+  document.getElementById('f-bulan').value = S.filter.bulan;
+  document.getElementById('f-opd').value   = '';
+  goSection(document.querySelector('.nav-item.active')?.dataset.s||'eksekutif');
 });
 
 // ======================================================
 // EKSEKUTIF
 // ======================================================
 async function loadEksekutif() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const [kpiRes, metRes, statRes] = await Promise.all([
-    api({ action: 'kpiDashboard', periode: p, kode_satker: ks || undefined }),
-    api({ action: 'dashboardMetode', periode: p, kode_satker: ks || undefined }),
-    api({ action: 'dashboardStatus', periode: p, kode_satker: ks || undefined }),
-  ]);
-
-  // KPI Cards
-  const kpi  = kpiRes.data || {};
-  const cards = [
-    { label: 'Total Pagu RUP',   val: IDR(kpi.total_pagu),      icon: '💰', color: 'bg-blue-50', sub: fmt(kpi.jumlah_paket_rup) + ' paket' },
-    { label: 'Total Kontrak',    val: IDR(kpi.total_kontrak),    icon: '📄', color: 'bg-green-50', sub: fmt(kpi.jumlah_paket_realisasi) + ' transaksi' },
-    { label: 'Efisiensi',        val: IDR(kpi.total_efisiensi),  icon: '📈', color: 'bg-yellow-50', sub: pct(kpi.persen_efisiensi) + ' dari pagu' },
-    { label: 'Paket Matched',    val: fmt(kpi.jumlah_matched),   icon: '✅', color: 'bg-purple-50', sub: 'dari ' + fmt(kpi.jumlah_paket_realisasi) + ' realisasi' },
-  ];
-  document.getElementById('kpi-cards').innerHTML = cards.map(c => `
-    <div class="kpi-card ${c.color}">
-      <div class="flex justify-between items-start">
-        <div>
-          <div class="kpi-label mb-1">${c.label}</div>
-          <div class="kpi-val">${c.val}</div>
-          <div class="text-xs text-slate-500 mt-1">${c.sub}</div>
+  const p = getPeriode(), ks = S.filter.opd;
+  document.getElementById('kpi-grid').innerHTML = `<div class="card col-span-2 lg:col-span-4 text-center py-6 text-slate-400 text-sm">
+    <div class="inline-block w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mb-1"></div><br>Memuat data...</div>`;
+  try {
+    const [kpiRes, metRes, stRes] = await Promise.all([
+      api({action:'kpiDashboard', periode:p, kode_satker:ks||undefined}),
+      api({action:'dashboardMetode', periode:p, kode_satker:ks||undefined}),
+      api({action:'dashboardStatus', periode:p, kode_satker:ks||undefined}),
+    ]);
+    const kpi = kpiRes.data||{};
+    const cards = [
+      {lbl:'Total Pagu RUP',   val:IDR(kpi.total_pagu),     sub:fmt(kpi.jumlah_paket_rup)+' paket RUP',         bg:'bg-blue-50',   icon:'💰'},
+      {lbl:'Total Kontrak',    val:IDR(kpi.total_kontrak),   sub:fmt(kpi.jumlah_paket_realisasi)+' transaksi',    bg:'bg-green-50',  icon:'📄'},
+      {lbl:'Efisiensi',        val:IDR(kpi.total_efisiensi), sub:pct(kpi.persen_efisiensi)+' dari pagu',          bg:'bg-yellow-50', icon:'📈'},
+      {lbl:'Paket Matched',    val:fmt(kpi.jumlah_matched),  sub:'dari '+fmt(kpi.jumlah_paket_realisasi)+' transaksi', bg:'bg-purple-50', icon:'✅'},
+    ];
+    document.getElementById('kpi-grid').innerHTML = cards.map(c=>`
+      <div class="card ${c.bg}">
+        <div class="flex justify-between items-start">
+          <div><div class="kpi-lbl mb-1">${c.lbl}</div><div class="kpi-val">${c.val}</div><div class="text-xs text-slate-500 mt-1">${c.sub}</div></div>
+          <span class="text-2xl">${c.icon}</span>
         </div>
-        <div class="text-2xl">${c.icon}</div>
-      </div>
-    </div>`).join('');
+      </div>`).join('');
 
-  // Chart metode
-  const metode = (metRes.data?.metode_rup || []).slice(0, 6);
-  mkChart('chart-metode-eksekutif', 'doughnut',
-    metode.map(d => d.label), [{
-      data: metode.map(d => d.value),
-      backgroundColor: PALETTE(metode),
-      borderWidth: 2,
-    }]
-  );
-
-  // Chart status
-  const st = statRes.data || {};
-  mkChart('chart-status-eksekutif', 'doughnut',
-    ['Selesai', 'Sedang Berjalan', 'Belum Berproses'],
-    [{ data: [st.selesai||0, st.sedang_berjalan||0, st.belum_berproses||0],
-       backgroundColor: ['#16A34A','#CA8A04','#94A3B8'], borderWidth: 2 }]
-  );
+    const md = (metRes.data?.metode_rup||[]).slice(0,6);
+    mkChart('c-metode-eks','doughnut',md.map(d=>d.label),[{data:md.map(d=>d.value),backgroundColor:pal(md),borderWidth:2}]);
+    const st = stRes.data||{};
+    mkChart('c-status-eks','doughnut',['Selesai','Sedang Berjalan','Belum Berproses'],[{data:[st.selesai||0,st.sedang_berjalan||0,st.belum_berproses||0],backgroundColor:['#16A34A','#CA8A04','#94A3B8'],borderWidth:2}]);
+  } catch(e) { showErr('Gagal memuat: '+e.message); }
 }
 
 // ======================================================
 // OPD
 // ======================================================
 async function loadOPD() {
-  const p  = getPeriode();
-  const res = await api({ action: 'dashboardOPD', periode: p });
-  const data = res.data || [];
-
-  // Bar chart top 10
-  const top10 = data.slice(0, 10);
-  mkChart('chart-opd-bar', 'bar',
-    top10.map(d => d.nama_satker.length > 20 ? d.nama_satker.slice(0,20)+'…' : d.nama_satker),
-    [
-      { label: 'Pagu', data: top10.map(d => d.total_pagu), backgroundColor: '#BFDBFE' },
-      { label: 'Kontrak', data: top10.map(d => d.total_kontrak), backgroundColor: '#0070C0' },
-    ],
-    { extra: { scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { callback: v => IDR(v), font: { size: 10 } } } } } }
+  const res = await api({action:'dashboardOPD', periode:getPeriode()});
+  const data = res.data||[];
+  const top = data.slice(0,10);
+  mkChart('c-opd-bar','bar', top.map(d=>d.nama_satker.slice(0,20)),
+    [{label:'Pagu',data:top.map(d=>d.total_pagu),backgroundColor:'#BFDBFE'},{label:'Kontrak',data:top.map(d=>d.total_kontrak),backgroundColor:'#0070C0'}],
+    {yFmt:v=>IDR(v)}
   );
-
-  // Tabel
-  const tbody = document.querySelector('#tbl-opd tbody');
-  tbody.innerHTML = data.map((d, i) => `
-    <tr>
-      <td class="mono text-xs">${i+1}</td>
-      <td class="font-medium">${d.nama_satker}</td>
-      <td class="mono">${IDRfull(d.total_pagu)}</td>
-      <td class="mono">${IDRfull(d.total_kontrak)}</td>
-      <td class="mono ${d.efisiensi < 0 ? 'text-red-600' : 'text-green-700'}">${IDRfull(d.efisiensi)}</td>
-      <td><span class="badge ${d.persen_efisiensi < 0 ? 'badge-red' : d.persen_efisiensi > 50 ? 'badge-green' : 'badge-yellow'}">${pct(d.persen_efisiensi)}</span></td>
-      <td class="mono">${fmt(d.jumlah_paket_rup)}</td>
-      <td class="mono">${fmt(d.jumlah_matched)}</td>
-    </tr>`).join('');
+  document.querySelector('#t-opd tbody').innerHTML = data.map((d,i)=>`<tr>
+    <td class="mono">${i+1}</td><td>${d.nama_satker}</td>
+    <td class="mono">${IDRf(d.total_pagu)}</td><td class="mono">${IDRf(d.total_kontrak)}</td>
+    <td class="mono ${d.efisiensi<0?'text-red-600':'text-green-700'}">${IDRf(d.efisiensi)}</td>
+    <td><span class="badge ${d.persen_efisiensi<0?'bg-red':d.persen_efisiensi>50?'bg-green':'bg-yellow'}">${pct(d.persen_efisiensi)}</span></td>
+    <td class="mono text-center">${fmt(d.jumlah_rup)}</td><td class="mono text-center">${fmt(d.jumlah_matched)}</td>
+  </tr>`).join('');
 }
 
 // ======================================================
 // METODE & JENIS
 // ======================================================
 async function loadMetode() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const res = await api({ action: 'dashboardMetode', periode: p, kode_satker: ks || undefined });
-  const d = res.data || {};
-
-  const draw = (id, data) => {
-    const items = (data || []).slice(0, 8);
-    mkChart(id, 'bar',
-      items.map(x => x.label.length > 22 ? x.label.slice(0,22)+'…' : x.label),
-      [{ label: 'Jumlah Paket', data: items.map(x => x.value), backgroundColor: PALETTE(items) }],
-      { extra: { plugins: { legend: { display: false } } } }
-    );
+  const res = await api({action:'dashboardMetode', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
+  const d = res.data||{};
+  const bar = (id,data) => {
+    const items = (data||[]).slice(0,8);
+    mkChart(id,'bar',items.map(x=>x.label.slice(0,24)),[{label:'Jumlah Paket',data:items.map(x=>x.value),backgroundColor:pal(items)}],{extra:{plugins:{legend:{display:false}}}});
   };
-  draw('chart-metode-rup',  d.metode_rup);
-  draw('chart-jenis-rup',   d.jenis_rup);
-  draw('chart-metode-real', d.metode_real);
-  draw('chart-jenis-real',  d.jenis_real);
+  bar('c-mtd-rup',d.metode_rup); bar('c-jns-rup',d.jenis_rup);
+  bar('c-mtd-rel',d.metode_real); bar('c-jns-rel',d.jenis_real);
 }
 
 // ======================================================
 // SUMBER
 // ======================================================
 async function loadSumber() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const res = await api({ action: 'dashboardSumber', periode: p, kode_satker: ks || undefined });
-  const d = res.data || {};
-
-  const mkDonut = (id, data) => {
-    const items = (data || []).slice(0, 8);
-    mkChart(id, 'doughnut',
-      items.map(x => x.label),
-      [{ data: items.map(x => x.value), backgroundColor: PALETTE(items), borderWidth: 2 }]
-    );
-  };
-  mkDonut('chart-sumber-dana',       d.sumber_dana);
-  mkDonut('chart-sumber-transaksi',  d.sumber_transaksi);
+  const res = await api({action:'dashboardSumber', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
+  const d = res.data||{};
+  const donut = (id,data) => { const items=(data||[]).slice(0,7); mkChart(id,'doughnut',items.map(x=>x.label),[{data:items.map(x=>x.value),backgroundColor:pal(items),borderWidth:2}]); };
+  donut('c-sumber-dana',d.sumber_dana); donut('c-sumber-tr',d.sumber_transaksi);
 }
 
 // ======================================================
 // STATUS
 // ======================================================
 async function loadStatus() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const res = await api({ action: 'dashboardStatus', periode: p, kode_satker: ks || undefined });
-  const d = res.data || {};
-
-  document.getElementById('status-kpi-cards').innerHTML = [
-    { label: 'Selesai', val: fmt(d.selesai), color: 'bg-green-50', badge: 'badge-green' },
-    { label: 'Sedang Berjalan', val: fmt(d.sedang_berjalan), color: 'bg-yellow-50', badge: 'badge-yellow' },
-    { label: 'Belum Berproses', val: fmt(d.belum_berproses), color: 'bg-slate-50', badge: 'badge-gray' },
-  ].map(c => `<div class="kpi-card ${c.color}"><div class="kpi-label mb-1">${c.label}</div><div class="kpi-val">${c.val}</div></div>`).join('');
-
-  mkChart('chart-status-pie', 'pie',
-    ['Selesai', 'Sedang Berjalan', 'Belum Berproses'],
-    [{ data: [d.selesai||0, d.sedang_berjalan||0, d.belum_berproses||0],
-       backgroundColor: ['#16A34A','#CA8A04','#94A3B8'], borderWidth: 2 }]
-  );
+  const res = await api({action:'dashboardStatus', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
+  const d = res.data||{};
+  document.getElementById('status-kpi').innerHTML = [
+    {lbl:'Selesai',val:fmt(d.selesai),bg:'bg-green-50'},{lbl:'Sedang Berjalan',val:fmt(d.sedang_berjalan),bg:'bg-yellow-50'},{lbl:'Belum Berproses',val:fmt(d.belum_berproses),bg:'bg-slate-50'}
+  ].map(c=>`<div class="card ${c.bg}"><div class="kpi-lbl mb-1">${c.lbl}</div><div class="kpi-val">${c.val}</div></div>`).join('');
+  mkChart('c-status-pie','pie',['Selesai','Sedang Berjalan','Belum Berproses'],[{data:[d.selesai||0,d.sedang_berjalan||0,d.belum_berproses||0],backgroundColor:['#16A34A','#CA8A04','#94A3B8'],borderWidth:2}]);
 }
 
 // ======================================================
-// TOP PENYEDIA
+// PENYEDIA
 // ======================================================
 async function loadPenyedia() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const res = await api({ action: 'dashboardPenyedia', periode: p, kode_satker: ks || undefined });
-  const data = res.data || [];
-
-  mkChart('chart-penyedia', 'bar',
-    data.map(d => d.nama_penyedia.length > 25 ? d.nama_penyedia.slice(0,25)+'…' : d.nama_penyedia),
-    [{ label: 'Total Nilai Kontrak', data: data.map(d => d.total_nilai), backgroundColor: PALETTE(data) }],
-    { extra: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => IDR(v) } } } } }
+  const res = await api({action:'dashboardPenyedia', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
+  const data = res.data||[];
+  mkChart('c-penyedia','bar',data.map(d=>d.nama_penyedia.slice(0,25)),
+    [{label:'Total Kontrak',data:data.map(d=>d.total_nilai),backgroundColor:pal(data)}],
+    {yFmt:v=>IDR(v),extra:{plugins:{legend:{display:false}}}}
   );
-
-  document.querySelector('#tbl-penyedia tbody').innerHTML = data.map((d, i) => `
-    <tr><td class="mono">${i+1}</td><td>${d.nama_penyedia}</td>
-    <td class="mono text-center">${fmt(d.jumlah)}</td>
-    <td class="mono">${IDRfull(d.total_nilai)}</td></tr>`).join('');
+  document.querySelector('#t-penyedia tbody').innerHTML = data.map((d,i)=>`<tr>
+    <td class="mono">${i+1}</td><td>${d.nama_penyedia}</td>
+    <td class="mono text-center">${fmt(d.jumlah)}</td><td class="mono">${IDRf(d.total_nilai)}</td>
+  </tr>`).join('');
 }
 
 // ======================================================
 // EFISIENSI
 // ======================================================
 async function loadEfisiensi() {
-  const p  = getPeriode();
-  const ks = state.filter.kode_satker;
-  const res = await api({ action: 'dashboardEfisiensi', periode: p, kode_satker: ks || undefined });
-  const data = (res.data || []).slice(0, 20);
-
-  const colors = data.map(d => d.efisiensi < 0 ? '#FCA5A5' : '#6EE7B7');
-  mkChart('chart-efisiensi', 'bar',
-    data.map(d => d.nama_satker.length > 22 ? d.nama_satker.slice(0,22)+'…' : d.nama_satker),
-    [{ label: 'Efisiensi (Rp)', data: data.map(d => d.efisiensi), backgroundColor: colors }],
-    { extra: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => IDR(v) } } } } }
+  const res = await api({action:'dashboardEfisiensi', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
+  const data = (res.data||[]).slice(0,20);
+  mkChart('c-efi','bar',data.map(d=>d.nama_satker.slice(0,22)),
+    [{label:'Efisiensi',data:data.map(d=>d.efisiensi),backgroundColor:data.map(d=>d.efisiensi<0?'#FCA5A5':'#6EE7B7')}],
+    {indexAxis:'y',yFmt:v=>IDR(v),extra:{plugins:{legend:{display:false}}}}
   );
-
-  document.querySelector('#tbl-efisiensi tbody').innerHTML = data.map((d, i) => `
-    <tr>
-      <td class="mono">${i+1}</td>
-      <td>${d.nama_satker}</td>
-      <td class="mono">${IDRfull(d.total_pagu)}</td>
-      <td class="mono">${IDRfull(d.total_kontrak)}</td>
-      <td class="mono ${d.efisiensi < 0 ? 'text-red-600 font-bold' : 'text-green-700'}">${IDRfull(d.efisiensi)}</td>
-      <td><span class="badge ${d.persen_efisiensi < 0 ? 'badge-red' : d.persen_efisiensi > 50 ? 'badge-green' : 'badge-yellow'}">${pct(d.persen_efisiensi)}</span></td>
-    </tr>`).join('');
+  document.querySelector('#t-efi tbody').innerHTML = data.map((d,i)=>`<tr>
+    <td class="mono">${i+1}</td><td>${d.nama_satker}</td>
+    <td class="mono">${IDRf(d.total_pagu)}</td><td class="mono">${IDRf(d.total_kontrak)}</td>
+    <td class="mono ${d.efisiensi<0?'text-red-600 font-bold':'text-green-700'}">${IDRf(d.efisiensi)}</td>
+    <td><span class="badge ${d.persen_efisiensi<0?'bg-red':d.persen_efisiensi>50?'bg-green':'bg-yellow'}">${pct(d.persen_efisiensi)}</span></td>
+  </tr>`).join('');
 }
 
 // ======================================================
 // TREN
 // ======================================================
 async function loadTren() {
-  const res  = await api({ action: 'dashboardTren' });
-  const data = res.data || [];
-
-  mkChart('chart-tren', 'line',
-    data.map(d => d.periode),
-    [
-      { label: 'Total Pagu', data: data.map(d => d.total_pagu), borderColor: '#0070C0', backgroundColor: 'rgba(0,112,192,.1)', tension: 0.3, fill: true },
-      { label: 'Total Kontrak', data: data.map(d => d.total_kontrak), borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,.08)', tension: 0.3, fill: true },
-    ],
-    { extra: { scales: { y: { ticks: { callback: v => IDR(v) } } } } }
-  );
-
-  document.querySelector('#tbl-tren tbody').innerHTML = data.map(d => `
-    <tr>
-      <td class="font-semibold mono">${d.periode}</td>
-      <td class="mono">${IDRfull(d.total_pagu)}</td>
-      <td class="mono">${IDRfull(d.total_kontrak)}</td>
-      <td class="mono ${Number(d.total_efisiensi) < 0 ? 'text-red-600' : 'text-green-700'}">${IDRfull(d.total_efisiensi)}</td>
-      <td><span class="badge ${Number(d.persen_efisiensi) < 0 ? 'badge-red' : 'badge-green'}">${pct(d.persen_efisiensi)}</span></td>
-      <td class="mono text-center">${fmt(d.jumlah_paket_rup)}</td>
-      <td class="mono text-center">${fmt(d.jumlah_paket_realisasi)}</td>
-    </tr>`).join('');
+  const res = await api({action:'dashboardTren'});
+  const data = res.data||[];
+  mkChart('c-tren','line',data.map(d=>d.periode),[
+    {label:'Total Pagu',data:data.map(d=>d.total_pagu),borderColor:'#0070C0',backgroundColor:'rgba(0,112,192,.1)',tension:.3,fill:true},
+    {label:'Total Kontrak',data:data.map(d=>d.total_kontrak),borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.08)',tension:.3,fill:true},
+  ],{yFmt:v=>IDR(v)});
+  document.querySelector('#t-tren tbody').innerHTML = data.map(d=>`<tr>
+    <td class="mono font-semibold">${d.periode}</td>
+    <td class="mono">${IDRf(d.total_pagu)}</td><td class="mono">${IDRf(d.total_kontrak)}</td>
+    <td class="mono ${Number(d.total_efisiensi)<0?'text-red-600':'text-green-700'}">${IDRf(d.total_efisiensi)}</td>
+    <td><span class="badge ${Number(d.persen_efisiensi)<0?'bg-red':'bg-green'}">${pct(d.persen_efisiensi)}</span></td>
+    <td class="mono text-center">${fmt(d.jumlah_paket_rup)}</td><td class="mono text-center">${fmt(d.jumlah_paket_realisasi)}</td>
+  </tr>`).join('');
 }
 
 // ======================================================
 // DETAIL PAKET
 // ======================================================
-async function loadDetail(page = 1) {
-  state.detailPage = page;
-  const p   = getPeriode();
-  const ks  = state.filter.kode_satker;
-  const res = await api({
-    action: 'detailPaket', periode: p, kode_satker: ks || undefined,
-    page, per_page: 50, search: state.detailSearch,
-  });
-  const d = res.data || {};
-  const items = d.items || [];
-
-  const statusBadge = s => {
-    if (!s) return '<span class="badge badge-gray">-</span>';
-    if (s === 'MATCHED') return '<span class="badge badge-green">MATCHED</span>';
-    if (s === 'ORPHAN')  return '<span class="badge badge-red">ORPHAN</span>';
-    return '<span class="badge badge-yellow">UNMATCHED</span>';
+async function loadDetail(page=1) {
+  S.detailPage=page;
+  const res = await api({action:'detailPaket', periode:getPeriode(), kode_satker:S.filter.opd||undefined, page, per_page:50, search:S.detailQ});
+  const d = res.data||{};
+  const stBadge = s => {
+    if(!s) return '<span class="badge bg-gray">-</span>';
+    if(s==='MATCHED') return '<span class="badge bg-green">MATCHED</span>';
+    if(s==='ORPHAN')  return '<span class="badge bg-red">ORPHAN</span>';
+    return '<span class="badge bg-yellow">UNMATCHED</span>';
   };
-
-  document.querySelector('#tbl-detail tbody').innerHTML = items.map((r, i) => `
-    <tr>
-      <td class="mono text-xs">${(page-1)*50+i+1}</td>
-      <td class="text-xs">${r.nama_satker || '-'}</td>
-      <td class="max-w-xs truncate text-xs" title="${r.nama_paket_rup || r.nama_paket_realisasi || '-'}">${(r.nama_paket_rup || r.nama_paket_realisasi || '-').slice(0,60)}</td>
-      <td class="mono text-xs">${r.pagu_rup ? IDRfull(r.pagu_rup) : '-'}</td>
-      <td class="mono text-xs">${r.nilai_kontrak ? IDRfull(r.nilai_kontrak) : '-'}</td>
-      <td class="mono text-xs ${Number(r.efisiensi) < 0 ? 'text-red-600' : ''}">${r.efisiensi ? IDRfull(r.efisiensi) : '-'}</td>
-      <td class="text-xs">${r.metode_matching || '-'}</td>
-      <td>${statusBadge(r.status_matching)}</td>
-    </tr>`).join('');
-
-  document.getElementById('detail-info').textContent =
-    `Menampilkan ${(page-1)*50+1}–${Math.min(page*50, d.total)} dari ${fmt(d.total)} paket`;
-
-  document.getElementById('btn-prev').disabled = page <= 1;
-  document.getElementById('btn-next').disabled = page >= d.total_pages;
+  document.querySelector('#t-detail tbody').innerHTML = (d.items||[]).map((r,i)=>`<tr>
+    <td class="mono">${(page-1)*50+i+1}</td>
+    <td class="text-xs">${r.nama_satker||'-'}</td>
+    <td class="text-xs max-w-xs truncate" title="${r.nama_paket_rup||r.nama_paket_realisasi||''}">${(r.nama_paket_rup||r.nama_paket_realisasi||'-').slice(0,55)}</td>
+    <td class="mono text-xs">${r.pagu_rup?IDRf(r.pagu_rup):'-'}</td>
+    <td class="mono text-xs">${r.nilai_kontrak?IDRf(r.nilai_kontrak):'-'}</td>
+    <td class="mono text-xs ${Number(r.efisiensi)<0?'text-red-600':''}">${r.efisiensi?IDRf(r.efisiensi):'-'}</td>
+    <td class="text-xs">${r.metode_matching||'-'}</td>
+    <td>${stBadge(r.status_matching)}</td>
+  </tr>`).join('');
+  document.getElementById('detail-info').textContent = `${(page-1)*50+1}–${Math.min(page*50,d.total)} dari ${fmt(d.total)} paket`;
+  document.getElementById('btn-prev').disabled = page<=1;
+  document.getElementById('btn-next').disabled = page>=d.total_pages;
 }
-
-document.getElementById('btn-detail-search').addEventListener('click', () => {
-  state.detailSearch = document.getElementById('detail-search').value;
-  loadDetail(1);
-});
-document.getElementById('detail-search').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { state.detailSearch = e.target.value; loadDetail(1); }
-});
-document.getElementById('btn-prev').addEventListener('click', () => loadDetail(state.detailPage - 1));
-document.getElementById('btn-next').addEventListener('click', () => loadDetail(state.detailPage + 1));
+document.getElementById('btn-detail-cari').addEventListener('click',()=>{ S.detailQ=document.getElementById('detail-q').value; loadDetail(1); });
+document.getElementById('detail-q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ S.detailQ=e.target.value; loadDetail(1); }});
+document.getElementById('btn-prev').addEventListener('click',()=>loadDetail(S.detailPage-1));
+document.getElementById('btn-next').addEventListener('click',()=>loadDetail(S.detailPage+1));
 
 // ======================================================
-// UPLOAD
+// UPLOAD + TOKEN
 // ======================================================
-let rupFile = null, realFile = null;
+let rupFile=null, realFile=null;
 
-function setupDropZone(dropId, inputId, labelId, onFile) {
-  const drop  = document.getElementById(dropId);
-  const input = document.getElementById(inputId);
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
-  drop.addEventListener('drop', e => {
-    e.preventDefault(); drop.classList.remove('drag');
-    const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
-  });
-  input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); });
+function setupDrop(dropId, fileId, lblId, cb) {
+  const drop=document.getElementById(dropId), inp=document.getElementById(fileId);
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+  drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');if(e.dataTransfer.files[0]) cb(e.dataTransfer.files[0])});
+  inp.addEventListener('change',()=>{if(inp.files[0]) cb(inp.files[0])});
 }
-
-setupDropZone('drop-rup', 'file-rup', 'label-rup', file => {
-  if (!file.name.endsWith('.csv')) { Swal.fire('Error', 'File harus berformat .csv', 'error'); return; }
-  if (file.size > 10 * 1024 * 1024) { Swal.fire('Error', 'Ukuran file melebihi 10 MB', 'error'); return; }
-  rupFile = file;
-  document.getElementById('label-rup').textContent = '✅ ' + file.name;
-  document.getElementById('btn-upload-rup').disabled = false;
+setupDrop('drop-rup','file-rup','lbl-rup', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv, maks 10 MB','error');return;}
+  rupFile=f; document.getElementById('lbl-rup').textContent='✅ '+f.name;
+  document.getElementById('btn-rup').disabled=false;
 });
-
-setupDropZone('drop-real', 'file-real', 'label-real', file => {
-  if (!file.name.endsWith('.csv')) { Swal.fire('Error', 'File harus berformat .csv', 'error'); return; }
-  if (file.size > 10 * 1024 * 1024) { Swal.fire('Error', 'Ukuran file melebihi 10 MB', 'error'); return; }
-  realFile = file;
-  document.getElementById('label-real').textContent = '✅ ' + file.name;
-  document.getElementById('btn-upload-real').disabled = false;
+setupDrop('drop-real','file-real','lbl-real', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv, maks 10 MB','error');return;}
+  realFile=f; document.getElementById('lbl-real').textContent='✅ '+f.name;
+  document.getElementById('btn-real').disabled=false;
 });
 
 function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
-  return lines.slice(1).map(line => {
-    const vals = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
-    const obj  = {};
-    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+  const lines = text.trim().split('\n').filter(l=>l.trim());
+  if(lines.length<2) return [];
+  const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line=>{
+    const vals=[]; let cur='',inQ=false;
+    for(const ch of line+','){
+      if(ch==='"'){inQ=!inQ}
+      else if(ch===','&&!inQ){vals.push(cur.trim());cur=''}
+      else cur+=ch;
+    }
+    const obj={}; headers.forEach((h,i)=>{ obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim(); });
     return obj;
   });
 }
 
-async function uploadChunked(action, rows, periode, namaFile, progFill, progPct, progLabel, progWrap) {
-  document.getElementById(progWrap).classList.remove('hidden');
-  const chunks     = [];
-  for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
-  const sessionId  = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
-  const totalChunks= chunks.length;
-  let processed    = 0;
-  let lastResponse = null;
-
-  for (let ci = 0; ci < totalChunks; ci++) {
-    document.getElementById(progLabel).textContent =
-      totalChunks > 1 ? `Mengunggah chunk ${ci+1} dari ${totalChunks}...` : 'Mengunggah...';
+async function uploadChunked(action, rows, periode, namaFile, pfill, ppct, plbl, pwrap) {
+  document.getElementById(pwrap).classList.remove('hidden');
+  const chunks=[]; for(let i=0;i<rows.length;i+=CHUNK_SIZE) chunks.push(rows.slice(i,i+CHUNK_SIZE));
+  const sid = (typeof crypto!=='undefined'&&crypto.randomUUID) ? crypto.randomUUID() : 'sid-'+Date.now();
+  let processed=0, lastRes=null;
+  for(let ci=0;ci<chunks.length;ci++){
+    document.getElementById(plbl).textContent = chunks.length>1 ? `Chunk ${ci+1}/${chunks.length}...` : 'Mengunggah...';
     const res = await api({
-      action,
-      token:         state.adminToken,
-      periode,
-      data:          chunks[ci],
-      nama_file:     namaFile,
-      session_id:    sessionId,
-      chunk_index:   ci,
-      total_chunks:  totalChunks,
-      total_records: rows.length,
+      action, token:S.adminToken, periode, data:chunks[ci], nama_file:namaFile,
+      session_id:sid, chunk_index:ci, total_chunks:chunks.length, total_records:rows.length,
     });
-    if (res.status !== 'success') throw new Error(res.message);
-    lastResponse = res;
-    processed += chunks[ci].length;
-    const pctVal = Math.round(processed / rows.length * 100);
-    document.getElementById(progFill).style.width = pctVal + '%';
-    document.getElementById(progPct).textContent  = pctVal + '%';
+    if(res.status!=='success') throw new Error(res.message);
+    lastRes=res; processed+=chunks[ci].length;
+    const v=Math.round(processed/rows.length*100);
+    document.getElementById(pfill).style.width=v+'%';
+    document.getElementById(ppct).textContent=v+'%';
   }
-  document.getElementById(progLabel).textContent = '✅ Selesai';
-  return { total: processed, lastResponse };
+  document.getElementById(plbl).textContent='✅ Selesai';
+  return {total:processed, lastRes};
 }
 
-document.getElementById('btn-upload-rup').addEventListener('click', async () => {
-  if (!rupFile) return;
-  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
-  const btn     = document.getElementById('btn-upload-rup');
-  btn.disabled  = true;
+document.getElementById('btn-verify').addEventListener('click', async()=>{
+  const token=document.getElementById('inp-token').value.trim();
+  const btn=document.getElementById('btn-verify'), st=document.getElementById('token-status');
+  if(!token){Swal.fire('Error','Token tidak boleh kosong','error');return;}
+  btn.disabled=true; btn.textContent='Memeriksa...';
+  st.innerHTML='<span class="text-slate-400">⏳</span>';
   try {
-    const text  = await rupFile.text();
-    const rows  = parseCSV(text);
-    const result= await uploadChunked('uploadRUP', rows, periode, rupFile.name,
-      'prog-rup-fill','prog-rup-pct','prog-rup-label','prog-rup-wrap');
-    Swal.fire('✅ Berhasil', `Upload RUP selesai: <strong>${result.total.toLocaleString('id-ID')}</strong> record diproses.`, 'success');
-    rupFile = null;
-    document.getElementById('label-rup').textContent = 'Klik atau drag data_rup_*.csv';
-    document.getElementById('prog-rup-wrap').classList.add('hidden');
-    loadUploadLog();
-  } catch(e) {
-    Swal.fire('❌ Error', e.message, 'error');
-  } finally { btn.disabled = false; }
-});
-
-document.getElementById('btn-upload-real').addEventListener('click', async () => {
-  if (!realFile) return;
-  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
-  const btn     = document.getElementById('btn-upload-real');
-  btn.disabled  = true;
-  try {
-    const text   = await realFile.text();
-    const rows   = parseCSV(text);
-    const result = await uploadChunked('uploadRealisasi', rows, periode, realFile.name,
-      'prog-real-fill','prog-real-pct','prog-real-label','prog-real-wrap');
-    const d = result.lastResponse?.data || {};
-    Swal.fire('✅ Berhasil',
-      `Upload Realisasi selesai: <strong>${result.total.toLocaleString('id-ID')}</strong> record.<br>` +
-      `Matched: <strong>${d.matched ?? '-'}</strong> | Unmatched: <strong>${d.unmatched ?? '-'}</strong> | Orphan: <strong>${d.orphan ?? '-'}</strong>`,
-      'success');
-    realFile = null;
-    document.getElementById('label-real').textContent = 'Klik atau drag data_realisasi_*.csv';
-    document.getElementById('prog-real-wrap').classList.add('hidden');
-    await init();
-    loadUploadLog();
-  } catch(e) {
-    Swal.fire('❌ Error', e.message, 'error');
-  } finally { btn.disabled = false; }
-});
-
-// Token verification
-document.getElementById('btn-verify-token').addEventListener('click', async () => {
-  const token  = document.getElementById('admin-token').value.trim();
-  const btn    = document.getElementById('btn-verify-token');
-  const status = document.getElementById('token-status');
-  if (!token) { Swal.fire('Error', 'Token tidak boleh kosong.', 'error'); return; }
-  if (SCRIPT_URL.includes('GANTI_DENGAN_SCRIPT_ID_ANDA')) {
-    Swal.fire('Setup Diperlukan', 'SCRIPT_URL belum diisi. Lihat panduan di tab Eksekutif.', 'warning');
-    return;
-  }
-  btn.disabled = true;
-  btn.textContent = 'Memeriksa...';
-  status.innerHTML = '<span class="text-slate-400">⏳ Memverifikasi...</span>';
-  try {
-    const res = await api({ action: 'verifyToken', token });
-    if (res.status === 'success' && res.data?.valid) {
-      state.adminToken = token;
-      state.isAdmin    = true;
-      status.innerHTML = '<span class="text-green-600 font-medium">✅ Token valid — akses admin aktif</span>';
+    const res = await api({action:'verifyToken', token});
+    if(res.status==='success'&&res.data?.valid){
+      S.adminToken=token; S.isAdmin=true;
+      st.innerHTML='<span class="text-green-600 font-semibold">✅ Token valid — akses admin aktif</span>';
       document.getElementById('upload-panel').classList.remove('hidden');
       document.getElementById('nav-kualitas').classList.remove('hidden');
-      loadUploadLog();
+      loadLog();
     } else {
-      status.innerHTML = '<span class="text-red-500">❌ Token salah</span>';
+      st.innerHTML='<span class="text-red-500">❌ Token salah</span>';
     }
   } catch(e) {
-    status.innerHTML = '<span class="text-red-500">❌ Gagal terhubung ke backend</span>';
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Verifikasi';
-  }
+    st.innerHTML='<span class="text-red-500">❌ Gagal terhubung ke backend</span>';
+  } finally { btn.disabled=false; btn.textContent='Verifikasi'; }
 });
 
-// Hapus Periode
-document.getElementById('btn-delete-periode').addEventListener('click', async () => {
-  const p = document.getElementById('del-periode').value.trim();
-  if (!p) { Swal.fire('Error', 'Masukkan periode dalam format YYYY-MM', 'error'); return; }
-  const conf = await Swal.fire({ title: `Hapus data ${p}?`, text: 'Data tidak dapat dipulihkan!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#DC2626', confirmButtonText: 'Ya, Hapus!' });
-  if (!conf.isConfirmed) return;
-  const res = await api({ action: 'deletePeriode', token: state.adminToken, periode: p });
-  if (res.status === 'success') Swal.fire('✅ Berhasil', res.message, 'success');
-  else Swal.fire('❌ Error', res.message, 'error');
+document.getElementById('btn-rup').addEventListener('click', async()=>{
+  if(!rupFile) return;
+  const periode = document.getElementById('up-tahun').value+'-'+document.getElementById('up-bulan').value;
+  const btn=document.getElementById('btn-rup'); btn.disabled=true;
+  try {
+    const text=await rupFile.text(), rows=parseCSV(text);
+    const r=await uploadChunked('uploadRUP',rows,periode,rupFile.name,'prog-rup-fill','prog-rup-pct','prog-rup-lbl','prog-rup-wrap');
+    Swal.fire('✅ Berhasil',`Upload RUP selesai: <b>${r.total.toLocaleString('id-ID')}</b> record.`,'success');
+    rupFile=null; document.getElementById('lbl-rup').textContent='Klik atau drag file di sini';
+    document.getElementById('prog-rup-wrap').classList.add('hidden');
+    document.getElementById('btn-rup').disabled=true;
+    loadLog();
+  } catch(e){ Swal.fire('❌ Gagal',e.message,'error'); }
+  finally { btn.disabled=false; }
 });
+
+document.getElementById('btn-real').addEventListener('click', async()=>{
+  if(!realFile) return;
+  const periode=document.getElementById('up-tahun').value+'-'+document.getElementById('up-bulan').value;
+  const btn=document.getElementById('btn-real'); btn.disabled=true;
+  try {
+    const text=await realFile.text(), rows=parseCSV(text);
+    const r=await uploadChunked('uploadRealisasi',rows,periode,realFile.name,'prog-real-fill','prog-real-pct','prog-real-lbl','prog-real-wrap');
+    const d=r.lastRes?.data||{};
+    Swal.fire('✅ Berhasil',
+      `Upload Realisasi selesai: <b>${r.total.toLocaleString('id-ID')}</b> record.<br>` +
+      `Matched: <b>${d.matched??'-'}</b> | Unmatched: <b>${d.unmatched??'-'}</b> | Orphan: <b>${d.orphan??'-'}</b>`,
+      'success');
+    realFile=null; document.getElementById('lbl-real').textContent='Klik atau drag file di sini';
+    document.getElementById('prog-real-wrap').classList.add('hidden');
+    document.getElementById('btn-real').disabled=true;
+    await init(); loadLog();
+  } catch(e){ Swal.fire('❌ Gagal',e.message,'error'); }
+  finally { btn.disabled=false; }
+});
+
+document.getElementById('btn-del').addEventListener('click', async()=>{
+  const p=document.getElementById('del-periode').value.trim();
+  if(!p){Swal.fire('Error','Format: YYYY-MM','error');return;}
+  const ok=await Swal.fire({title:'Hapus '+p+'?',text:'Tidak dapat dibatalkan!',icon:'warning',showCancelButton:true,confirmButtonColor:'#DC2626',confirmButtonText:'Ya, Hapus!'});
+  if(!ok.isConfirmed) return;
+  const res=await api({action:'deletePeriode',token:S.adminToken,periode:p});
+  Swal.fire(res.status==='success'?'✅ Berhasil':'❌ Error', res.message, res.status==='success'?'success':'error');
+  loadLog();
+});
+
+async function loadLog() {
+  const periode=document.getElementById('up-tahun').value+'-'+document.getElementById('up-bulan').value;
+  const tbody=document.querySelector('#t-log tbody');
+  tbody.innerHTML='<tr><td colspan="6" class="text-center text-slate-400 py-3 text-xs">Memuat...</td></tr>';
+  try {
+    const res=await api({action:'getUploadLog', periode});
+    const logs=res.data||[];
+    const hasRUP=logs.some(l=>l.jenis_data==='RUP');
+    const hasReal=logs.some(l=>l.jenis_data==='REALISASI');
+    document.getElementById('log-warning').classList.toggle('hidden', hasReal||!hasRUP);
+    document.getElementById('log-ok').classList.toggle('hidden', !(hasRUP&&hasReal));
+    if(!logs.length){
+      tbody.innerHTML='<tr><td colspan="6" class="text-center text-slate-400 py-4 text-xs">Belum ada upload untuk periode ini.</td></tr>';
+      return;
+    }
+    tbody.innerHTML=logs.map(l=>{
+      const jBadge=l.jenis_data==='RUP'?'<span class="badge bg-blue">RUP</span>':'<span class="badge bg-green">REALISASI</span>';
+      const waktu=l.uploaded_at?new Date(l.uploaded_at).toLocaleString('id-ID'):'-';
+      const st=l.status==='SUCCESS'?'<span class="text-green-600 font-bold text-xs">SUCCESS</span>':'<span class="text-red-600 font-bold text-xs">'+l.status+'</span>';
+      return `<tr>
+        <td>${jBadge}</td>
+        <td class="text-xs mono">${l.nama_file||'-'}</td>
+        <td class="text-xs mono text-center">${Number(l.jumlah_record||0).toLocaleString('id-ID')}</td>
+        <td class="text-xs">${waktu}</td>
+        <td>${st}</td>
+        <td class="text-xs text-slate-500">${l.catatan||'-'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){ tbody.innerHTML='<tr><td colspan="6" class="text-center text-red-400 py-3 text-xs">Gagal memuat log.</td></tr>'; }
+}
+
+document.getElementById('up-tahun').addEventListener('change', ()=>{ if(S.isAdmin) loadLog(); });
+document.getElementById('up-bulan').addEventListener('change', ()=>{ if(S.isAdmin) loadLog(); });
 
 // ======================================================
 // KUALITAS DATA
 // ======================================================
 async function loadKualitas() {
-  if (!state.isAdmin) { Swal.fire('Akses Ditolak', 'Harap login sebagai admin terlebih dahulu.', 'warning'); return; }
-  const p   = getPeriode();
-  const res = await api({ action: 'unmatchedData', token: state.adminToken, periode: p });
-  const d   = res.data || {};
+  if(!S.isAdmin){ Swal.fire('Akses Ditolak','Login admin diperlukan.','warning'); return; }
+  const res=await api({action:'unmatchedData', token:S.adminToken, periode:getPeriode()});
+  const d=res.data||{};
+  document.getElementById('kualitas-kpi').innerHTML=[
+    {lbl:'Matching Rate',val:pct(d.matching_rate),bg:'bg-green-50'},
+    {lbl:'Total Realisasi',val:fmt(d.total_realisasi),bg:'bg-blue-50'},
+    {lbl:'Total Matched',val:fmt(d.total_matched),bg:'bg-purple-50'},
+  ].map(c=>`<div class="card ${c.bg}"><div class="kpi-lbl mb-1">${c.lbl}</div><div class="kpi-val">${c.val}</div></div>`).join('');
 
-  document.getElementById('kualitas-kpi').innerHTML = [
-    { label: 'Matching Rate', val: pct(d.matching_rate), color: 'bg-green-50' },
-    { label: 'Total Realisasi', val: fmt(d.total_realisasi), color: 'bg-blue-50' },
-    { label: 'Total Matched', val: fmt(d.total_matched), color: 'bg-purple-50' },
-  ].map(c => `<div class="kpi-card ${c.color}"><div class="kpi-label mb-1">${c.label}</div><div class="kpi-val">${c.val}</div></div>`).join('');
-
-  const fill = (tbodySelector, rows, cols) => {
-    document.querySelector(tbodySelector + ' tbody').innerHTML =
-      rows.length === 0 ? '<tr><td colspan="99" class="text-center text-slate-400 py-4">Tidak ada data</td></tr>'
-      : rows.map(r => `<tr>${cols.map(c => `<td class="text-xs">${c(r)}</td>`).join('')}</tr>`).join('');
+  const fill=(id,rows,cols)=>{
+    document.querySelector(id+' tbody').innerHTML=!rows?.length
+      ?'<tr><td colspan="99" class="text-center text-slate-400 py-3 text-xs">Tidak ada data</td></tr>'
+      :rows.map(r=>`<tr>${cols.map(c=>`<td class="text-xs">${c(r)}</td>`).join('')}</tr>`).join('');
   };
-
-  fill('#tbl-unmatched-rup', d.unmatched_rup || [], [
-    r => r.nama_satker, r => (r.nama_paket_rup||'-'), r => IDRfull(r.pagu_rup),
-  ]);
-  fill('#tbl-unmatched-real', d.unmatched_realisasi || [], [
-    r => r.nama_satker, r => (r.nama_paket_realisasi||'-'), r => IDRfull(r.nilai_kontrak),
-  ]);
-  fill('#tbl-orphan', d.orphan || [], [
-    r => r.nama_satker, r => r.kode_paket, r => IDRfull(r.nilai_kontrak), r => r.metode_matching,
-  ]);
+  fill('#t-um-rup', d.unmatched_rup,[r=>r.nama_satker,r=>r.nama_paket_rup||'-',r=>IDRf(r.pagu_rup)]);
+  fill('#t-um-real',d.unmatched_realisasi,[r=>r.nama_satker,r=>r.nama_paket_realisasi||'-',r=>IDRf(r.nilai_kontrak)]);
+  fill('#t-orphan', d.orphan,[r=>r.nama_satker,r=>r.kode_paket||'-',r=>IDRf(r.nilai_kontrak),r=>r.sumber_transaksi||'-']);
 }
 
 // ======================================================
 // EXPORT EXCEL
 // ======================================================
-document.getElementById('btn-export-excel').addEventListener('click', async () => {
-  const p   = getPeriode();
-  const ks  = state.filter.kode_satker;
-  const res = await api({ action: 'detailPaket', periode: p, kode_satker: ks || undefined, page: 1, per_page: 20000 });
-  const items = res.data?.items || [];
-
-  const ws_data = [
+document.getElementById('btn-export').addEventListener('click', async()=>{
+  const res=await api({action:'detailPaket',periode:getPeriode(),kode_satker:S.filter.opd||undefined,page:1,per_page:20000});
+  const items=res.data?.items||[];
+  const ws=XLSX.utils.aoa_to_sheet([
     ['Satker','Nama Paket RUP','Nama Paket Realisasi','Pagu','Nilai Kontrak','Efisiensi','% Efisiensi','Metode Matching','Status'],
-    ...items.map(r => [
-      r.nama_satker, r.nama_paket_rup, r.nama_paket_realisasi,
-      r.pagu_rup, r.nilai_kontrak, r.efisiensi, r.persen_efisiensi,
-      r.metode_matching, r.status_matching,
-    ])
-  ];
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(ws_data);
-  XLSX.utils.book_append_sheet(wb, ws, 'Detail Paket');
-  XLSX.writeFile(wb, `BPBJ_Surakarta_${p || 'semua'}.xlsx`);
+    ...items.map(r=>[r.nama_satker,r.nama_paket_rup,r.nama_paket_realisasi,r.pagu_rup,r.nilai_kontrak,r.efisiensi,r.persen_efisiensi,r.metode_matching,r.status_matching])
+  ]);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Detail');
+  XLSX.writeFile(wb,'BPBJ_'+getPeriode()+'.xlsx');
 });
-
-// ======================================================
-// ERROR HELPER
-// ======================================================
-function showError(msg) {
-  document.getElementById('kpi-cards').innerHTML =
-    `<div class="kpi-card col-span-4 text-center text-red-500 py-6">${msg}</div>`;
-}
-
-// ======================================================
-// UPLOAD LOG
-// ======================================================
-async function loadUploadLog() {
-  const periode = document.getElementById('up-tahun').value + '-' + document.getElementById('up-bulan').value;
-  const tbody   = document.querySelector('#tbl-upload-log tbody');
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-3 text-xs">Memuat...</td></tr>';
-
-  try {
-    const res  = await api({ action: 'getUploadLog', periode });
-    const logs = res.data || [];
-
-    // Status warning/info
-    const hasRUP  = logs.some(l => l.jenis_data === 'RUP');
-    const hasReal = logs.some(l => l.jenis_data === 'REALISASI');
-    document.getElementById('upload-log-warning').classList.toggle('hidden', hasReal || !hasRUP);
-    document.getElementById('upload-log-info').classList.toggle('hidden', !(hasRUP && hasReal));
-
-    if (logs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-4 text-xs">Belum ada upload untuk periode ini.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = logs.map(l => {
-      const jenisBadge = l.jenis_data === 'RUP'
-        ? '<span class="badge badge-blue" style="font-size:10px">RUP</span>'
-        : '<span class="badge badge-green" style="font-size:10px">REALISASI</span>';
-      const waktu = l.uploaded_at
-        ? new Date(l.uploaded_at).toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
-        : '-';
-      const status = l.status === 'SUCCESS'
-        ? '<span class="text-green-600 font-semibold text-xs">SUCCESS</span>'
-        : '<span class="text-red-600 font-semibold text-xs">' + l.status + '</span>';
-      return `<tr>
-        <td>${jenisBadge}</td>
-        <td class="text-xs mono">${l.nama_file || '-'}</td>
-        <td class="text-xs mono text-center">${Number(l.jumlah_record||0).toLocaleString('id-ID')}</td>
-        <td class="text-xs">${l.uploaded_by || '-'}</td>
-        <td class="text-xs">${waktu}</td>
-        <td>${status}</td>
-        <td class="text-xs text-slate-500">${l.catatan || '-'}</td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-400 py-3 text-xs">Gagal memuat log.</td></tr>';
-  }
-}
-
-// Auto-load log saat periode upload berubah
-document.getElementById('up-tahun')?.addEventListener('change', loadUploadLog);
-document.getElementById('up-bulan')?.addEventListener('change', loadUploadLog);
 
 // ======================================================
 // START
