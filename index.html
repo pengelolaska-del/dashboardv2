@@ -285,16 +285,27 @@ table.dt tr:hover td{background:#F8FAFC}
 
         <!-- Riwayat Upload -->
         <div class="card">
-          <div class="flex items-center justify-between mb-2">
-            <p class="font-semibold text-sm text-navy">Riwayat Upload Periode Ini</p>
-            <button onclick="loadLog()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
+          <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <p class="font-semibold text-sm text-navy">Riwayat Upload</p>
+            <div class="flex gap-2 items-center">
+              <button id="btn-hapus-log" onclick="hapusLogTerpilih()" class="hidden text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-medium flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Hapus yang Dipilih (<span id="sel-count">0</span>)
+              </button>
+              <button onclick="loadLog()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
+            </div>
           </div>
           <div id="log-warning" class="hidden mb-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">⚠ Realisasi belum diupload untuk periode ini.</div>
           <div id="log-ok"      class="hidden mb-2 px-3 py-2 bg-green-50  border border-green-200  rounded-lg text-xs text-green-800">✅ RUP dan Realisasi sudah diupload untuk periode ini.</div>
           <div class="overflow-x-auto">
             <table class="dt" id="t-log">
-              <thead><tr><th>PERIODE</th><th>JENIS</th><th>NAMA FILE</th><th>RECORD</th><th>WAKTU</th><th>STATUS</th><th>KETERANGAN</th></tr></thead>
-              <tbody><tr><td colspan="6" class="text-center text-slate-400 py-4">Memuat...</td></tr></tbody>
+              <thead>
+                <tr>
+                  <th style="width:36px"><input type="checkbox" id="chk-all" title="Pilih semua" class="cursor-pointer w-3.5 h-3.5"/></th>
+                  <th>PERIODE</th><th>JENIS</th><th>NAMA FILE</th><th>RECORD</th><th>WAKTU</th><th>STATUS</th><th>KETERANGAN</th>
+                </tr>
+              </thead>
+              <tbody><tr><td colspan="8" class="text-center text-slate-400 py-4">Memuat...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -861,8 +872,20 @@ async function loadLog() {
       return;
     }
 
+    // Bind select-all setelah render
+    setTimeout(() => {
+      const chkAll = document.getElementById('chk-all');
+      if (chkAll) {
+        chkAll.addEventListener('change', () => {
+          document.querySelectorAll('.chk-log').forEach(c => c.checked = chkAll.checked);
+          updateSelCount();
+        });
+      }
+    }, 50);
+
     tbody.innerHTML = logsToShow.map(l => {
       const cur   = String(l.periode) === String(periode);
+      const uid   = encodeURIComponent(JSON.stringify({upload_id: l.upload_id, periode: l.periode, jenis_data: l.jenis_data}));
       const jBdg  = l.jenis_data === 'RUP'
         ? '<span class="badge bg-blue">RUP</span>'
         : '<span class="badge bg-green">REALISASI</span>';
@@ -871,6 +894,7 @@ async function loadLog() {
         ? '<span class="text-green-600 font-bold text-xs">SUCCESS</span>'
         : '<span class="text-red-600 font-bold text-xs">' + (l.status||'?') + '</span>';
       return '<tr class="' + (cur ? '' : 'opacity-40') + '">' +
+        '<td class="text-center" style="width:36px"><input type="checkbox" class="chk-log cursor-pointer w-3.5 h-3.5" data-item="' + uid + '" onchange="updateSelCount()"/></td>' +
         '<td class="text-xs font-bold mono ' + (cur ? 'text-blue-700' : 'text-slate-400') + '">' + (l.periode||'-') + '</td>' +
         '<td>' + jBdg + '</td>' +
         '<td class="text-xs mono">' + (l.nama_file||'-') + '</td>' +
@@ -887,6 +911,64 @@ async function loadLog() {
 
 document.getElementById('up-tahun').addEventListener('change', ()=>{ if(S.isAdmin) loadLog(); });
 document.getElementById('up-bulan').addEventListener('change', ()=>{ if(S.isAdmin) loadLog(); });
+
+// ======================================================
+// CHECKLIST LOG — SELECT & DELETE
+// ======================================================
+function updateSelCount() {
+  const checked = document.querySelectorAll('.chk-log:checked').length;
+  const total   = document.querySelectorAll('.chk-log').length;
+  document.getElementById('sel-count').textContent = checked;
+  document.getElementById('btn-hapus-log').classList.toggle('hidden', checked === 0);
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) { chkAll.checked = checked === total && total > 0; chkAll.indeterminate = checked > 0 && checked < total; }
+}
+
+async function hapusLogTerpilih() {
+  const checked = document.querySelectorAll('.chk-log:checked');
+  if (!checked.length) return;
+
+  const items = [];
+  checked.forEach(c => {
+    try { items.push(JSON.parse(decodeURIComponent(c.dataset.item))); } catch(e) {}
+  });
+
+  // Buat ringkasan untuk konfirmasi
+  const summary = items.map(i =>
+    '<li><b>' + i.periode + '</b> — ' + i.jenis_data + '</li>'
+  ).join('');
+
+  const conf = await Swal.fire({
+    title: 'Hapus ' + items.length + ' item?',
+    html: '<p class="text-sm text-slate-600 mb-2">Data berikut akan dihapus dari spreadsheet:</p><ul class="text-sm text-left list-none space-y-1">' + summary + '</ul>' +
+          '<p class="text-xs text-red-500 mt-3">⚠ Matching & aggregate untuk periode terkait juga akan dihapus.</p>',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#DC2626',
+    cancelButtonText: 'Batal',
+    confirmButtonText: 'Ya, Hapus!',
+  });
+  if (!conf.isConfirmed) return;
+
+  const btn = document.getElementById('btn-hapus-log');
+  btn.disabled = true; btn.innerHTML = '⏳ Menghapus...';
+
+  try {
+    const res = await api({ action: 'deleteByLog', token: S.adminToken, items });
+    if (res.status === 'success') {
+      Swal.fire('✅ Berhasil', res.message, 'success');
+      await init();
+      loadLog();
+    } else {
+      Swal.fire('❌ Gagal', res.message, 'error');
+    }
+  } catch(e) {
+    Swal.fire('❌ Error', e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Hapus yang Dipilih (<span id="sel-count">0</span>)';
+  }
+}
 
 // ======================================================
 // KUALITAS DATA
