@@ -290,7 +290,7 @@ table.dt tr:hover td{background:#F8FAFC}
             <div class="flex gap-2 items-center">
               <button id="btn-hapus-log" onclick="hapusLogTerpilih()" class="hidden text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-medium flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                Hapus yang Dipilih (<span id="sel-count">0</span>)
+                <span class="btn-label">Hapus yang Dipilih</span> (<span id="sel-count">0</span>)
               </button>
               <button onclick="loadLog()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
             </div>
@@ -384,14 +384,26 @@ const pal  = arr => arr.map((_,i)=>COLORS[i%COLORS.length]);
 // API
 // ======================================================
 async function api(payload) {
-  const res = await fetch(SCRIPT_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain'},
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error('HTTP '+res.status);
-  const json = await res.json();
-  return json;
+  let res;
+  try {
+    res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+    });
+  } catch(netErr) {
+    throw new Error('Koneksi gagal (Failed to fetch). Kemungkinan penyebab:\n' +
+      '1. Apps Script belum di-redeploy setelah update Code.gs\n' +
+      '2. URL Web App salah\n' +
+      '3. Koneksi internet terputus');
+  }
+  if (!res.ok) throw new Error('HTTP error: ' + res.status);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    throw new Error('Respons bukan JSON. Pastikan Apps Script sudah di-redeploy (New Version).');
+  }
 }
 
 function getPeriode() {
@@ -951,7 +963,8 @@ async function hapusLogTerpilih() {
   if (!conf.isConfirmed) return;
 
   const btn = document.getElementById('btn-hapus-log');
-  btn.disabled = true; btn.innerHTML = '⏳ Menghapus...';
+  btn.disabled = true;
+  document.querySelector('#btn-hapus-log .btn-label').textContent = 'Menghapus...';
 
   try {
     const res = await api({ action: 'deleteByLog', token: S.adminToken, items });
@@ -966,7 +979,9 @@ async function hapusLogTerpilih() {
     Swal.fire('❌ Error', e.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Hapus yang Dipilih (<span id="sel-count">0</span>)';
+    // Kembalikan label tanpa mereset id sel-count (untuk hindari duplikat id)
+    document.querySelector('#btn-hapus-log .btn-label').textContent = 'Hapus yang Dipilih';
+    updateSelCount();
   }
 }
 
