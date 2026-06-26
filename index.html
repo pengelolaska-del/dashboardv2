@@ -789,6 +789,7 @@ document.getElementById('btn-verify').addEventListener('click', async()=>{
       st.innerHTML='<span class="text-green-600 font-semibold">✅ Token valid — akses admin aktif</span>';
       document.getElementById('upload-panel').classList.remove('hidden');
       document.getElementById('nav-kualitas').classList.remove('hidden');
+      syncUploadPeriode();
       loadLog();
     } else {
       st.innerHTML='<span class="text-red-500">❌ Token salah</span>';
