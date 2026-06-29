@@ -116,6 +116,26 @@ table.dt-modal tr:hover td{background:#F8FAFC}
   width:100%;outline:none;
 }
 #modal-mj-search:focus{border-color:#0070C0;box-shadow:0 0 0 2px rgba(0,112,192,.15)}
+
+/* ── Filter Tags ── */
+.af-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 8px 2px 10px;border-radius:99px;font-size:10.5px;font-weight:600;
+  background:#DBEAFE;color:#1D4ED8;border:1px solid #BFDBFE;
+}
+.af-tag button{
+  background:none;border:none;cursor:pointer;color:#3B82F6;font-size:13px;
+  padding:0;line-height:1;display:flex;align-items:center;transition:color .1s;
+}
+.af-tag button:hover{color:#1D4ED8}
+/* KPI card analisis kecil */
+.af-kpi-card{
+  background:#fff;border:1px solid #E2E8F0;border-radius:10px;
+  padding:10px 14px;display:flex;flex-direction:column;gap:1px;
+}
+.af-kpi-card .ak-val{font-size:17px;font-weight:800;color:#1E3A5F;line-height:1.2}
+.af-kpi-card .ak-lbl{font-size:10px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.af-kpi-card .ak-sub{font-size:10px;color:#94A3B8;margin-top:1px}
 </style>
 </head>
 <body class="flex">
@@ -147,7 +167,7 @@ table.dt-modal tr:hover td{background:#F8FAFC}
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Top Penyedia
     </div>
     <div class="nav-item" data-s="efisiensi">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Efisiensi
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>Efisiensi &amp; Analisis
     </div>
     <div class="nav-item" data-s="tren">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>Tren Bulanan
@@ -302,11 +322,123 @@ table.dt-modal tr:hover td{background:#F8FAFC}
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-penyedia"><thead><tr><th>#</th><th>Nama Penyedia</th><th>Jml Transaksi</th><th>Total Kontrak</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <!-- EFISIENSI -->
+    <!-- EFISIENSI / ANALISIS -->
     <section id="sec-efisiensi" class="section">
-      <h2 class="text-base font-bold text-navy mb-3">Analisis Efisiensi per OPD</h2>
-      <div class="chart-card mb-4"><div style="height:380px"><canvas id="c-efi"></canvas></div></div>
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="dt" id="t-efi"><thead><tr><th>#</th><th>Nama Satker</th><th>Total Pagu</th><th>Total Kontrak</th><th>Efisiensi (Rp)</th><th>% Efi</th></tr></thead><tbody></tbody></table></div>
+      <div class="flex items-start justify-between mb-1 flex-wrap gap-2">
+        <div>
+          <h2 class="text-base font-bold text-navy">Analisis Pengadaan &amp; Efisiensi</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Filter kombinasi metode, jenis, dan status paket — tabel paket diperbarui otomatis.</p>
+        </div>
+        <button id="btn-analisis-reset" class="text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 text-slate-500">↺ Reset Filter</button>
+      </div>
+
+      <!-- ── FILTER BAR ── -->
+      <div class="bg-white rounded-xl border border-slate-200 px-4 py-3 mb-4 flex flex-wrap gap-3 items-end shadow-sm">
+        <!-- Metode -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Metode Pengadaan</label>
+          <select id="af-metode" class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-44">
+            <option value="">Semua Metode</option>
+          </select>
+        </div>
+        <!-- Jenis -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Jenis Pengadaan</label>
+          <select id="af-jenis" class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-44">
+            <option value="">Semua Jenis</option>
+          </select>
+        </div>
+        <!-- Status -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status Paket</label>
+          <select id="af-status" class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-40">
+            <option value="">Semua Status</option>
+            <option value="Selesai">✅ Selesai</option>
+            <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
+            <option value="Belum Berproses">⏳ Belum Berproses</option>
+          </select>
+        </div>
+        <!-- Search -->
+        <div class="flex flex-col gap-1 flex-1 min-w-48">
+          <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cari Paket</label>
+          <input id="af-search" type="text" placeholder="Nama paket, satker, penyedia, kode RUP..."
+            class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+        </div>
+        <button id="btn-analisis-terapkan"
+          class="text-xs bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 font-semibold self-end">
+          Terapkan
+        </button>
+        <button id="btn-analisis-export"
+          class="text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 flex items-center gap-1 self-end">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>Export
+        </button>
+      </div>
+
+      <!-- ── KPI SUMMARY (dinamis ikut filter) ── -->
+      <div id="af-kpi" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
+
+      <!-- ── STATUS BREAKDOWN per METODE (stacked bar) ── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="chart-card">
+          <h3 class="font-semibold text-sm text-navy mb-1">Status Paket per Metode Pengadaan</h3>
+          <p class="text-xs text-slate-400 mb-2">Klik batang untuk filter tabel</p>
+          <div style="height:250px"><canvas id="c-af-metode-status"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="font-semibold text-sm text-navy mb-1">Status Paket per Jenis Pengadaan</h3>
+          <p class="text-xs text-slate-400 mb-2">Klik batang untuk filter tabel</p>
+          <div style="height:250px"><canvas id="c-af-jenis-status"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── EFISIENSI per OPD ── -->
+      <div class="chart-card mb-4">
+        <h3 class="font-semibold text-sm text-navy mb-1">Efisiensi per OPD <span id="af-efi-filter-tag" class="text-xs font-normal text-blue-600 ml-1"></span></h3>
+        <p class="text-xs text-slate-400 mb-2">Hanya paket MATCHED. Klik batang untuk filter tabel ke OPD tersebut.</p>
+        <div style="height:320px"><canvas id="c-af-efi"></canvas></div>
+      </div>
+
+      <!-- ── TABEL PAKET ── -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div>
+            <span class="font-semibold text-sm text-navy">Daftar Paket</span>
+            <span id="af-tbl-info" class="text-xs text-slate-400 ml-2"></span>
+          </div>
+          <div id="af-active-filters" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="dt" id="t-af-paket">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Satker / OPD</th>
+                <th>Nama Paket</th>
+                <th>Metode</th>
+                <th>Jenis</th>
+                <th>Sumber Dana</th>
+                <th>Pagu (Rp)</th>
+                <th>Nilai Kontrak (Rp)</th>
+                <th>Efisiensi (Rp)</th>
+                <th>Status</th>
+                <th>Penyedia</th>
+              </tr>
+            </thead>
+            <tbody id="af-tbody"></tbody>
+          </table>
+        </div>
+        <!-- Pagination tabel -->
+        <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+          <span id="af-pg-info"></span>
+          <div class="flex items-center gap-2">
+            <button class="mp-btn" id="af-btn-prev" disabled>‹ Prev</button>
+            <span id="af-pg-label" class="font-medium text-slate-600"></span>
+            <button class="mp-btn" id="af-btn-next" disabled>Next ›</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- TREN -->
@@ -521,7 +653,11 @@ async function api(payload) {
       '2. URL Web App salah\n' +
       '3. Koneksi internet terputus');
   }
-  if (!res.ok) throw new Error('HTTP error: ' + res.status);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('HTTP 404: URL Web App tidak ditemukan atau deployment bermasalah. Pastikan sudah deploy New Version di Apps Script.');
+    if (res.status === 401) throw new Error('HTTP 401: Akses ditolak. Pastikan Web App di-set "Who has access: Anyone".');
+    throw new Error('HTTP error: ' + res.status);
+  }
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -1279,19 +1415,62 @@ setupDrop('drop-real','file-real','lbl-real', f=>{
 });
 
 function parseCSV(text) {
-  const lines = text.trim().split('\n').filter(l=>l.trim());
-  if(lines.length<2) return [];
-  const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
-  return lines.slice(1).map(line=>{
-    const vals=[]; let cur='',inQ=false;
-    for(const ch of line+','){
-      if(ch==='"'){inQ=!inQ}
-      else if(ch===','&&!inQ){vals.push(cur.trim());cur=''}
-      else cur+=ch;
+  // Parser RFC 4180 — handle quoted fields dengan newline di dalamnya
+  const normalized = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+
+  function parseRow(str, pos) {
+    const vals = [];
+    while (pos <= str.length) {
+      if (str[pos] === '"') {
+        // Quoted field
+        let val = '', p = pos + 1;
+        while (p < str.length) {
+          if (str[p] === '"') {
+            if (str[p+1] === '"') { val += '"'; p += 2; } // escaped quote
+            else { p++; break; } // end of quoted field
+          } else {
+            val += str[p++];
+          }
+        }
+        vals.push(val);
+        // Skip past comma or newline
+        if (str[p] === ',') p++;
+        pos = p;
+      } else {
+        // Unquoted field — read until comma or newline
+        let end = pos;
+        while (end < str.length && str[end] !== ',' && str[end] !== '\n') end++;
+        vals.push(str.slice(pos, end).trim());
+        pos = (str[end] === ',') ? end + 1 : end;
+      }
+      // End of this row
+      if (pos >= str.length || str[pos-1] === '\n' || str[pos] === '\n') break;
     }
-    const obj={}; headers.forEach((h,i)=>{ obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim(); });
-    return obj;
-  });
+    return { vals, nextPos: pos };
+  }
+
+  // Split dengan memperhatikan quoted newlines
+  const rows = [];
+  let pos = 0;
+  while (pos < normalized.length) {
+    if (normalized[pos] === '\n') { pos++; continue; }
+    const { vals, nextPos } = parseRow(normalized, pos);
+    if (vals.length > 0) rows.push(vals);
+    pos = nextPos;
+    if (pos < normalized.length && normalized[pos] === '\n') pos++;
+  }
+
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.replace(/^"|"$/g,'').trim());
+  return rows.slice(1)
+    .filter(vals => vals.some(v => v.trim() !== ''))
+    .map(vals => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = (vals[i] !== undefined ? vals[i] : '').trim();
+      });
+      return obj;
+    });
 }
 
 async function uploadChunked(action, rows, periode, namaFile, pfill, ppct, plbl, pwrap) {
