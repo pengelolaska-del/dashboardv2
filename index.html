@@ -1379,7 +1379,7 @@ async function loadDetail(page=1) {
     <td class="mono text-xs">${r.pagu_rup?IDRf(r.pagu_rup):'-'}</td>
     <td class="mono text-xs">${r.nilai_kontrak?IDRf(r.nilai_kontrak):'-'}</td>
     <td class="mono text-xs ${Number(r.efisiensi)<0?'text-red-600':''}">${r.efisiensi?IDRf(r.efisiensi):'-'}</td>
-    <td class="text-xs">${r.metode_matching||'-'}</td>
+    <td class="text-xs">${r.metode_pengadaan||r.metode_matching||'-'}</td>
     <td>${stBadge(r.status_matching)}</td>
   </tr>`).join('');
   document.getElementById('detail-info').textContent = `${(page-1)*50+1}–${Math.min(page*50,d.total)} dari ${fmt(d.total)} paket`;
@@ -1812,7 +1812,7 @@ async function showStatusModal(statusKey, label, icon, color) {
     renderModalStatus();
   } catch(e) {
     document.getElementById('modal-status-tbody').innerHTML =
-      '<tr><td colspan="8" class="text-center py-8 text-red-400 text-xs">⚠ ' + e.message + '</td></tr>';
+      '<tr><td style="padding:32px;text-align:center;font-size:12px;color:#EF4444">⚠ ' + e.message + '</td></tr>';
   }
 }
 
@@ -1860,7 +1860,7 @@ function renderModalStatus() {
 
   if (!slice.length) {
     document.getElementById('modal-status-tbody').innerHTML =
-      '<tr><td colspan="8" class="text-center py-10 text-slate-400 text-xs">Tidak ada paket ditemukan.</td></tr>';
+      '<tr><td style="padding:40px;text-align:center;font-size:12px;color:#94A3B8">Tidak ada paket ditemukan.</td></tr>';
     return;
   }
 
@@ -1882,23 +1882,61 @@ function renderModalStatus() {
     return '<span class="badge bg-yellow">UNMATCHED</span>';
   };
 
-  document.getElementById('modal-status-tbody').innerHTML = slice.map((r,i)=>`
-    <tr>
-      <td class="mono text-center text-slate-400">${start+i+1}</td>
-      <td class="text-xs font-medium" style="min-width:140px">${r.nama_satker||'-'}</td>
-      <td class="text-xs" style="min-width:200px">
-        <div class="font-medium text-slate-800" title="${r.nama_paket_realisasi||r.nama_paket_rup||''}">${
-          ((r.nama_paket_realisasi||r.nama_paket_rup)||'-').slice(0,80)
-        }${((r.nama_paket_realisasi||r.nama_paket_rup)||'').length>80?'…':''}</div>
-        ${r.kode_rup ? `<div class="text-slate-400 mono text-xs mt-0.5">RUP: ${r.kode_rup}</div>` : ''}
-        ${r.kode_paket ? `<div class="text-slate-400 mono text-xs">Paket: ${r.kode_paket}</div>` : ''}
+  // Card-based layout — responsive tanpa scroll horizontal
+  document.getElementById('modal-status-tbody').innerHTML = slice.map((r,i) => {
+    const namaPaket = (r.nama_paket_realisasi || r.nama_paket_rup || '-');
+    const metode    = r.metode_pengadaan || '-';
+    const nilai     = r.nilai_kontrak ? IDRf(r.nilai_kontrak) : (r.pagu_rup ? IDRf(r.pagu_rup) : '-');
+    const penyedia  = r.nama_penyedia || null;
+    const sumber    = r.sumber_dana || '-';
+    const status    = stBadge(r.status_paket || MST.label);
+
+    // Badge metode warna
+    const metodeBadge = (() => {
+      const colors = {
+        'E-Purchasing':       'background:#EFF6FF;color:#1D4ED8',
+        'Pengadaan Langsung': 'background:#F0FDF4;color:#15803D',
+        'Dikecualikan':       'background:#FFF7ED;color:#C2410C',
+        'Tender':             'background:#FAF5FF;color:#7C3AED',
+        'Seleksi':            'background:#FFF1F2;color:#BE123C',
+        'Penunjukan Langsung':'background:#FEFCE8;color:#A16207',
+        'Swakelola':          'background:#F0F9FF;color:#0369A1',
+      };
+      const st = colors[metode] || 'background:#F1F5F9;color:#64748B';
+      return `<span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;${st}">${metode}</span>`;
+    })();
+
+    return `<tr>
+      <td style="padding:12px 10px 12px 14px;border-bottom:1px solid #F1F5F9;vertical-align:top">
+        <!-- Card layout: satu baris = satu paket -->
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <!-- Baris 1: Nama Paket -->
+          <div style="font-size:12.5px;font-weight:600;color:#1E293B;line-height:1.4">${namaPaket}</div>
+          <!-- Baris 2: Satker -->
+          <div style="font-size:11px;color:#64748B">${r.nama_satker||'-'}</div>
+          <!-- Baris 3: Badge pills -->
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">
+            ${metodeBadge}
+            <span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;background:#F1F5F9;color:#475569">${sumber}</span>
+            ${status}
+          </div>
+          <!-- Baris 4: Penyedia + Nilai -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;flex-wrap:wrap;gap:4px">
+            <div style="font-size:11px;color:#475569">
+              ${penyedia ? `🏢 ${penyedia}` : '<span style="color:#CBD5E1">Penyedia tidak tersedia</span>'}
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#1E3A5F;font-family:monospace">${nilai}</div>
+          </div>
+          <!-- Baris 5: Kode RUP & Paket (collapsed) -->
+          ${(r.kode_rup || r.kode_paket) ? `
+          <div style="display:flex;gap:10px;margin-top:1px">
+            ${r.kode_rup    ? `<span style="font-size:10px;color:#94A3B8;font-family:monospace">RUP: ${r.kode_rup}</span>` : ''}
+            ${r.kode_paket  ? `<span style="font-size:10px;color:#94A3B8;font-family:monospace">Paket: ${r.kode_paket}</span>` : ''}
+          </div>` : ''}
+        </div>
       </td>
-      <td class="text-xs" style="min-width:130px">${r.nama_penyedia||'<span class="text-slate-300">—</span>'}</td>
-      <td class="text-xs whitespace-nowrap">${r.metode_matching||r.metode_pengadaan||'-'}</td>
-      <td class="text-xs whitespace-nowrap">${r.sumber_dana||'-'}</td>
-      <td class="mono text-xs whitespace-nowrap text-right">${r.nilai_kontrak ? IDRf(r.nilai_kontrak) : (r.pagu_rup ? IDRf(r.pagu_rup) : '-')}</td>
-      <td>${stBadge(r.status_paket||MST.label)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function closeStatusModal() {
@@ -1921,7 +1959,7 @@ function exportStatusModal() {
     r.kode_rup||'-',
     r.kode_paket||'-',
     r.nama_penyedia||'-',
-    r.metode_matching||r.metode_pengadaan||'-',
+    r.metode_pengadaan||'-',
     r.sumber_dana||'-',
     Number(r.nilai_kontrak)||Number(r.pagu_rup)||0,
     r.status_paket||MST.label,
@@ -1987,18 +2025,13 @@ init();
 
     <!-- Tabel -->
     <div id="modal-status-body">
-      <div class="overflow-x-auto">
-        <table class="dt-modal" id="t-modal-status">
+      <div>
+        <table style="width:100%;border-collapse:collapse" id="t-modal-status">
           <thead>
             <tr>
-              <th style="width:36px">#</th>
-              <th>Satker / OPD</th>
-              <th>Nama Paket</th>
-              <th>Penyedia</th>
-              <th>Metode</th>
-              <th>Sumber Dana</th>
-              <th>Nilai Kontrak</th>
-              <th>Status</th>
+              <th style="font-size:11px;text-transform:none;letter-spacing:0;font-weight:500;color:#94A3B8;background:#FAFBFC;padding:8px 14px;border-bottom:1px solid #E2E8F0">
+                Daftar paket — klik nama paket untuk detail
+              </th>
             </tr>
           </thead>
           <tbody id="modal-status-tbody">
