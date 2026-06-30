@@ -68,6 +68,21 @@ table.dt tr:hover td{background:#F8FAFC}
 }
 #modal-status-search:focus{border-color:#0070C0;box-shadow:0 0 0 2px rgba(0,112,192,.15)}
 table.dt-modal{width:100%;border-collapse:collapse;font-size:12px}
+.status-sub-tab{
+  padding:7px 14px;border-radius:8px 8px 0 0;font-size:12px;font-weight:600;
+  color:#64748B;background:transparent;border:none;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap
+}
+.status-sub-tab:hover{color:#1E3A5F;background:rgba(255,255,255,.6)}
+.status-sub-tab.active{color:var(--status-clr,#16A34A);background:#fff;border-bottom-color:var(--status-clr,#16A34A)}
+#submenu-tabbar{background:var(--status-bg,#F0FDF4);transition:background .2s}
+.sub-tab-panel{display:block}
+.sub-tab-panel.hidden{display:none}
+.sub-row:hover td{background:#F8FAFC}
+.sub-row td{padding:9px 12px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
+.sub-progress{height:5px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin-top:3px;min-width:60px}
+.sub-progress-fill{height:100%;border-radius:99px;transition:width .4s}
+.unmatch-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:#FEE2E2;color:#DC2626}
 table.dt-modal th{
   background:#1E3A5F;color:#fff;padding:9px 10px;text-align:left;
   font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
@@ -310,8 +325,124 @@ table.dt-modal tr:hover td{background:#F8FAFC}
     <!-- STATUS -->
     <section id="sec-status" class="section">
       <h2 class="text-base font-bold text-navy mb-1">Status Paket</h2>
-      <p class="text-xs text-slate-500 mb-3">Klik kartu status untuk melihat daftar paket secara detail.</p>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" id="status-kpi"></div>
+      <p class="text-xs text-slate-500 mb-3">Klik kartu status untuk melihat rincian per Metode &amp; Jenis Pengadaan (jumlah paket dan total pagu).</p>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4" id="status-kpi"></div>
+
+      <!-- Sub-menu breakdown (generik untuk semua status) -->
+      <div id="status-submenu" class="hidden mb-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+
+          <!-- Header submenu: judul status aktif -->
+          <div id="submenu-header" class="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span id="submenu-icon" class="text-lg"></span>
+              <span id="submenu-title" class="font-bold text-sm text-navy"></span>
+              <span id="submenu-count" class="text-xs text-slate-400"></span>
+            </div>
+            <button onclick="closeStatusSubmenu()" class="text-slate-400 hover:text-slate-600 text-xs px-2 py-1 rounded hover:bg-slate-50">✕ Tutup</button>
+          </div>
+
+          <!-- Tab bar -->
+          <div id="submenu-tabbar" class="flex border-b border-slate-100 px-4 pt-3 gap-1 flex-wrap">
+            <button class="status-sub-tab active" data-tab="metode" onclick="switchSubTab('metode')">📊 Per Metode Pengadaan</button>
+            <button class="status-sub-tab" data-tab="jenis"  onclick="switchSubTab('jenis')" >🏷 Per Jenis Pengadaan</button>
+            <button class="status-sub-tab" data-tab="sumber" onclick="switchSubTab('sumber')">💰 Per Sumber Dana</button>
+            <button class="status-sub-tab" data-tab="opd"    onclick="switchSubTab('opd')"   >🏢 Per OPD</button>
+          </div>
+
+          <!-- Tab: Per Metode -->
+          <div id="subtab-metode" class="sub-tab-panel p-4">
+            <p class="text-xs text-slate-400 mb-3">Rincian paket <span id="lbl-status-metode" class="font-semibold"></span> berdasarkan metode pengadaan</p>
+            <div class="overflow-x-auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="t-sub-metode">
+                <thead>
+                  <tr style="background:#1E3A5F;color:#fff">
+                    <th style="padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Metode Pengadaan</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Jml Paket</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-pagu-metode">Total Pagu</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-kontrak-metode">Total Nilai Kontrak</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">% dari Total</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-sub-metode">
+                  <tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Per Jenis -->
+          <div id="subtab-jenis" class="sub-tab-panel p-4 hidden">
+            <p class="text-xs text-slate-400 mb-3">Rincian paket <span id="lbl-status-jenis" class="font-semibold"></span> berdasarkan jenis pengadaan</p>
+            <div class="overflow-x-auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="t-sub-jenis">
+                <thead>
+                  <tr style="background:#1E3A5F;color:#fff">
+                    <th style="padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase">Jenis Pengadaan</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Jml Paket</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-pagu-jenis">Total Pagu</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-kontrak-jenis">Total Nilai Kontrak</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">% dari Total</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-sub-jenis">
+                  <tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Per Sumber Dana -->
+          <div id="subtab-sumber" class="sub-tab-panel p-4 hidden">
+            <p class="text-xs text-slate-400 mb-3">Rincian paket <span id="lbl-status-sumber" class="font-semibold"></span> berdasarkan sumber dana</p>
+            <div class="overflow-x-auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="t-sub-sumber">
+                <thead>
+                  <tr style="background:#1E3A5F;color:#fff">
+                    <th style="padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase">Sumber Dana</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Jml Paket</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-pagu-sumber">Total Pagu</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-kontrak-sumber">Total Nilai Kontrak</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">% dari Total</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-sub-sumber">
+                  <tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Per OPD -->
+          <div id="subtab-opd" class="sub-tab-panel p-4 hidden">
+            <p class="text-xs text-slate-400 mb-3">Rincian paket <span id="lbl-status-opd" class="font-semibold"></span> berdasarkan OPD/Satker</p>
+            <div class="overflow-x-auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="t-sub-opd">
+                <thead>
+                  <tr style="background:#1E3A5F;color:#fff">
+                    <th style="padding:9px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase">OPD / Satker</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Jml Paket</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-pagu-opd">Total Pagu</th>
+                    <th style="padding:9px 12px;text-align:right;font-weight:600;font-size:11px;text-transform:uppercase" id="th-kontrak-opd">Total Nilai Kontrak</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">% dari Total</th>
+                    <th style="padding:9px 12px;text-align:center;font-weight:600;font-size:11px;text-transform:uppercase">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-sub-opd">
+                  <tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">Memuat...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie chart -->
       <div class="chart-card max-w-sm mx-auto"><div style="height:280px"><canvas id="c-status-pie"></canvas></div></div>
     </section>
 
@@ -1227,47 +1358,65 @@ async function loadSumber() {
 }
 
 // ======================================================
-// STATUS — dengan kartu yang dapat diklik
+// STATUS — kartu klik untuk semua kategori (Selesai, Sedang Berjalan,
+// Belum Berproses, Tidak Ada Kategori/UNMATCHED) + sub-breakdown per kategori
 // ======================================================
+let STATUS_BREAKDOWN_DATA = null;   // cache breakdown utk kategori yang aktif
+let STATUS_BREAKDOWN_KEY  = null;   // kategori mana yang sedang di-cache
+
+// Konfigurasi 4 kartu status
+const STATUS_CARD_CONFIG = {
+  selesai: {
+    lbl:'Selesai', icon:'✅', color:'#16A34A', bg:'bg-green-50',
+    bgLight:'#F0FDF4', desc:'Paket yang telah selesai dilaksanakan',
+  },
+  sedang_berjalan: {
+    lbl:'Sedang Berjalan', icon:'🔄', color:'#CA8A04', bg:'bg-yellow-50',
+    bgLight:'#FEFCE8', desc:'Paket yang sedang dalam proses pelaksanaan',
+  },
+  belum_berproses: {
+    lbl:'Belum Berproses', icon:'⏳', color:'#94A3B8', bg:'bg-slate-50',
+    bgLight:'#F8FAFC', desc:'Paket yang belum mulai dilaksanakan',
+  },
+  tidak_ada_kategori: {
+    lbl:'Tidak Ada Kategori', icon:'⚠️', color:'#DC2626', bg:'bg-red-50',
+    bgLight:'#FEF2F2', desc:'Tidak ada pasangan Kode RUP antara data RUP dan Realisasi (UNMATCHED)',
+  },
+};
+
 async function loadStatus() {
   const res = await api({action:'dashboardStatus', periode:getPeriode(), kode_satker:S.filter.opd||undefined});
   const d = res.data||{};
 
-  const statusCards = [
-    {
-      key:'selesai', lbl:'Selesai', val:fmt(d.selesai||0),
-      bg:'bg-green-50', borderHover:'selesai',
-      icon:'✅', desc:'Paket yang telah selesai dilaksanakan',
-      color:'#16A34A'
-    },
-    {
-      key:'sedang_berjalan', lbl:'Sedang Berjalan', val:fmt(d.sedang_berjalan||0),
-      bg:'bg-yellow-50', borderHover:'sedang',
-      icon:'🔄', desc:'Paket yang sedang dalam proses pelaksanaan',
-      color:'#CA8A04'
-    },
-    {
-      key:'belum_berproses', lbl:'Belum Berproses', val:fmt(d.belum_berproses||0),
-      bg:'bg-slate-50', borderHover:'belum',
-      icon:'⏳', desc:'Paket yang belum mulai dilaksanakan',
-      color:'#94A3B8'
-    },
-  ];
+  // Jumlah UNMATCHED — coba ambil dari response; fallback ke 0 jika tidak ada field-nya
+  const jmlUnmatched = d.tidak_ada_kategori ?? d.unmatched ?? 0;
 
-  document.getElementById('status-kpi').innerHTML = statusCards.map(c=>`
-    <div class="card ${c.bg} status-card-btn ${c.borderHover}"
-         onclick="showStatusModal('${c.key}','${c.lbl}','${c.icon}','${c.color}')"
-         title="Klik untuk melihat daftar paket ${c.lbl}" role="button" tabindex="0"
-         onkeydown="if(event.key==='Enter'||event.key===' ') showStatusModal('${c.key}','${c.lbl}','${c.icon}','${c.color}')">
+  const counts = {
+    selesai: d.selesai||0,
+    sedang_berjalan: d.sedang_berjalan||0,
+    belum_berproses: d.belum_berproses||0,
+    tidak_ada_kategori: jmlUnmatched,
+  };
+
+  document.getElementById('status-kpi').innerHTML = Object.keys(STATUS_CARD_CONFIG).map(key => {
+    const c = STATUS_CARD_CONFIG[key];
+    return `
+    <div class="card ${c.bg} status-card-btn" style="cursor:pointer"
+         onclick="openStatusSubmenu('${key}')"
+         title="Klik untuk lihat rincian per Metode &amp; Jenis Pengadaan" role="button" tabindex="0">
       <div class="flex justify-between items-start">
         <div>
           <div class="kpi-lbl mb-1">${c.lbl}</div>
-          <div class="kpi-val">${c.val}</div>
-          <div class="click-hint mt-1.5">🔍 Klik untuk lihat detail</div>
+          <div class="kpi-val">${fmt(counts[key])}</div>
+          <div class="click-hint mt-1.5">📊 Klik lihat rincian</div>
         </div>
         <span class="text-2xl">${c.icon}</span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  // Simpan counts untuk dipakai di tempat lain jika perlu
+  S._statusCounts = counts;
 
   mkChart('c-status-pie','pie',
     ['Selesai','Sedang Berjalan','Belum Berproses'],
@@ -1282,28 +1431,251 @@ async function loadStatus() {
         if(!el.length) return;
         const idx = el[0].index;
         const keys = ['selesai','sedang_berjalan','belum_berproses'];
-        const lbls = ['Selesai','Sedang Berjalan','Belum Berproses'];
-        const icons= ['✅','🔄','⏳'];
-        const cols = ['#16A34A','#CA8A04','#94A3B8'];
-        showStatusModal(keys[idx], lbls[idx], icons[idx], cols[idx]);
+        openStatusSubmenu(keys[idx]);
       },
       plugins:{
         legend:{
           position:'bottom',
           labels:{font:{size:11},boxWidth:11},
           onClick:(evt,item,legend)=>{
-            const idx=item.index;
             const keys=['selesai','sedang_berjalan','belum_berproses'];
-            const lbls=['Selesai','Sedang Berjalan','Belum Berproses'];
-            const icons=['✅','🔄','⏳'];
-            const cols=['#16A34A','#CA8A04','#94A3B8'];
-            showStatusModal(keys[idx],lbls[idx],icons[idx],cols[idx]);
+            openStatusSubmenu(keys[item.index]);
           }
         },
         tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.raw)+' paket'}}
       }
     }}
   );
+}
+
+// ======================================================
+// STATUS SUBMENU — BREAKDOWN GENERIK (berlaku utk 4 kategori)
+// ======================================================
+
+// Buka submenu untuk kategori tertentu
+async function openStatusSubmenu(statusKey) {
+  S._activeStatusKey = statusKey;
+  const cfg = STATUS_CARD_CONFIG[statusKey];
+
+  // Tampilkan submenu
+  const submenu = document.getElementById('status-submenu');
+  submenu.classList.remove('hidden');
+  submenu.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  // Set warna tema sesuai kategori (via CSS variable)
+  submenu.style.setProperty('--status-clr', cfg.color);
+  submenu.style.setProperty('--status-bg',  cfg.bgLight);
+
+  // Update header
+  document.getElementById('submenu-icon').textContent  = cfg.icon;
+  document.getElementById('submenu-title').textContent = cfg.lbl;
+  document.getElementById('submenu-count').textContent = '· ' + cfg.desc;
+
+  // Update label kecil di setiap tab panel
+  ['metode','jenis','sumber','opd'].forEach(t => {
+    const lblEl = document.getElementById('lbl-status-' + t);
+    if (lblEl) { lblEl.textContent = cfg.lbl; lblEl.style.color = cfg.color; }
+  });
+
+  // Loading state
+  ['metode','jenis','sumber','opd'].forEach(t =>
+    document.getElementById('tbody-sub-'+t).innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">⏳ Memuat data...</td></tr>'
+  );
+
+  // Load data sesuai kategori
+  await loadStatusBreakdown(statusKey);
+}
+
+function closeStatusSubmenu() {
+  document.getElementById('status-submenu').classList.add('hidden');
+}
+
+// Ambil data breakdown sesuai kategori (Selesai/Sedang/Belum/UNMATCHED)
+async function loadStatusBreakdown(statusKey) {
+  try {
+    let rows = [];
+
+    if (statusKey === 'tidak_ada_kategori') {
+      // Kategori UNMATCHED — ambil dari endpoint kualitas data / matching
+      const res = await api({
+        action: 'dashboardKualitasData',
+        periode: getPeriode(),
+        kode_satker: S.filter.opd || undefined,
+      });
+      if (res.status === 'success') {
+        // Gabungkan unmatched dari sisi RUP dan Realisasi jika tersedia
+        const fromRup  = res.data?.unmatched_rup_list  || res.data?.rup_unmatched  || [];
+        const fromReal = res.data?.unmatched_real_list || res.data?.real_unmatched || [];
+        rows = [...fromRup, ...fromReal];
+      }
+      // Fallback: jika endpoint kualitas data tidak menyediakan list, coba endpoint umum
+      if (!rows.length) {
+        const res2 = await api({
+          action: 'detailPaketStatus',
+          periode: getPeriode(),
+          kode_satker: S.filter.opd || undefined,
+          status_matching: 'UNMATCHED',
+          per_page: 9999, page: 1,
+        });
+        if (res2.status === 'success') rows = res2.data?.items || [];
+      }
+    } else {
+      // Kategori Selesai / Sedang Berjalan / Belum Berproses
+      const res = await api({
+        action: 'detailPaketStatus',
+        periode: getPeriode(),
+        kode_satker: S.filter.opd || undefined,
+        status_paket: STATUS_MAP[statusKey],
+        per_page: 9999, page: 1,
+      });
+      if (res.status === 'success') rows = res.data?.items || [];
+    }
+
+    STATUS_BREAKDOWN_DATA = rows;
+    STATUS_BREAKDOWN_KEY  = statusKey;
+    renderSubBreakdown(S._activeSubTab || 'metode');
+  } catch(e) {
+    console.warn('loadStatusBreakdown:', e.message);
+    ['metode','jenis','sumber','opd'].forEach(t =>
+      document.getElementById('tbody-sub-'+t).innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:24px;color:#DC2626;font-size:12px">⚠ Gagal memuat data: '+e.message+'</td></tr>'
+    );
+  }
+}
+
+function switchSubTab(tab) {
+  S._activeSubTab = tab;
+  document.querySelectorAll('.status-sub-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.status-sub-tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.sub-tab-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('subtab-'+tab).classList.remove('hidden');
+  if (STATUS_BREAKDOWN_DATA) renderSubBreakdown(tab);
+}
+
+function renderSubBreakdown(tab) {
+  if (!STATUS_BREAKDOWN_DATA) return;
+  const rows = STATUS_BREAKDOWN_DATA;
+  const statusKey = STATUS_BREAKDOWN_KEY || S._activeStatusKey;
+  const cfg = STATUS_CARD_CONFIG[statusKey] || STATUS_CARD_CONFIG.selesai;
+
+  const totalPagu    = rows.reduce((s,r) => s + (Number(r.pagu_rup ?? r.pagu)||0), 0);
+  const totalKontrak = rows.reduce((s,r) => s + (Number(r.nilai_kontrak)||0), 0);
+
+  // Group by field
+  const fieldMap = {
+    metode: 'metode_pengadaan',
+    jenis:  'jenis_pengadaan',
+    sumber: 'sumber_dana',
+    opd:    'nama_satker',
+  };
+  const field = fieldMap[tab];
+
+  const grp = {};
+  rows.forEach(r => {
+    const k = r[field] || 'Tidak Diketahui';
+    if (!grp[k]) grp[k] = { label: k, jumlah: 0, total_pagu: 0, total_kontrak: 0 };
+    grp[k].jumlah++;
+    grp[k].total_pagu    += Number(r.pagu_rup ?? r.pagu) || 0;
+    grp[k].total_kontrak += Number(r.nilai_kontrak)      || 0;
+  });
+
+  const sorted = Object.values(grp).sort((a,b) => b.jumlah - a.jumlah);
+  // Basis % dan progress bar: gunakan pagu jika ada nilainya, jika 0 semua pakai kontrak
+  const useBasis  = totalPagu > 0 ? 'total_pagu' : 'total_kontrak';
+  const totalBasis= useBasis === 'total_pagu' ? totalPagu : totalKontrak;
+  const maxBasis  = Math.max(...sorted.map(x => x[useBasis]), 1);
+
+  // Update header kolom pagu/kontrak sesuai kategori
+  ['metode','jenis','sumber','opd'].forEach(t => {
+    const thP = document.getElementById('th-pagu-'+t);
+    const thK = document.getElementById('th-kontrak-'+t);
+    if (thP) thP.textContent = statusKey === 'tidak_ada_kategori' ? 'Total Pagu (jika ada)' : 'Total Pagu';
+    if (thK) thK.textContent = statusKey === 'tidak_ada_kategori' ? 'Total Nilai (jika ada)' : 'Total Nilai Kontrak';
+  });
+
+  // Warna badge metode
+  const METODE_COLORS = {
+    'E-Purchasing':       '#1D4ED8',
+    'Pengadaan Langsung': '#15803D',
+    'Dikecualikan':       '#C2410C',
+    'Tender':             '#7C3AED',
+    'Seleksi':            '#BE123C',
+    'Penunjukan Langsung':'#A16207',
+    'Swakelola':          '#0369A1',
+  };
+  const BAR_COLORS = ['#0070C0','#16A34A','#CA8A04','#7C3AED','#C2410C','#BE123C','#0369A1','#A16207','#0891B2','#059669'];
+
+  const tbody = document.getElementById('tbody-sub-'+tab);
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94A3B8;font-size:12px">Tidak ada data untuk kategori ini</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map((item, idx) => {
+    const basisVal = item[useBasis];
+    const pct      = totalBasis > 0 ? (basisVal / totalBasis * 100).toFixed(1) : '0.0';
+    const barPct   = maxBasis   > 0 ? (basisVal / maxBasis   * 100).toFixed(1) : '0';
+    const barClr   = tab === 'metode' ? (METODE_COLORS[item.label] || cfg.color) : BAR_COLORS[idx % BAR_COLORS.length];
+
+    const labelBadge = tab === 'metode'
+      ? `<span style="display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:${barClr}1A;color:${barClr}">${item.label}</span>`
+      : `<span style="font-size:12.5px;font-weight:500;color:#1E293B">${item.label}</span>`;
+
+    return `<tr class="sub-row">
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9">
+        ${labelBadge}
+        <div class="sub-progress" style="margin-top:5px">
+          <div class="sub-progress-fill" style="width:${barPct}%;background:${barClr}"></div>
+        </div>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;text-align:center">
+        <span style="font-size:14px;font-weight:700;color:#1E3A5F">${fmt(item.jumlah)}</span>
+        <div style="font-size:10px;color:#94A3B8">paket</div>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;text-align:right">
+        <span style="font-size:13px;font-weight:700;color:#0070C0;font-family:monospace">${item.total_pagu > 0 ? IDRf(item.total_pagu) : '<span style="color:#CBD5E1">—</span>'}</span>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;text-align:right">
+        <span style="font-size:13px;font-weight:700;color:#16A34A;font-family:monospace">${item.total_kontrak > 0 ? IDRf(item.total_kontrak) : '<span style="color:#CBD5E1">—</span>'}</span>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;text-align:center">
+        <span style="font-size:12px;font-weight:600;color:${barClr}">${pct}%</span>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid #F1F5F9;text-align:center">
+        <button onclick="showStatusModalFiltered('${statusKey}','${item.label.replace(/'/g,"\\'")}','${field}')"
+          style="font-size:11px;color:#0070C0;background:#EFF6FF;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">
+          Lihat Paket →
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Buka modal status dengan filter tambahan (dari sub-breakdown), berlaku utk semua kategori
+async function showStatusModalFiltered(statusKey, filterValue, filterField) {
+  const labelMap = {
+    metode_pengadaan: 'Metode',
+    jenis_pengadaan:  'Jenis',
+    sumber_dana:      'Sumber Dana',
+    nama_satker:      'OPD',
+  };
+  const cfg = STATUS_CARD_CONFIG[statusKey] || STATUS_CARD_CONFIG.selesai;
+
+  // Buka modal status biasa, lalu filter data lokal dari cache breakdown yang sudah ada
+  await showStatusModal(statusKey, cfg.lbl, cfg.icon, cfg.color);
+
+  setTimeout(() => {
+    const sourceRows = STATUS_BREAKDOWN_DATA || MST.allRows;
+    if (!sourceRows) return;
+    MST.allRows  = sourceRows;
+    MST.filtered = sourceRows.filter(r => (r[filterField]||'') === filterValue);
+    MST.page = 1;
+    document.getElementById('modal-status-title').textContent =
+      cfg.lbl + ' — ' + labelMap[filterField] + ': ' + filterValue;
+    document.getElementById('modal-status-count').textContent = fmt(MST.filtered.length) + ' paket';
+    renderModalStatus();
+  }, 500);
 }
 
 // ======================================================
@@ -1461,7 +1833,8 @@ function parseCSV(text) {
   }
 
   if (rows.length < 2) return [];
-  const headers = rows[0].map(h => h.replace(/^"|"$/g,'').trim());
+  const rawHeaders = rows[0].map(h => h.replace(/^"|"$/g,'').trim());
+  const headers = rawHeaders.map(normalizeHeaderName);
   return rows.slice(1)
     .filter(vals => vals.some(v => v.trim() !== ''))
     .map(vals => {
@@ -1471,6 +1844,42 @@ function parseCSV(text) {
       });
       return obj;
     });
+}
+
+// ── Normalisasi nama kolom CSV ──────────────────────────────────
+// Mendukung 2 gaya penulisan header:
+//   1) Title Case asli SIRUP/LPSE  → "Nama Satuan Kerja", "Total Nilai (Rp)"
+//   2) snake_case                  → "nama_satuan_kerja", "total_nilai"
+// Backend (Code.gs) mengharapkan format Title Case, sehingga setiap
+// header hasil parsing CSV dipetakan ke format tersebut di sini.
+const HEADER_ALIAS_MAP = {
+  // RUP
+  'nama_instansi':         'Nama Instansi',
+  'nama_satuan_kerja':     'Nama Satuan Kerja',
+  'tahun_anggaran':        'Tahun Anggaran',
+  'cara_pengadaan':        'Cara Pengadaan',
+  'metode_pengadaan':      'Metode Pengadaan',
+  'jenis_pengadaan':       'Jenis Pengadaan',
+  'nama_paket':            'Nama Paket',
+  'kode_rup':              'Kode RUP',
+  'sumber_dana':           'Sumber Dana',
+  'produk_dalam_negeri':   'Produk Dalam Negeri',
+  'total_nilai':           'Total Nilai (Rp)',
+  // Realisasi (tambahan/khusus)
+  'kode_paket':            'Kode Paket',
+  'sumber_transaksi':      'Sumber Transaksi',
+  'nama_penyedia':         'Nama Penyedia',
+  'status_paket':          'Status Paket',
+  'nilai_pdn':             'Nilai PDN (Rp)',
+};
+
+function normalizeHeaderName(h) {
+  const trimmed = String(h || '').trim();
+  // Cek alias case-insensitive (snake_case → Title Case)
+  const key = trimmed.toLowerCase();
+  if (HEADER_ALIAS_MAP[key]) return HEADER_ALIAS_MAP[key];
+  // Sudah dalam format Title Case (atau header tidak dikenal) — kembalikan apa adanya
+  return trimmed;
 }
 
 async function uploadChunked(action, rows, periode, namaFile, pfill, ppct, plbl, pwrap) {
@@ -1757,9 +2166,10 @@ const MST = {
 
 // Pemetaan statusKey → nilai status_paket di REALISASI (dari backend)
 const STATUS_MAP = {
-  selesai:          'Selesai',
-  sedang_berjalan:  'Sedang Berjalan',
-  belum_berproses:  'Belum Berproses',
+  selesai:            'Selesai',
+  sedang_berjalan:    'Sedang Berjalan',
+  belum_berproses:    'Belum Berproses',
+  tidak_ada_kategori: null, // ditangani khusus — lihat showStatusModal()
 };
 
 async function showStatusModal(statusKey, label, icon, color) {
@@ -1779,7 +2189,8 @@ async function showStatusModal(statusKey, label, icon, color) {
   document.getElementById('modal-status-title').textContent = 'Daftar Paket — ' + label;
   document.getElementById('modal-status-subtitle').textContent =
     'Periode: ' + (getPeriode()||'—') +
-    (S.filter.opd ? '  ·  OPD: ' + (S.satkerList.find(s=>s.kode_satker===S.filter.opd)?.nama_satker||S.filter.opd) : '');
+    (S.filter.opd ? '  ·  OPD: ' + (S.satkerList.find(s=>s.kode_satker===S.filter.opd)?.nama_satker||S.filter.opd) : '') +
+    (statusKey === 'tidak_ada_kategori' ? '  ·  Tidak ada pasangan Kode RUP antara data RUP dan Realisasi' : '');
 
   // Header color accent
   document.getElementById('modal-status-header').style.borderTop = '4px solid ' + color;
@@ -1795,19 +2206,53 @@ async function showStatusModal(statusKey, label, icon, color) {
     '<br><span class="text-xs text-slate-400">Memuat data paket...</span></td></tr>';
 
   try {
-    // Ambil data realisasi — semua page per 2000 untuk modal
-    const res = await api({
-      action: 'detailPaketStatus',
-      periode: getPeriode(),
-      kode_satker: S.filter.opd || undefined,
-      status_paket: STATUS_MAP[statusKey],
-      per_page: 5000,
-      page: 1,
-    });
+    // Jika kategori sudah tercache dari sub-breakdown (lewat showStatusModalFiltered),
+    // gunakan cache itu langsung agar tidak fetch ulang & konsisten datanya
+    if (STATUS_BREAKDOWN_DATA && STATUS_BREAKDOWN_KEY === statusKey) {
+      MST.allRows  = STATUS_BREAKDOWN_DATA;
+      MST.filtered = [...MST.allRows];
+      renderModalStatus();
+      return;
+    }
 
-    if (res.status !== 'success') throw new Error(res.message || 'Gagal mengambil data');
+    let rows = [];
 
-    MST.allRows  = res.data?.items || [];
+    if (statusKey === 'tidak_ada_kategori') {
+      // Kategori UNMATCHED — coba endpoint kualitas data dulu
+      const res = await api({
+        action: 'dashboardKualitasData',
+        periode: getPeriode(),
+        kode_satker: S.filter.opd || undefined,
+      });
+      if (res.status === 'success') {
+        const fromRup  = res.data?.unmatched_rup_list  || res.data?.rup_unmatched  || [];
+        const fromReal = res.data?.unmatched_real_list || res.data?.real_unmatched || [];
+        rows = [...fromRup, ...fromReal];
+      }
+      if (!rows.length) {
+        const res2 = await api({
+          action: 'detailPaketStatus',
+          periode: getPeriode(),
+          kode_satker: S.filter.opd || undefined,
+          status_matching: 'UNMATCHED',
+          per_page: 5000, page: 1,
+        });
+        if (res2.status === 'success') rows = res2.data?.items || [];
+      }
+    } else {
+      const res = await api({
+        action: 'detailPaketStatus',
+        periode: getPeriode(),
+        kode_satker: S.filter.opd || undefined,
+        status_paket: STATUS_MAP[statusKey],
+        per_page: 5000,
+        page: 1,
+      });
+      if (res.status !== 'success') throw new Error(res.message || 'Gagal mengambil data');
+      rows = res.data?.items || [];
+    }
+
+    MST.allRows  = rows;
     MST.filtered = [...MST.allRows];
     renderModalStatus();
   } catch(e) {
@@ -1867,9 +2312,10 @@ function renderModalStatus() {
   // Status badge warna sesuai status
   const stBadge = s => {
     const m = {
-      'Selesai':         'background:#DCFCE7;color:#16A34A',
-      'Sedang Berjalan': 'background:#FEF9C3;color:#CA8A04',
-      'Belum Berproses': 'background:#F1F5F9;color:#64748B',
+      'Selesai':           'background:#DCFCE7;color:#16A34A',
+      'Sedang Berjalan':   'background:#FEF9C3;color:#CA8A04',
+      'Belum Berproses':   'background:#F1F5F9;color:#64748B',
+      'Tidak Ada Kategori':'background:#FEE2E2;color:#DC2626',
     };
     const style = m[s] || 'background:#F1F5F9;color:#64748B';
     return `<span class="badge" style="${style}">${s||'-'}</span>`;
