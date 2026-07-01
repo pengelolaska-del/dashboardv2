@@ -1399,9 +1399,9 @@ async function loadStatus() {
       '</div>' : ''}
     </div>`).join('');
 
-  // Load breakdown data selesai di background
+  // Load breakdown data selesai di background (silent — tidak mengganggu loading utama)
   STATUS_BREAKDOWN_DATA = null;
-  loadSelesaiBreakdown();
+  setTimeout(() => loadSelesaiBreakdown(), 100);
 
   mkChart('c-status-pie','pie',
     ['Selesai','Sedang Berjalan','Belum Berproses'],
@@ -1452,13 +1452,21 @@ async function loadSelesaiBreakdown() {
       status_paket: 'Selesai',
       per_page: 9999, page: 1,
     });
-    if (res.status !== 'success') return;
+    if (!res || res.status !== 'success') {
+      console.warn('detailPaketStatus tidak tersedia atau gagal:', res?.message);
+      return;
+    }
     STATUS_BREAKDOWN_DATA = res.data?.items || [];
     // Kalau submenu sudah terbuka, langsung render
-    if (!document.getElementById('status-submenu').classList.contains('hidden')) {
+    const submenu = document.getElementById('status-submenu');
+    if (submenu && !submenu.classList.contains('hidden')) {
       renderSubBreakdown(S._activeSubTab || 'metode');
     }
-  } catch(e) { console.warn('loadSelesaiBreakdown:', e.message); }
+  } catch(e) {
+    // Silent fail — jangan mengganggu loading halaman utama
+    console.warn('loadSelesaiBreakdown:', e.message);
+    STATUS_BREAKDOWN_DATA = [];
+  }
 }
 
 function toggleSelesaiBreakdown() {
