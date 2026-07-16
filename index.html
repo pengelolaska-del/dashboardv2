@@ -826,19 +826,18 @@ table.dt tr:hover td{background:#FAFBFF}
   <!-- ===================== UNMATCHED ===================== -->
   <section id="sec-unmatched" class="section">
     <h1 class="page-title">Paket Tanpa Pasangan (Unmatched)</h1>
-    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Menampilkan paket pada periode terpilih yang belum memiliki pasangan RUP ↔ Realisasi. Gunakan menu Edit Pagu untuk melengkapi pagu paket realisasi yang belum ter-<i>match</i>.</p>
+    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Menampilkan paket realisasi pada periode terpilih yang belum memiliki kode RUP. Catat <b>kode paket</b>-nya untuk menambahkan pagu secara manual di menu Edit Pagu.</p>
     <div class="summary-grid-4" style="grid-template-columns:repeat(4,1fr)" id="um-kpi"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-      <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched RUP <span style="font-weight:400;color:#94A3B8">(paket rencana tanpa realisasi)</span></p>
-        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto">
-          <table class="dt" id="t-um-rup"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Pagu</th></tr></thead><tbody></tbody></table>
+    <div style="margin-top:16px">
+      <div class="tbl-wrap">
+        <div class="tbl-topbar">
+          <span class="tbl-topbar-info">Unmatched Realisasi — paket realisasi tanpa kode RUP</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadUnmatched()">↻ Refresh</button>
         </div>
-      </div>
-      <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched Realisasi <span style="font-weight:400;color:#94A3B8">(paket realisasi tanpa kode RUP)</span></p>
-        <div class="tbl-wrap" style="max-height:340px;overflow-y:auto">
-          <table class="dt" id="t-um-real"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Kontrak</th></tr></thead><tbody></tbody></table>
+        <div class="tbl-scroll" style="max-height:520px;overflow-y:auto">
+          <table class="dt" id="t-um-real"><thead><tr>
+            <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th><th class="text-right">Kontrak</th>
+          </tr></thead><tbody></tbody></table>
         </div>
       </div>
     </div>
@@ -1000,8 +999,7 @@ async function init() {
     // Isi badge Unmatched di sidebar (non-blocking)
     if (active !== 'unmatched') {
       api({action:'unmatchedData', periode:latest_periode}).then(r => {
-        const d = r.data||{};
-        updateUnmatchedBadge((d.unmatched_rup?.length||0) + (d.unmatched_realisasi?.length||0));
+        updateUnmatchedBadge((r.data?.unmatched_realisasi||[]).length);
       }).catch(()=>{});
     }
 
@@ -1421,20 +1419,25 @@ async function loadUnmatched() {
   try {
     const periode = getPeriode();
     const res = await api({action:'unmatchedData', periode});
+    if (res.status!=='success') throw new Error(res.message||'Gagal memuat data unmatched.');
     const d = res.data||{};
-    const totalUnmatched = (d.unmatched_rup?.length||0) + (d.unmatched_realisasi?.length||0);
+    const unmatchedReal = d.unmatched_realisasi || [];
 
     document.getElementById('um-kpi').innerHTML = [
       {lbl:'Matching Rate', val:pct(d.matching_rate)},
       {lbl:'Total Realisasi', val:fmt(d.total_realisasi)},
       {lbl:'Total Matched', val:fmt(d.total_matched)},
-      {lbl:'Total Unmatched', val:fmt(totalUnmatched)},
+      {lbl:'Unmatched Realisasi', val:fmt(unmatchedReal.length)},
     ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
 
-    fillTbl('#t-um-rup',  d.unmatched_rup,      [r=>r.nama_satker, r=>r.nama_paket_rup||'—', r=>IDRf(r.pagu_rup)]);
-    fillTbl('#t-um-real', d.unmatched_realisasi,[r=>r.nama_satker, r=>r.nama_paket_realisasi||'—', r=>IDRf(r.nilai_kontrak)]);
+    fillTbl('#t-um-real', unmatchedReal, [
+      r=>r.nama_satker||'—',
+      r=>r.nama_paket_realisasi||'—',
+      r=>`<span class="mono" style="color:#64748B">${r.kode_paket||'—'}</span>`,
+      r=>IDRf(r.nilai_kontrak),
+    ]);
 
-    updateUnmatchedBadge(totalUnmatched);
+    updateUnmatchedBadge(unmatchedReal.length);
   } catch(e) {
     document.getElementById('um-kpi').innerHTML = `<div class="error-state">⚠ ${e.message}</div>`;
   }
