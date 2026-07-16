@@ -1,4 +1,1837 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard Pengadaan — BPBJ Kota Surakarta</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;min-height:100vh;display:flex}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+#sidebar{
+  width:230px;min-height:100vh;background:#0F1C2E;
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:fixed;top:0;left:0;z-index:100;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:2px 0 16px rgba(0,0,0,.18);
+}
+.sb-logo{
+  padding:20px 18px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:11px;
+}
+.sb-logo-icon{
+  width:38px;height:38px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sb-logo-text{line-height:1.25}
+.sb-logo-text b{font-size:14px;font-weight:800;color:#F1F5F9;display:block}
+.sb-logo-text span{font-size:10.5px;color:#64748B}
+.sb-section{padding:10px 10px 4px;font-size:10px;font-weight:700;color:#334155;letter-spacing:.1em;text-transform:uppercase}
+.nav-link{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;
+  border-radius:8px;cursor:pointer;color:#64748B;font-size:13px;font-weight:500;
+  transition:background .15s,color .15s;user-select:none;border:none;background:none;width:calc(100% - 16px);
+  text-align:left;
+}
+.nav-link svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-link:hover{background:rgba(255,255,255,.06);color:#CBD5E1}
+.nav-link:hover svg{opacity:1}
+.nav-link.active{background:rgba(59,130,246,.18);color:#60A5FA}
+.nav-link.active svg{opacity:1;color:#3B82F6}
+.nav-link{position:relative}
+.nav-badge{
+  margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:#EF4444;color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;
+}
+.nav-badge.b-zero{background:#334155;color:#64748B}
+.nav-badge.hidden{display:none}
+.nav-lock{margin-left:auto;opacity:.5;flex-shrink:0;width:12px;height:12px}
+.sb-footer{margin-top:auto;padding:12px 16px 16px;font-size:10.5px;color:#334155;border-top:1px solid rgba(255,255,255,.05)}
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+#main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+#topbar{
+  height:58px;background:#fff;border-bottom:1px solid #E5E9F0;
+  display:flex;align-items:center;gap:12px;padding:0 24px;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 1px 0 #E5E9F0;
+}
+.topbar-title{font-size:14px;font-weight:700;color:#1A2332;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.period-wrap{display:flex;align-items:center;gap:6px}
+.period-wrap label{font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em}
+.sel-period{
+  border:1px solid #E2E8F0;border-radius:7px;padding:6px 10px;
+  font-size:12.5px;color:#374151;background:#FAFAFA;outline:none;
+  transition:border-color .15s,box-shadow .15s;cursor:pointer;font-family:inherit;
+}
+.sel-period:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+#btn-sidebar{
+  width:34px;height:34px;border:none;background:none;cursor:pointer;
+  border-radius:8px;color:#64748B;display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#btn-sidebar:hover{background:#F1F5F9}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.section{display:none;flex:1;padding:22px 24px}
+.section.active{display:block}
+.page-title{font-size:20px;font-weight:800;color:#0F1C2E;margin-bottom:18px;letter-spacing:-.02em}
+
+/* ============================================================
+   FILTER PANEL
+   ============================================================ */
+.filter-panel{background:#fff;border-radius:12px;border:1px solid #E5E9F0;margin-bottom:16px;overflow:hidden}
+.filter-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 18px;cursor:pointer;user-select:none;
+}
+.filter-header:hover{background:#FAFBFC}
+.filter-title{font-size:13px;font-weight:700;color:#1A2332}
+.filter-sub{font-size:11px;color:#94A3B8;margin-top:1px}
+.filter-chevron{transition:transform .22s;color:#94A3B8;flex-shrink:0}
+.filter-chevron.open{transform:rotate(180deg)}
+.filter-body{padding:14px 18px 18px;border-top:1px solid #F1F5F9}
+.filter-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.filter-row2{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;margin-top:10px;align-items:end}
+.filter-row3{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-top:10px;align-items:end}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em}
+.fld select,.fld input{
+  border:1px solid #E2E8F0;border-radius:7px;padding:7px 10px;
+  font-size:12.5px;color:#1A2332;background:#fff;outline:none;
+  transition:border-color .15s,box-shadow .15s;font-family:inherit;width:100%;
+}
+.fld select:focus,.fld input:focus{border-color:#3B82F6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.fld select:disabled{background:#F8FAFC;color:#94A3B8;cursor:not-allowed}
+.fld input::placeholder{color:#CBD5E1}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:600;
+  cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;
+}
+.btn-primary{background:#2563EB;color:#fff;box-shadow:0 1px 3px rgba(37,99,235,.3)}
+.btn-primary:hover{background:#1D4ED8;box-shadow:0 3px 8px rgba(37,99,235,.35)}
+.btn-ghost{background:#fff;color:#475569;border:1px solid #E2E8F0}
+.btn-ghost:hover{background:#F8FAFC;border-color:#CBD5E1}
+.btn-danger{background:#EF4444;color:#fff;box-shadow:0 1px 3px rgba(239,68,68,.25)}
+.btn-danger:hover{background:#DC2626}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:7px}
+.btn-icon{width:34px;height:34px;padding:0;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ============================================================
+   SUMMARY CARDS
+   ============================================================ */
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+.summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.scard{
+  background:#fff;border-radius:12px;padding:18px 22px;
+  border:1px solid #E5E9F0;position:relative;overflow:hidden;
+}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#3B82F6)}
+.scard.green::before{--accent:#16A34A}
+.scard.yellow::before{--accent:#D97706}
+.scard.red::before{--accent:#DC2626}
+.scard.purple::before{--accent:#7C3AED}
+.scard-label{font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.scard-value{font-size:24px;font-weight:800;color:#0F1C2E;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.scard-sub{font-size:11px;color:#94A3B8;margin-top:4px}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+.tbl-wrap{background:#fff;border-radius:12px;border:1px solid #E5E9F0;overflow:hidden}
+.tbl-topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;border-bottom:1px solid #F1F5F9;background:#FAFBFC;
+}
+.tbl-topbar-info{font-size:12px;color:#64748B}
+.tbl-scroll{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{
+  background:#0F1C2E;color:#94A3B8;padding:9px 13px;text-align:left;
+  font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  white-space:nowrap;position:sticky;top:0;
+}
+table.dt th:first-child{border-radius:0}
+table.dt td{padding:9px 13px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:#FAFBFF}
+.tbl-pagination{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-top:1px solid #F1F5F9;background:#FAFBFC;
+}
+.tbl-pagination-info{font-size:12px;color:#64748B;flex:1}
+.page-btn{
+  width:30px;height:30px;border:1px solid #E2E8F0;border-radius:7px;
+  background:#fff;cursor:pointer;font-size:13px;color:#475569;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.page-btn:hover{background:#F1F5F9;border-color:#CBD5E1}
+.page-btn:disabled{opacity:.35;cursor:not-allowed}
+.page-num{font-size:12px;font-weight:600;color:#1A2332;padding:0 8px}
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge{
+  display:inline-block;padding:2px 9px;border-radius:99px;
+  font-size:10.5px;font-weight:700;white-space:nowrap;
+}
+.b-blue{background:#EFF6FF;color:#1D4ED8}
+.b-green{background:#F0FDF4;color:#15803D}
+.b-yellow{background:#FFFBEB;color:#B45309}
+.b-red{background:#FFF1F2;color:#BE123C}
+.b-purple{background:#FAF5FF;color:#6D28D9}
+.b-orange{background:#FFF7ED;color:#C2410C}
+.b-gray{background:#F1F5F9;color:#475569}
+.b-sky{background:#F0F9FF;color:#0369A1}
+.b-teal{background:#F0FDFA;color:#0F766E}
+
+/* ============================================================
+   UPLOAD SECTION
+   ============================================================ */
+.upload-card{background:#fff;border-radius:12px;border:1px solid #E5E9F0;padding:18px}
+.upload-card-title{font-size:13px;font-weight:700;color:#1A2332;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.drop-zone{
+  border:2px dashed #CBD5E1;border-radius:10px;padding:28px 20px;
+  text-align:center;cursor:pointer;transition:all .18s;
+}
+.drop-zone:hover,.drop-zone.drag{border-color:#3B82F6;background:#EFF6FF}
+.drop-zone-icon{color:#CBD5E1;margin-bottom:8px}
+.drop-zone p{font-size:12.5px;color:#94A3B8;margin:0}
+.drop-zone .file-name{font-size:12.5px;color:#16A34A;font-weight:600}
+.progress-wrap{margin-top:10px}
+.progress-bar{height:4px;background:#E9EDF2;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#3B82F6,#2563EB);border-radius:99px;transition:width .3s}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin-bottom:4px}
+.upload-btn{
+  width:100%;margin-top:10px;padding:9px;border:none;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;font-family:inherit;
+}
+.upload-btn-rup{background:#2563EB;color:#fff}
+.upload-btn-rup:hover{background:#1D4ED8}
+.upload-btn-real{background:#16A34A;color:#fff}
+.upload-btn-real:hover{background:#15803D}
+.upload-btn:disabled{opacity:.38;cursor:not-allowed}
+.log-banner{
+  padding:9px 13px;border-radius:8px;font-size:12px;
+  margin-bottom:10px;display:none;
+}
+.log-banner.warn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
+.log-banner.ok{background:#F0FDF4;border:1px solid #86EFAC;color:#166534}
+
+/* ============================================================
+   MISC
+   ============================================================ */
+.hidden{display:none!important}
+.spin{
+  display:inline-block;width:18px;height:18px;
+  border:2.5px solid #BFDBFE;border-top-color:#2563EB;
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:48px 20px;color:#94A3B8}
+.empty-state .empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+.empty-state p{font-size:13px}
+.error-state{text-align:center;padding:32px 20px;color:#EF4444;font-size:12.5px}
+.chart-card{background:#fff;border-radius:12px;border:1px solid #E5E9F0;padding:18px}
+.chart-title{font-size:13px;font-weight:700;color:#1A2332;margin-bottom:14px}
+.mono{font-family:'JetBrains Mono','Fira Code',Consolas,monospace}
+.text-right{text-align:right}
+.text-center{text-align:center}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#F1F5F9}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#94A3B8}
+
+/* Responsive */
+@media(max-width:1200px){.filter-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.filter-grid{grid-template-columns:repeat(2,1fr)}.summary-grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+  #sidebar{transform:translateX(-230px)}
+  #main{margin-left:0}
+  .sidebar-open #sidebar{transform:none}
+  .sidebar-open #main{margin-left:0}
+  .summary-grid,.summary-grid-4{grid-template-columns:1fr}
+  .filter-grid{grid-template-columns:1fr}
+  .filter-row2,.filter-row3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================================================
+     SIDEBAR
+     ====================================================== -->
+<nav id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.2">
+        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <div class="sb-logo-text">
+      <b>BPBJ</b>
+      <span>Kota Surakarta</span>
+    </div>
+  </div>
+
+  <div class="sb-section">Data</div>
+
+  <button class="nav-link active" data-s="rup">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    Rencana (RUP)
+  </button>
+
+  <button class="nav-link" data-s="realisasi">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+    Realisasi
+  </button>
+
+  <button class="nav-link" data-s="efisiensi">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    Efisiensi
+  </button>
+
+  <button class="nav-link" data-s="unmatched">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9"/></svg>
+    Unmatched
+    <span class="nav-badge hidden" id="nav-unmatched-badge">0</span>
+  </button>
+
+  <div class="sb-section" style="margin-top:10px">Kelola</div>
+
+  <button class="nav-link" data-s="upload">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+    Upload Data
+  </button>
+
+  <button class="nav-link hidden" id="nav-pagu" data-s="pagu">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .672-3 1.5S10.343 11 12 11s3 .672 3 1.5-1.343 1.5-3 1.5m0-6V6m0 1.5V8m0 8v1.5m0-1.5V16m0 4a8 8 0 100-16 8 8 0 000 16z"/></svg>
+    Edit Pagu
+  </button>
+
+  <div class="sb-footer" id="sb-period">Periode: —</div>
+</nav>
+
+<!-- ======================================================
+     MAIN
+     ====================================================== -->
+<div id="main">
+
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <button id="btn-sidebar">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="topbar-title">Dashboard Monitoring Pengadaan Barang/Jasa</span>
+    <div class="period-wrap">
+      <label>Tahun</label>
+      <select id="g-tahun" class="sel-period"></select>
+      <label>Bulan</label>
+      <select id="g-bulan" class="sel-period">
+        <option value="">Semua</option>
+        <option value="01">Januari</option><option value="02">Februari</option>
+        <option value="03">Maret</option><option value="04">April</option>
+        <option value="05">Mei</option><option value="06">Juni</option>
+        <option value="07">Juli</option><option value="08">Agustus</option>
+        <option value="09">September</option><option value="10">Oktober</option>
+        <option value="11">November</option><option value="12">Desember</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ===================== RUP ===================== -->
+  <section id="sec-rup" class="section active">
+    <h1 class="page-title">Rencana Umum Pengadaan</h1>
+
+    <div class="filter-panel">
+      <div class="filter-header" id="fh-rup">
+        <div>
+          <div class="filter-title">Filter Data</div>
+          <div class="filter-sub">Pilih filter untuk mempersempit data yang ditampilkan</div>
+        </div>
+        <svg class="filter-chevron open" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="filter-body" id="fb-rup">
+        <div class="filter-grid">
+          <div class="fld" style="grid-column:span 2">
+            <label>Satuan Kerja</label>
+            <select id="rup-satker"></select>
+          </div>
+          <div class="fld">
+            <label>Cara Pengadaan</label>
+            <select id="rup-cara">
+              <option value="">Semua</option>
+              <option>Penyedia</option>
+              <option>Swakelola</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="rup-metode"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Jenis Pengadaan</label>
+            <select id="rup-jenis"><option value="">Semua</option></select>
+          </div>
+          <div class="fld" style="grid-column:span 2">
+            <label>Sumber Dana</label>
+            <select id="rup-sumber"><option value="">Semua sumber dana</option></select>
+          </div>
+        </div>
+        <div class="filter-row2">
+          <div class="fld">
+            <label>Kode RUP</label>
+            <input id="rup-kode" type="text" placeholder="Cari kode RUP..."/>
+          </div>
+          <div class="fld">
+            <label>Nama Paket</label>
+            <input id="rup-nama" type="text" placeholder="Cari nama paket..."/>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-primary" onclick="applyRUP()">Terapkan</button>
+            <button class="btn btn-ghost btn-icon" onclick="resetRUP()" title="Reset filter">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="scard">
+        <div class="scard-label">Jumlah Paket RUP</div>
+        <div class="scard-value" id="rup-s-total">—</div>
+        <div class="scard-sub" id="rup-s-sub"></div>
+      </div>
+      <div class="scard green">
+        <div class="scard-label">Total Nilai Pagu</div>
+        <div class="scard-value" id="rup-s-pagu">—</div>
+        <div class="scard-sub" id="rup-s-pagu-sub"></div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info" id="rup-tbl-info"></span>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('rup')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download CSV
+        </button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th style="width:40px">No</th>
+            <th style="min-width:180px">Nama Satuan Kerja</th>
+            <th>Cara Pengadaan</th>
+            <th>Metode Pengadaan</th>
+            <th>Jenis Pengadaan</th>
+            <th style="min-width:220px">Nama Paket</th>
+            <th>Kode RUP</th>
+            <th>Sumber Dana</th>
+            <th>PDN</th>
+            <th class="text-right" style="min-width:140px">Total Nilai (Rp)</th>
+          </tr></thead>
+          <tbody id="rup-tbody">
+            <tr><td colspan="10"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-pagination">
+        <span class="tbl-pagination-info" id="rup-pg-info"></span>
+        <button class="page-btn" id="rup-prev" onclick="pageRUP(-1)">‹</button>
+        <span class="page-num" id="rup-pg-num"></span>
+        <button class="page-btn" id="rup-next" onclick="pageRUP(1)">›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REALISASI ===================== -->
+  <section id="sec-realisasi" class="section">
+    <h1 class="page-title">Data Realisasi</h1>
+
+    <div class="filter-panel">
+      <div class="filter-header" id="fh-real">
+        <div>
+          <div class="filter-title">Filter Data</div>
+          <div class="filter-sub">Pilih filter untuk mempersempit data yang ditampilkan</div>
+        </div>
+        <svg class="filter-chevron open" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="filter-body" id="fb-real">
+        <div class="filter-grid">
+          <div class="fld" style="grid-column:span 2">
+            <label>Satuan Kerja</label>
+            <select id="real-satker"></select>
+          </div>
+          <div class="fld">
+            <label>Sumber Transaksi</label>
+            <select id="real-transaksi"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="real-metode"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Status Paket</label>
+            <select id="real-status"><option value="">Semua status</option></select>
+          </div>
+          <div class="fld" style="grid-column:span 2">
+            <label>Sumber Dana</label>
+            <select id="real-sumber"><option value="">Semua sumber dana</option></select>
+          </div>
+          <div class="fld" style="grid-column:span 2">
+            <label>Jenis Pengadaan</label>
+            <select id="real-jenis"><option value="">Semua</option></select>
+          </div>
+        </div>
+        <div class="filter-row3">
+          <div class="fld">
+            <label>Cari Penyedia</label>
+            <input id="real-penyedia" type="text" placeholder="Nama penyedia..."/>
+          </div>
+          <div class="fld">
+            <label>Cari Nama Paket</label>
+            <input id="real-nama" type="text" placeholder="Nama paket..."/>
+          </div>
+          <div class="fld">
+            <label>Cari Kode Paket</label>
+            <input id="real-kode" type="text" placeholder="Kode paket..."/>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-primary" onclick="applyReal()">Terapkan</button>
+            <button class="btn btn-ghost btn-icon" onclick="resetReal()" title="Reset filter">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="scard">
+        <div class="scard-label">Jumlah Transaksi</div>
+        <div class="scard-value" id="real-s-total">—</div>
+        <div class="scard-sub" id="real-s-sub"></div>
+      </div>
+      <div class="scard green">
+        <div class="scard-label">Total Nilai Kontrak</div>
+        <div class="scard-value" id="real-s-nilai">—</div>
+        <div class="scard-sub" id="real-s-nilai-sub"></div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info" id="real-tbl-info"></span>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('real')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download CSV
+        </button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th style="width:40px">No</th>
+            <th style="min-width:180px">Nama Satuan Kerja</th>
+            <th style="min-width:160px">Kode Paket</th>
+            <th>Kode RUP</th>
+            <th>Sumber Transaksi</th>
+            <th>Sumber Dana</th>
+            <th style="min-width:150px">Nama Penyedia</th>
+            <th>Metode</th>
+            <th>Jenis</th>
+            <th style="min-width:220px">Nama Paket</th>
+            <th>Status</th>
+            <th class="text-right" style="min-width:150px">Nilai Kontrak (Rp)</th>
+          </tr></thead>
+          <tbody id="real-tbody">
+            <tr><td colspan="12"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-pagination">
+        <span class="tbl-pagination-info" id="real-pg-info"></span>
+        <button class="page-btn" id="real-prev" onclick="pageReal(-1)">‹</button>
+        <span class="page-num" id="real-pg-num"></span>
+        <button class="page-btn" id="real-next" onclick="pageReal(1)">›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EFISIENSI ===================== -->
+  <section id="sec-efisiensi" class="section">
+    <h1 class="page-title">Analisis Efisiensi</h1>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-header" id="fh-efi">
+        <div>
+          <div class="filter-title">Filter Data</div>
+          <div class="filter-sub">Filter berpengaruh pada KPI, jumlah paket, dan tabel per satker</div>
+        </div>
+        <svg class="filter-chevron open" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="filter-body" id="fb-efi">
+        <div class="filter-grid">
+          <div class="fld" style="grid-column:span 2">
+            <label>Satuan Kerja</label>
+            <select id="efi-satker"><option value="">Semua Satuan Kerja</option></select>
+          </div>
+          <div class="fld">
+            <label>Sumber Transaksi</label>
+            <select id="efi-transaksi"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="efi-metode"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Status Paket</label>
+            <select id="efi-status"><option value="">Semua status</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="applyEfi()">Terapkan</button>
+          <button class="btn btn-ghost btn-icon" onclick="resetEfi()" title="Reset filter">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 6 kartu: 2 baris -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+      <div class="scard">
+        <div class="scard-label">Total Pagu RUP</div>
+        <div class="scard-value" id="efi-pagu">—</div>
+        <div class="scard-sub">Keseluruhan periode</div>
+      </div>
+      <div class="scard green">
+        <div class="scard-label">Total Kontrak</div>
+        <div class="scard-value" id="efi-kontrak">—</div>
+        <div class="scard-sub">Keseluruhan periode</div>
+      </div>
+      <div class="scard yellow">
+        <div class="scard-label">% Efisiensi</div>
+        <div class="scard-value" id="efi-pct">—</div>
+        <div class="scard-sub" id="efi-nilai-sub">—</div>
+      </div>
+    </div>
+    <!-- KPI filtered -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
+        <div class="scard-sub" id="efi-filter-desc">Belum ada filter aktif</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Kontrak (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-kontrak-f">—</div>
+        <div class="scard-sub" id="efi-efi-f-label">—</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Jumlah Paket (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-paket-f">—</div>
+        <div class="scard-sub" id="efi-pct-f">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="chart-card"><div class="chart-title">Tren Pagu vs Kontrak per Periode</div><div style="height:220px"><canvas id="c-tren"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Top 10 OPD — Efisiensi Tertinggi</div><div style="height:220px"><canvas id="c-opd"></canvas></div></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('efi')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download CSV
+        </button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th>No</th><th>Nama Satuan Kerja</th>
+            <th class="text-right">Total Pagu</th>
+            <th class="text-right">Total Kontrak</th>
+            <th class="text-right">Efisiensi (Rp)</th>
+            <th class="text-center">% Efi</th>
+            <th class="text-center">Jml Paket</th>
+          </tr></thead>
+          <tbody id="efi-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== UPLOAD ===================== -->
+  <section id="sec-upload" class="section">
+    <h1 class="page-title">Upload Data Bulanan</h1>
+
+    <!-- Token -->
+    <div class="upload-card" style="margin-bottom:16px">
+      <div class="upload-card-title">
+        <span>Autentikasi Admin</span>
+        <span id="token-badge" class="badge b-gray">Belum login</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="inp-token" type="password" placeholder="Masukkan token admin..."
+          style="border:1px solid #E2E8F0;border-radius:8px;padding:8px 12px;font-size:13px;width:280px;outline:none;font-family:inherit;transition:border-color .15s"/>
+        <button class="btn btn-primary" id="btn-verify" onclick="verifyToken()">Verifikasi</button>
+        <span id="token-msg" style="font-size:12px"></span>
+      </div>
+    </div>
+
+    <div id="upload-panel" class="hidden">
+      <!-- Periode -->
+      <div class="upload-card" style="margin-bottom:16px;flex-direction:row;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Periode Upload</span>
+        <select id="up-tahun" style="border:1px solid #E2E8F0;border-radius:8px;padding:7px 11px;font-size:13px;font-family:inherit;outline:none"></select>
+        <select id="up-bulan" style="border:1px solid #E2E8F0;border-radius:8px;padding:7px 11px;font-size:13px;font-family:inherit;outline:none">
+          <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+          <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+          <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+          <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+        </select>
+        <div style="font-size:12px;color:#64748B" id="up-periode-label"></div>
+      </div>
+
+      <!-- Upload boxes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+        <div class="upload-card">
+          <div class="upload-card-title">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:22px;height:22px;background:#EFF6FF;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#1D4ED8">1</span>
+              Upload Data RUP
+            </div>
+            <span class="badge b-blue">Langkah 1</span>
+          </div>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">File: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">data_rup_YYYYMMDD.csv</code></p>
+          <div class="drop-zone" id="drop-rup" onclick="document.getElementById('file-rup').click()">
+            <div class="drop-zone-icon">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            </div>
+            <p id="lbl-rup">Klik atau drag file CSV di sini</p>
+            <p style="font-size:11px;color:#CBD5E1;margin-top:3px">Maks. 10 MB</p>
+          </div>
+          <input type="file" id="file-rup" accept=".csv" style="display:none"/>
+          <div class="progress-wrap hidden" id="prog-rup-wrap">
+            <div class="progress-label"><span id="prog-rup-lbl">Mengunggah...</span><span id="prog-rup-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-rup-fill" style="width:0%"></div></div>
+          </div>
+          <button id="btn-rup" disabled onclick="uploadRUP()" class="upload-btn upload-btn-rup">↑ Upload RUP</button>
+        </div>
+
+        <div class="upload-card">
+          <div class="upload-card-title">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:22px;height:22px;background:#F0FDF4;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#15803D">2</span>
+              Upload Data Realisasi
+            </div>
+            <span class="badge b-green">Langkah 2</span>
+          </div>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">File: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">data_realisasi_YYYYMMDD.csv</code></p>
+          <div class="drop-zone" id="drop-real" onclick="document.getElementById('file-real').click()">
+            <div class="drop-zone-icon">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            </div>
+            <p id="lbl-real">Klik atau drag file CSV di sini</p>
+            <p style="font-size:11px;color:#CBD5E1;margin-top:3px">Maks. 10 MB</p>
+          </div>
+          <input type="file" id="file-real" accept=".csv" style="display:none"/>
+          <div style="margin-top:8px;font-size:11.5px;color:#D97706;display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="#D97706" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+            Matching engine otomatis berjalan setelah upload.
+          </div>
+          <div class="progress-wrap hidden" id="prog-real-wrap">
+            <div class="progress-label"><span id="prog-real-lbl">Mengunggah...</span><span id="prog-real-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-real-fill" style="width:0%"></div></div>
+          </div>
+          <button id="btn-real" disabled onclick="uploadReal()" class="upload-btn upload-btn-real">↑ Upload Realisasi + Matching</button>
+        </div>
+      </div>
+
+      <!-- Riwayat Upload -->
+      <div class="upload-card" style="margin-bottom:16px">
+        <div class="upload-card-title">
+          <span>Riwayat Upload</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-danger btn-sm hidden" id="btn-hapus-log" onclick="hapusLogTerpilih()">
+              🗑 Hapus Terpilih (<span id="sel-count">0</span>)
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="loadLog()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="log-banner-warn" class="log-banner warn"></div>
+        <div id="log-banner-ok"   class="log-banner ok"></div>
+        <div class="tbl-scroll">
+          <table class="dt">
+            <thead><tr>
+              <th style="width:36px"><input type="checkbox" id="chk-all" onclick="selAll(this)" style="cursor:pointer;accent-color:#2563EB"/></th>
+              <th>Periode</th><th>Jenis</th><th>Nama File</th>
+              <th class="text-center">Record</th><th>Waktu Upload</th><th>Status</th><th>Keterangan</th>
+            </tr></thead>
+            <tbody id="t-log">
+              <tr><td colspan="8"><div class="empty-state"><p>Memuat log...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Hapus Periode -->
+      <div class="upload-card" style="border:1px solid #FEE2E2">
+        <div class="upload-card-title" style="color:#DC2626">
+          <span>⚠ Hapus Data Periode</span>
+        </div>
+        <p style="font-size:12px;color:#64748B;margin-bottom:12px">Menghapus seluruh data RUP, Realisasi, Matching untuk periode tertentu. Tindakan ini tidak dapat dibatalkan.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="del-periode" type="text" placeholder="YYYY-MM  (contoh: 2026-05)"
+            style="border:1px solid #FCA5A5;border-radius:8px;padding:8px 12px;font-size:13px;width:220px;outline:none;font-family:inherit"/>
+          <button class="btn btn-danger" onclick="hapusPeriode()">Hapus Periode</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== UNMATCHED ===================== -->
+  <section id="sec-unmatched" class="section">
+    <h1 class="page-title">Paket Tanpa Pasangan (Unmatched)</h1>
+    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Menampilkan paket realisasi pada periode terpilih yang belum memiliki kode RUP. Catat <b>kode paket</b>-nya untuk menambahkan pagu secara manual di menu Edit Pagu.</p>
+    <div class="summary-grid-4" style="grid-template-columns:repeat(4,1fr)" id="um-kpi"></div>
+    <div style="margin-top:16px">
+      <div class="tbl-wrap">
+        <div class="tbl-topbar">
+          <span class="tbl-topbar-info">Unmatched Realisasi — paket realisasi tanpa kode RUP</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadUnmatched()">↻ Refresh</button>
+        </div>
+        <div class="tbl-scroll" style="max-height:520px;overflow-y:auto">
+          <table class="dt" id="t-um-real"><thead><tr>
+            <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th><th class="text-right">Kontrak</th>
+            <th class="text-right" style="width:160px">Pagu Manual</th><th class="text-center" style="width:110px">Aksi</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EDIT PAGU (MANUAL) ===================== -->
+  <section id="sec-pagu" class="section">
+    <h1 class="page-title">Edit Pagu Manual</h1>
+    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Isi pagu secara manual untuk paket realisasi yang belum memiliki pasangan RUP (mis. carry-over anggaran). Pagu manual tersimpan berdasarkan <b>kode paket</b> — sekali diisi, otomatis berlaku di periode manapun yang memuat kode paket yang sama, dan langsung dipakai pada perhitungan Efisiensi.</p>
+
+    <div class="tbl-wrap">
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info" id="pagu-tbl-info">Paket Realisasi Tanpa Pagu</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadPagu()">↻ Refresh</button>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th>
+            <th class="text-right">Kontrak</th><th class="text-right" style="width:180px">Pagu Manual</th>
+            <th class="text-center" style="width:90px">Aksi</th>
+          </tr></thead>
+          <tbody id="pagu-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /main -->
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeCK8-Bq9EnG-TUsNsLr7kytM84ndqpCuKhqVNo1IR2iF-1tnKTtcZYN_dIIrWZDq7rA/exec';
+const CHUNK_SIZE = 500;
+const PER_PAGE   = 50;
+
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  periodes: [], latestPeriode: '', satkerList: [],
+  adminToken: '', isAdmin: false,
+  rupPage: 1, realPage: 1,
+  rupF: {}, realF: {},
+  efiCharts: {},
+  efiF: {},
+};
+
+// ============================================================
+// FORMATTERS
+// ============================================================
+const fmt  = n => (Number(n)||0).toLocaleString('id-ID');
+const IDRf = n => 'Rp ' + fmt(n);
+const IDR  = n => {
+  const v = Math.abs(Number(n)||0), neg = Number(n)<0;
+  if (v >= 1e12) return (neg?'-':'')+'Rp '+(v/1e12).toFixed(2)+' T';
+  if (v >= 1e9)  return (neg?'-':'')+'Rp '+(v/1e9).toFixed(2)+' M';
+  if (v >= 1e6)  return (neg?'-':'')+'Rp '+(v/1e6).toFixed(1)+' jt';
+  return IDRf(n);
+};
+const pct = n => (Number(n)||0).toFixed(2)+'%';
+
+const METODE_COLOR = {
+  'E-Purchasing':'b-blue','Pengadaan Langsung':'b-green','Dikecualikan':'b-orange',
+  'Tender':'b-purple','Seleksi':'b-red','Penunjukan Langsung':'b-yellow',
+  'Swakelola':'b-sky','-':'b-gray',
+};
+const badge    = (cls,txt) => `<span class="badge ${cls}">${txt||'—'}</span>`;
+const mbadge   = m  => badge(METODE_COLOR[m]||'b-gray', m||'—');
+const sbadge   = s  => {
+  const map = {'Selesai':'b-green','Sedang Berjalan':'b-yellow','Belum Berproses':'b-gray',
+               'COMPLETED':'b-green','ON PROCESS':'b-yellow','PAKET SEDANG BERJALAN':'b-yellow','PAKET SELESAI':'b-green'};
+  return badge(map[s]||'b-gray', s||'—');
+};
+const caraBadge = c => badge(c==='Swakelola'?'b-sky':'b-blue', c||'—');
+const pdnBadge  = p => badge(p==='Ya'?'b-teal':'b-gray', p==='Ya'?'PDN':'Non-PDN');
+
+// ============================================================
+// API
+// ============================================================
+async function api(payload) {
+  let res;
+  try {
+    res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify(payload),
+    });
+  } catch(e) {
+    throw new Error('Koneksi gagal. Periksa koneksi internet Anda.');
+  }
+  if (!res.ok) {
+    if (res.status===404) throw new Error('HTTP 404 — Apps Script belum di-deploy New Version.');
+    if (res.status===401) throw new Error('HTTP 401 — set Web App access: Anyone.');
+    throw new Error('HTTP error: ' + res.status);
+  }
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Respons bukan JSON. Coba redeploy New Version.'); }
+}
+
+// ============================================================
+// PERIODE HELPER
+// ============================================================
+function getPeriode() {
+  const t = document.getElementById('g-tahun').value;
+  const b = document.getElementById('g-bulan').value;
+  if (t && b) return t + '-' + b;
+  if (t) return t;
+  return S.latestPeriode;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  setLoadingAll();
+  try {
+    const res = await api({action:'listPeriode'});
+    if (res.status !== 'success') { showConnErr(res.message); return; }
+    const { periodes, latest_periode, satker_list } = res.data;
+    S.periodes = periodes;
+    S.latestPeriode = latest_periode;
+    S.satkerList = satker_list;
+
+    // Isi dropdown tahun di topbar
+    const tahunSet = [...new Set(periodes.map(p=>String(p).split('-')[0]))].sort().reverse();
+    const gT = document.getElementById('g-tahun');
+    gT.innerHTML = tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if (tahunSet.length) gT.value = tahunSet[0];
+
+    // Set bulan ke latest
+    if (latest_periode) {
+      const bl = String(latest_periode).split('-')[1];
+      if (bl) document.getElementById('g-bulan').value = bl;
+    }
+
+    // Update badge
+    document.getElementById('sb-period').textContent = `Periode aktif: ${latest_periode||'—'}`;
+    syncUploadPeriode();
+
+    // Load halaman aktif
+    const active = document.querySelector('.nav-link.active')?.dataset.s || 'rup';
+    await loadSection(active, true);
+
+    // Isi badge Unmatched di sidebar (non-blocking)
+    if (active !== 'unmatched') {
+      api({action:'unmatchedData', periode:latest_periode}).then(r => {
+        updateUnmatchedBadge((r.data?.unmatched_realisasi||[]).length);
+      }).catch(()=>{});
+    }
+
+  } catch(e) { showConnErr(e.message); }
+}
+
+function setLoadingAll() {
+  ['rup-tbody','real-tbody','efi-tbody'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Menghubungkan ke server...</p></div></td></tr>`;
+  });
+}
+
+function showConnErr(msg) {
+  ['rup-tbody','real-tbody','efi-tbody'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<tr><td colspan="12"><div class="error-state">⚠ ${msg}</div></td></tr>`;
+  });
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+async function loadSection(name, skipNav=false) {
+  if (!skipNav) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-'+name)?.classList.add('active');
+    document.querySelector(`[data-s="${name}"]`)?.classList.add('active');
+  }
+  if      (name==='rup')       await loadRUP(1);
+  else if (name==='realisasi') await loadReal(1);
+  else if (name==='efisiensi') await loadEfisiensi();
+  else if (name==='unmatched') await loadUnmatched();
+  else if (name==='pagu')      await loadPagu();
+  else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
+}
+
+// Nav click
+document.querySelectorAll('.nav-link').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    loadSection(item.dataset.s);
+  });
+});
+
+// Sidebar toggle
+document.getElementById('btn-sidebar').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('sb-hidden');
+  document.getElementById('main').classList.toggle('ml-zero');
+});
+
+// Period change → auto refresh
+document.getElementById('g-tahun').addEventListener('change', onPeriodChange);
+document.getElementById('g-bulan').addEventListener('change', onPeriodChange);
+
+function onPeriodChange() {
+  const active = document.querySelector('.nav-link.active')?.dataset.s;
+  if      (active==='rup')       loadRUP(1);
+  else if (active==='realisasi') loadReal(1);
+  else if (active==='efisiensi') loadEfisiensi();
+  else if (active==='unmatched') loadUnmatched();
+  else if (active==='pagu')      loadPagu();
+}
+
+// Filter toggle
+function initFilterToggle(headerId, bodyId, chevronSelector) {
+  document.getElementById(headerId).addEventListener('click', () => {
+    const body    = document.getElementById(bodyId);
+    const chevron = document.querySelector('#'+headerId+' .filter-chevron');
+    const isOpen  = !body.hidden;
+    body.hidden   = isOpen;
+    if (chevron) chevron.classList.toggle('open', !isOpen);
+  });
+}
+initFilterToggle('fh-rup',  'fb-rup');
+initFilterToggle('fh-real', 'fb-real');
+initFilterToggle('fh-efi', 'fb-efi');
+
+// Enter key search
+['rup-kode','rup-nama'].forEach(id => document.getElementById(id).addEventListener('keydown', e => e.key==='Enter' && applyRUP()));
+['real-penyedia','real-nama','real-kode'].forEach(id => document.getElementById(id).addEventListener('keydown', e => e.key==='Enter' && applyReal()));
+
+// ============================================================
+// FILL DROPDOWNS HELPER
+// ============================================================
+function fillSelect(selId, opts, curVal, firstLabel='Semua') {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const saved = curVal !== undefined ? curVal : sel.value;
+  sel.innerHTML = `<option value="">${firstLabel}</option>` +
+    (opts||[]).map(o => `<option value="${o}">${o}</option>`).join('');
+  sel.value = saved || '';
+}
+
+function fillSatker(selId, list, curVal) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const saved = curVal !== undefined ? curVal : sel.value;
+  sel.innerHTML = `<option value="">Semua Satuan Kerja</option>` +
+    (list||[]).map(s => `<option value="${s.k||s.kode_satker}">${s.n||s.nama_satker}</option>`).join('');
+  sel.value = saved || '';
+}
+
+// ============================================================
+// RUP
+// ============================================================
+async function loadRUP(page=1) {
+  S.rupPage = page;
+  const tbody = document.getElementById('rup-tbody');
+  tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data RUP...</p></div></td></tr>`;
+
+  try {
+    const res = await api({
+      action: 'listRUP',
+      periode: getPeriode(),
+      kode_satker:      S.rupF.satker   || undefined,
+      cara_pengadaan:   S.rupF.cara     || undefined,
+      metode_pengadaan: S.rupF.metode   || undefined,
+      jenis_pengadaan:  S.rupF.jenis    || undefined,
+      sumber_dana:      S.rupF.sumber   || undefined,
+      kode_rup:         S.rupF.kode     || undefined,
+      nama_paket:       S.rupF.nama     || undefined,
+      page, per_page: PER_PAGE,
+    });
+    if (res.status !== 'success') throw new Error(res.message);
+    const d = res.data;
+
+    // Summary
+    document.getElementById('rup-s-total').textContent   = fmt(d.total);
+    document.getElementById('rup-s-pagu').textContent    = IDR(d.total_pagu);
+    document.getElementById('rup-s-sub').textContent     = `Halaman ${page} dari ${d.total_pages}`;
+    document.getElementById('rup-s-pagu-sub').textContent = `Periode: ${getPeriode()}`;
+
+    // Fill enums on first page
+    if (page === 1 && d.enums) {
+      fillSatker('rup-satker', d.enums.satker, S.rupF.satker);
+      fillSelect('rup-metode', d.enums.metode, S.rupF.metode);
+      fillSelect('rup-jenis',  d.enums.jenis,  S.rupF.jenis);
+      fillSelect('rup-sumber', d.enums.sumber, S.rupF.sumber, 'Semua sumber dana');
+    }
+
+    // Table
+    tbody.innerHTML = d.items.length
+      ? d.items.map((r,i) => `<tr>
+          <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*PER_PAGE+i+1}</td>
+          <td style="font-size:12px">${r.nama_satker||'—'}</td>
+          <td>${caraBadge(r.cara_pengadaan)}</td>
+          <td>${mbadge(r.metode_pengadaan)}</td>
+          <td style="font-size:11.5px;color:#475569">${r.jenis_pengadaan||'—'}</td>
+          <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,65)}${(r.nama_paket||'').length>65?'…':''}</td>
+          <td><a style="color:#2563EB;font-size:11px;font-family:monospace;text-decoration:none">${r.kode_rup||'—'}</a></td>
+          <td>${badge('b-gray',r.sumber_dana||'—')}</td>
+          <td>${pdnBadge(r.produk_dalam_negeri)}</td>
+          <td class="mono text-right" style="font-size:12px;white-space:nowrap">${IDRf(r.pagu)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
+
+    // Pagination
+    document.getElementById('rup-tbl-info').textContent =
+      d.total ? `Menampilkan ${(page-1)*PER_PAGE+1}–${Math.min(page*PER_PAGE,d.total)} dari ${fmt(d.total)} paket` : '';
+    document.getElementById('rup-pg-num').textContent   = `${page} / ${d.total_pages}`;
+    document.getElementById('rup-prev').disabled = page <= 1;
+    document.getElementById('rup-next').disabled = page >= d.total_pages;
+
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+function applyRUP() {
+  S.rupF = {
+    satker: v('rup-satker'), cara: v('rup-cara'), metode: v('rup-metode'),
+    jenis: v('rup-jenis'), sumber: v('rup-sumber'),
+    kode: v('rup-kode'), nama: v('rup-nama'),
+  };
+  loadRUP(1);
+}
+function resetRUP() {
+  S.rupF = {};
+  ['rup-satker','rup-cara','rup-metode','rup-jenis','rup-sumber'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['rup-kode','rup-nama'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  loadRUP(1);
+}
+function pageRUP(d) { loadRUP(S.rupPage + d); }
+
+// ============================================================
+// REALISASI
+// ============================================================
+async function loadReal(page=1) {
+  S.realPage = page;
+  const tbody = document.getElementById('real-tbody');
+  tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data Realisasi...</p></div></td></tr>`;
+
+  try {
+    const res = await api({
+      action: 'listRealisasi',
+      periode: getPeriode(),
+      kode_satker:      S.realF.satker   || undefined,
+      sumber_transaksi: S.realF.transaksi || undefined,
+      sumber_dana:      S.realF.sumber    || undefined,
+      status_paket:     S.realF.status    || undefined,
+      metode_pengadaan: S.realF.metode    || undefined,
+      jenis_pengadaan:  S.realF.jenis     || undefined,
+      nama_penyedia:    S.realF.penyedia  || undefined,
+      nama_paket:       S.realF.nama      || undefined,
+      kode_paket:       S.realF.kode      || undefined,
+      page, per_page: PER_PAGE,
+    });
+    if (res.status !== 'success') throw new Error(res.message);
+    const d = res.data;
+
+    // Summary
+    document.getElementById('real-s-total').textContent      = fmt(d.total);
+    document.getElementById('real-s-nilai').textContent      = IDR(d.total_nilai);
+    document.getElementById('real-s-sub').textContent        = `Halaman ${page} dari ${d.total_pages}`;
+    document.getElementById('real-s-nilai-sub').textContent  = `Periode: ${getPeriode()}`;
+
+    if (page === 1 && d.enums) {
+      fillSatker('real-satker',   d.enums.satker,   S.realF.satker);
+      fillSelect('real-transaksi',d.enums.transaksi, S.realF.transaksi);
+      fillSelect('real-sumber',   d.enums.sumber,    S.realF.sumber, 'Semua sumber dana');
+      fillSelect('real-metode',   d.enums.metode,    S.realF.metode);
+      fillSelect('real-status',   d.enums.status,    S.realF.status, 'Semua status');
+      fillSelect('real-jenis',    d.enums.jenis,     S.realF.jenis);
+    }
+
+    tbody.innerHTML = d.items.length
+      ? d.items.map((r,i) => `<tr>
+          <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*PER_PAGE+i+1}</td>
+          <td style="font-size:12px">${r.nama_satker||'—'}</td>
+          <td class="mono" style="font-size:10.5px;color:#2563EB">${r.kode_paket||'—'}</td>
+          <td class="mono" style="font-size:10.5px;color:#64748B">${r.kode_rup||'—'}</td>
+          <td style="font-size:11.5px;white-space:nowrap">${r.sumber_transaksi||'—'}</td>
+          <td>${badge('b-gray',r.sumber_dana||'—')}</td>
+          <td style="font-size:12px">${r.nama_penyedia||'<span style="color:#CBD5E1">—</span>'}</td>
+          <td>${mbadge(r.metode_pengadaan)}</td>
+          <td style="font-size:11.5px;color:#475569">${r.jenis_pengadaan||'—'}</td>
+          <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,55)}${(r.nama_paket||'').length>55?'…':''}</td>
+          <td>${sbadge(r.status_paket)}</td>
+          <td class="mono text-right" style="font-size:12px;white-space:nowrap">${IDRf(r.nilai_kontrak)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
+
+    document.getElementById('real-tbl-info').textContent =
+      d.total ? `Menampilkan ${(page-1)*PER_PAGE+1}–${Math.min(page*PER_PAGE,d.total)} dari ${fmt(d.total)} transaksi` : '';
+    document.getElementById('real-pg-num').textContent   = `${page} / ${d.total_pages}`;
+    document.getElementById('real-prev').disabled = page <= 1;
+    document.getElementById('real-next').disabled = page >= d.total_pages;
+
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+function applyReal() {
+  S.realF = {
+    satker: v('real-satker'), transaksi: v('real-transaksi'), sumber: v('real-sumber'),
+    metode: v('real-metode'), status: v('real-status'), jenis: v('real-jenis'),
+    penyedia: v('real-penyedia'), nama: v('real-nama'), kode: v('real-kode'),
+  };
+  loadReal(1);
+}
+function resetReal() {
+  S.realF = {};
+  ['real-satker','real-transaksi','real-sumber','real-metode','real-status','real-jenis'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['real-penyedia','real-nama','real-kode'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  loadReal(1);
+}
+function pageReal(d) { loadReal(S.realPage + d); }
+
+// ============================================================
+// EFISIENSI FILTER
+// ============================================================
+function applyEfi() {
+  S.efiF = {
+    satker:   v('efi-satker')    || undefined,
+    transaksi:v('efi-transaksi') || undefined,
+    metode:   v('efi-metode')    || undefined,
+    status:   v('efi-status')    || undefined,
+  };
+  loadEfisiensi();
+}
+function resetEfi() {
+  S.efiF = {};
+  ['efi-satker','efi-transaksi','efi-metode','efi-status'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  loadEfisiensi();
+}
+
+// ============================================================
+// EFISIENSI
+// ============================================================
+async function loadEfisiensi() {
+  document.getElementById('efi-tbody').innerHTML =
+    `<tr><td colspan="7"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat analisis efisiensi...</p></div></td></tr>`;
+  try {
+    const tahun = document.getElementById('g-tahun').value;
+    const [efiRes, trenRes] = await Promise.all([
+      api({
+        action: 'listEfisiensi', tahun,
+        kode_satker:      S.efiF.satker    || undefined,
+        sumber_transaksi: S.efiF.transaksi || undefined,
+        metode_pengadaan: S.efiF.metode    || undefined,
+        status_paket:     S.efiF.status    || undefined,
+      }),
+      api({action:'dashboardTren'}),
+    ]);
+
+    const d    = efiRes.data||{};
+    const {aggregate=[], by_opd=[], total_pagu_filtered=0,
+           total_kontrak_filtered=0, total_paket_filtered=0, enums={}} = d;
+    const tren = trenRes.data||[];
+
+    // KPI Global (dari aggregate — tidak dipengaruhi filter transaksi/metode/status)
+    const total_pagu    = aggregate.reduce((s,r)=>s+(Number(r.total_pagu)||0),0);
+    const total_kontrak = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak)||0),0);
+    const total_efi     = total_pagu - total_kontrak;
+    const p_efi         = total_pagu>0 ? (total_efi/total_pagu*100) : 0;
+
+    document.getElementById('efi-pagu').textContent    = IDR(total_pagu);
+    document.getElementById('efi-kontrak').textContent = IDR(total_kontrak);
+    document.getElementById('efi-pct').textContent     = p_efi.toFixed(2)+'%';
+    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi: ' + IDR(total_efi);
+
+    // KPI Filtered
+    const efi_f   = total_pagu_filtered - total_kontrak_filtered;
+    const pct_f   = total_pagu_filtered>0 ? (efi_f/total_pagu_filtered*100) : 0;
+    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.status;
+    document.getElementById('efi-pagu-f').textContent    = IDR(total_pagu_filtered);
+    document.getElementById('efi-kontrak-f').textContent = IDR(total_kontrak_filtered);
+    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered);
+    document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDR(efi_f);
+    document.getElementById('efi-pct-f').textContent = 'Efisiensi: ' + pct_f.toFixed(2)+'%';
+    document.getElementById('efi-filter-desc').textContent = hasFilter
+      ? 'Filter aktif: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.status].filter(Boolean).join(', ')||'Satker terpilih'
+      : 'Belum ada filter aktif';
+
+    // Fill enum dropdowns
+    fillSatker('efi-satker',   enums.satker,           S.efiF.satker);
+    fillSelect('efi-transaksi',enums.sumber_transaksi,  S.efiF.transaksi);
+    fillSelect('efi-metode',   enums.metode_pengadaan,  S.efiF.metode);
+    fillSelect('efi-status',   enums.status_paket,      S.efiF.status, 'Semua status');
+
+    // Trend chart (pakai aggregate global — tidak terpengaruh filter)
+    if (S.efiCharts.tren) S.efiCharts.tren.destroy();
+    const ctx1 = document.getElementById('c-tren');
+    S.efiCharts.tren = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: tren.map(d=>d.periode),
+        datasets: [
+          {label:'Pagu',data:tren.map(d=>d.total_pagu),borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',tension:.35,fill:true,borderWidth:2,pointRadius:3},
+          {label:'Kontrak',data:tren.map(d=>d.total_kontrak),borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.06)',tension:.35,fill:true,borderWidth:2,pointRadius:3},
+        ],
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10}}},
+        scales:{y:{ticks:{callback:v=>IDR(v),font:{size:10}},grid:{color:'#F1F5F9'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+
+    // OPD chart — top 10 dari hasil filter
+    const top10 = by_opd.slice(0,10);
+    if (S.efiCharts.opd) S.efiCharts.opd.destroy();
+    const ctx2 = document.getElementById('c-opd');
+    S.efiCharts.opd = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: top10.map(d=>d.nama_satker.slice(0,22)),
+        datasets: [{
+          label:'Efisiensi (Rp)',
+          data: top10.map(d=>d.efisiensi),
+          backgroundColor: top10.map(d=>d.efisiensi<0?'rgba(239,68,68,.7)':'rgba(22,163,74,.7)'),
+          borderRadius: 4,
+        }],
+      },
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{callback:v=>IDR(v),font:{size:9}},grid:{color:'#F1F5F9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+    });
+
+    // Info tabel
+    document.getElementById('efi-tbl-info').textContent =
+      `Efisiensi per Satuan Kerja — ${fmt(by_opd.length)} OPD${hasFilter?' (hasil filter)':''}`;
+
+    // Table
+    document.getElementById('efi-tbody').innerHTML = by_opd.length
+      ? by_opd.map((r,i) => `<tr>
+          <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
+          <td style="font-size:12px">${r.nama_satker}</td>
+          <td class="mono text-right">${IDRf(r.total_pagu)}</td>
+          <td class="mono text-right">${IDRf(r.total_kontrak)}</td>
+          <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
+          <td class="text-center">${badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi))}</td>
+          <td class="mono text-center">${fmt(r.jumlah)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada data efisiensi. Upload RUP & Realisasi terlebih dahulu.</p></div></td></tr>`;
+
+  } catch(e) {
+    document.getElementById('efi-tbody').innerHTML = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+// ============================================================
+// PAGU MANUAL — dipakai bersama oleh menu Unmatched & Edit Pagu
+// Pagu manual bersifat GLOBAL per kode_paket: sekali diisi,
+// otomatis berlaku untuk periode lain dengan kode paket sama.
+// ============================================================
+async function fetchManualPaguMap() {
+  const res = await api({action:'listManualPagu'});
+  if (res.status!=='success') throw new Error(res.message||'Gagal memuat pagu manual.');
+  const map = {};
+  (res.data||[]).forEach(r => { map[r.kode_paket] = r; });
+  return map;
+}
+
+function manualPaguRowHtml(r, manualMap) {
+  const m = manualMap[r.kode_paket];
+  const safeSatker = String(r.nama_satker||'').replace(/"/g,'&quot;');
+  const safePaket  = String(r.nama_paket_realisasi||'').replace(/"/g,'&quot;');
+  return `<tr data-kode="${r.kode_paket}" data-satker="${safeSatker}" data-paket="${safePaket}" data-pagu="${m?m.pagu_manual:''}">
+    <td style="font-size:12px">${r.nama_satker||'—'}</td>
+    <td style="font-size:12px">${r.nama_paket_realisasi||'—'}</td>
+    <td><span class="mono" style="color:#64748B;font-size:11px">${r.kode_paket||'—'}</span></td>
+    <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
+    <td class="mono text-right" style="font-weight:600;color:${m?'#16A34A':'#94A3B8'}">${m?IDRf(m.pagu_manual):'—'}</td>
+    <td class="text-center" style="white-space:nowrap">
+      <button class="btn ${m?'btn-ghost':'btn-primary'} btn-sm" onclick="openManualPaguModal(this)">${m?'✎ Edit':'+ Pagu'}</button>
+      ${m ? `<button class="btn btn-ghost btn-sm" onclick="deleteManualPaguRow(this)" title="Hapus pagu manual" style="margin-left:4px">🗑</button>` : ''}
+    </td>
+  </tr>`;
+}
+
+async function openManualPaguModal(btn) {
+  if (!S.isAdmin) {
+    Swal.fire({icon:'warning', title:'Login Admin Diperlukan', text:'Verifikasi token admin di menu Upload Data terlebih dahulu untuk menambahkan pagu manual.'});
+    return;
+  }
+  const tr = btn.closest('tr');
+  const kode_paket  = tr.dataset.kode;
+  const nama_satker = tr.dataset.satker;
+  const nama_paket  = tr.dataset.paket;
+
+  const { value: pagu, isConfirmed } = await Swal.fire({
+    title: 'Pagu Manual',
+    html: `<div style="text-align:left;font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.6">
+             <div><b>Kode Paket:</b> ${kode_paket}</div>
+             <div><b>Nama Paket:</b> ${nama_paket||'—'}</div>
+             <div><b>Satker:</b> ${nama_satker||'—'}</div>
+           </div>`,
+    input: 'number',
+    inputLabel: 'Nilai Pagu (Rp) — berlaku untuk semua periode dengan kode paket ini',
+    inputValue: tr.dataset.pagu || '',
+    inputAttributes: { min:0, step:1 },
+    showCancelButton: true,
+    confirmButtonText: 'Simpan',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#2563EB',
+    inputValidator: v => (v===''||isNaN(v)||Number(v)<0) ? 'Isi nilai pagu yang valid (≥ 0).' : undefined,
+  });
+  if (!isConfirmed) return;
+
+  try {
+    const res = await api({
+      action:'saveManualPagu', token:S.adminToken, periode:getPeriode(),
+      kode_paket, nama_paket, nama_satker, pagu_manual: Number(pagu),
+    });
+    if (res.status!=='success') throw new Error(res.message||'Gagal menyimpan pagu manual.');
+    Swal.fire({icon:'success', title:'Tersimpan', text:'Pagu manual berlaku untuk semua periode dengan kode paket ini.', timer:1800, showConfirmButton:false});
+    refreshManualPaguViews();
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
+}
+
+async function deleteManualPaguRow(btn) {
+  const tr = btn.closest('tr');
+  const kode_paket = tr.dataset.kode;
+  if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
+  const conf = await Swal.fire({title:'Hapus pagu manual?', text:'Kode paket '+kode_paket+' akan kembali tanpa pagu di semua periode.', icon:'warning', showCancelButton:true, confirmButtonText:'Hapus', confirmButtonColor:'#DC2626'});
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({action:'deleteManualPagu', token:S.adminToken, kode_paket});
+    if (res.status!=='success') throw new Error(res.message||'Gagal menghapus pagu manual.');
+    refreshManualPaguViews();
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
+}
+
+function refreshManualPaguViews() {
+  const active = document.querySelector('.nav-link.active')?.dataset.s;
+  if      (active==='unmatched') loadUnmatched();
+  else if (active==='pagu')      loadPagu();
+}
+
+// ============================================================
+// UNMATCHED — paket realisasi tanpa pasangan RUP
+// ============================================================
+async function loadUnmatched() {
+  document.getElementById('um-kpi').innerHTML = `<div class="scard"><div class="spin"></div></div>`;
+  document.querySelector('#t-um-real tbody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
+  try {
+    const periode = getPeriode();
+    const [res, manualMap] = await Promise.all([
+      api({action:'unmatchedData', periode}),
+      fetchManualPaguMap(),
+    ]);
+    if (res.status!=='success') throw new Error(res.message||'Gagal memuat data unmatched.');
+    const d = res.data||{};
+    const unmatchedReal = d.unmatched_realisasi || [];
+
+    document.getElementById('um-kpi').innerHTML = [
+      {lbl:'Matching Rate', val:pct(d.matching_rate)},
+      {lbl:'Total Realisasi', val:fmt(d.total_realisasi)},
+      {lbl:'Total Matched', val:fmt(d.total_matched)},
+      {lbl:'Unmatched Realisasi', val:fmt(unmatchedReal.length)},
+    ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
+
+    document.querySelector('#t-um-real tbody').innerHTML = unmatchedReal.length
+      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap)).join('')
+      : `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+
+    updateUnmatchedBadge(unmatchedReal.length);
+  } catch(e) {
+    document.getElementById('um-kpi').innerHTML = `<div class="error-state">⚠ ${e.message}</div>`;
+  }
+}
+
+function updateUnmatchedBadge(total) {
+  const b = document.getElementById('nav-unmatched-badge');
+  if (!b) return;
+  b.textContent = fmt(total);
+  b.classList.toggle('hidden', !total);
+  b.classList.toggle('b-zero', !total);
+}
+
+// ============================================================
+// EDIT PAGU MANUAL
+// ============================================================
+async function loadPagu() {
+  if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
+  const periode = getPeriode();
+  document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
+  try {
+    const [umRes, manualMap] = await Promise.all([
+      api({action:'unmatchedData', periode}),
+      fetchManualPaguMap(),
+    ]);
+    if (umRes.status!=='success') throw new Error(umRes.message||'Gagal memuat data unmatched.');
+
+    const unmatchedReal = umRes.data?.unmatched_realisasi || [];
+    document.getElementById('pagu-tbl-info').textContent =
+      `Paket Realisasi Tanpa Pagu — ${fmt(unmatchedReal.length)} paket, periode ${periode||'—'}`;
+
+    document.getElementById('pagu-tbody').innerHTML = unmatchedReal.length
+      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap)).join('')
+      : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><p>Semua paket realisasi periode ini sudah memiliki pasangan RUP.</p></div></td></tr>`;
+  } catch(e) {
+    document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+// ============================================================
+// UPLOAD
+// ============================================================
+let rupFile=null, realFile=null;
+
+function setupDrop(dropId, fileId, lblId, btnId, cb) {
+  const drop=document.getElementById(dropId), inp=document.getElementById(fileId);
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e=>{e.preventDefault();drop.classList.add('drag')}));
+  ['dragleave','dragend'].forEach(ev => drop.addEventListener(ev, ()=>drop.classList.remove('drag')));
+  drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('drag');if(e.dataTransfer.files[0])cb(e.dataTransfer.files[0])});
+  inp.addEventListener('change', ()=>{if(inp.files[0])cb(inp.files[0])});
+}
+
+setupDrop('drop-rup','file-rup','lbl-rup','btn-rup', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv dan maks 10 MB','error');return;}
+  rupFile=f;
+  document.getElementById('lbl-rup').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
+  const btn=document.getElementById('btn-rup'); btn.disabled=false;
+});
+setupDrop('drop-real','file-real','lbl-real','btn-real', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv dan maks 10 MB','error');return;}
+  realFile=f;
+  document.getElementById('lbl-real').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
+  const btn=document.getElementById('btn-real'); btn.disabled=false;
+});
+
+function parseCSV(text) {
+  const norm = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  function parseRow(s,pos) {
+    const vals=[];
+    while(pos<=s.length){
+      if(s[pos]==='"'){
+        let val='',p=pos+1;
+        while(p<s.length){if(s[p]==='"'){if(s[p+1]==='"'){val+='"';p+=2;}else{p++;break;}}else val+=s[p++];}
+        vals.push(val); if(s[p]===',')p++; pos=p;
+      } else {
+        let end=pos; while(end<s.length&&s[end]!==','&&s[end]!=='\n')end++;
+        vals.push(s.slice(pos,end).trim()); pos=s[end]===','?end+1:end;
+      }
+      if(pos>=s.length||(pos>0&&(s[pos-1]==='\n'||(pos<s.length&&s[pos]==='\n'))))break;
+    }
+    return{vals,nextPos:pos};
+  }
+  const rows=[]; let pos=0;
+  while(pos<norm.length){
+    if(norm[pos]==='\n'){pos++;continue;}
+    const{vals,nextPos}=parseRow(norm,pos);
+    if(vals.length)rows.push(vals); pos=nextPos;
+    if(pos<norm.length&&norm[pos]==='\n')pos++;
+  }
+  if(rows.length<2)return[];
+  const headers=rows[0].map(h=>h.replace(/^"|"$/g,'').trim());
+  return rows.slice(1).filter(r=>r.some(x=>x.trim()!=='')).map(vals=>{
+    const obj={}; headers.forEach((h,i)=>{obj[h]=(vals[i]!==undefined?vals[i]:'').trim();}); return obj;
+  });
+}
+
+async function uploadChunked(action, rows, periode, namaFile, pfill, ppct, plbl, pwrap) {
+  document.getElementById(pwrap).classList.remove('hidden');
+  const chunks=[]; for(let i=0;i<rows.length;i+=CHUNK_SIZE)chunks.push(rows.slice(i,i+CHUNK_SIZE));
+  const sid=(crypto.randomUUID?.())||('sid-'+Date.now());
+  let processed=0, lastRes=null;
+  for(let ci=0;ci<chunks.length;ci++){
+    document.getElementById(plbl).textContent = chunks.length>1?`Chunk ${ci+1}/${chunks.length}...`:'Mengunggah...';
+    const res = await api({action,token:S.adminToken,periode,data:chunks[ci],nama_file:namaFile,
+      session_id:sid,chunk_index:ci,total_chunks:chunks.length,total_records:rows.length});
+    if(res.status!=='success') throw new Error(res.message);
+    lastRes=res; processed+=chunks[ci].length;
+    const pv=Math.round(processed/rows.length*100);
+    document.getElementById(pfill).style.width=pv+'%';
+    document.getElementById(ppct).textContent=pv+'%';
+  }
+  document.getElementById(plbl).textContent='✅ Selesai';
+  return{total:processed,lastRes};
+}
+
+async function uploadRUP() {
+  if(!rupFile)return;
+  const periode=v('up-tahun')+'-'+v('up-bulan');
+  const btn=document.getElementById('btn-rup'); btn.disabled=true;
+  try {
+    const rows=parseCSV(await rupFile.text());
+    const r=await uploadChunked('uploadRUP',rows,periode,rupFile.name,'prog-rup-fill','prog-rup-pct','prog-rup-lbl','prog-rup-wrap');
+    Swal.fire('✅ Upload RUP Berhasil',`<b>${r.total.toLocaleString('id-ID')}</b> record berhasil diproses.`,'success');
+    rupFile=null; document.getElementById('lbl-rup').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-rup-wrap').classList.add('hidden'); btn.disabled=true;
+    loadLog();
+  } catch(e){ Swal.fire('❌ Upload Gagal',e.message,'error'); }
+  finally { btn.disabled=false; }
+}
+
+async function uploadReal() {
+  if(!realFile)return;
+  const periode=v('up-tahun')+'-'+v('up-bulan');
+  const btn=document.getElementById('btn-real'); btn.disabled=true;
+  try {
+    const rows=parseCSV(await realFile.text());
+
+    // Step 1: Upload data realisasi
+    btn.textContent='📤 Mengupload...';
+    const r=await uploadChunked('uploadRealisasi',rows,periode,realFile.name,'prog-real-fill','prog-real-pct','prog-real-lbl','prog-real-wrap');
+
+    // Step 2: Jalankan matching engine (request terpisah)
+    btn.textContent='⚙️ Matching...';
+    Swal.fire({title:'⚙️ Menjalankan Matching Engine',html:`Upload selesai: <b>${r.total.toLocaleString('id-ID')}</b> record.<br><small style="color:#94A3B8">Proses matching 30–90 detik, jangan tutup halaman...</small>`,allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+
+    const matchRes = await api({action:'runMatching', token:S.adminToken, periode});
+    if(matchRes.status!=='success') throw new Error('Matching gagal: '+(matchRes.message||'unknown'));
+
+    const md = matchRes.data||{};
+    Swal.fire('✅ Upload & Matching Berhasil',
+      `<b>${r.total.toLocaleString('id-ID')}</b> record diproses.<br>` +
+      `Matched: <b>${md.matched??'—'}</b> | Unmatched: <b>${md.unmatched??'—'}</b> | Orphan: <b>${md.orphan??'—'}</b>`,
+      'success');
+
+    realFile=null;
+    document.getElementById('lbl-real').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-real-wrap').classList.add('hidden');
+    btn.disabled=true;
+    await init(); loadLog();
+  } catch(e){ Swal.fire('❌ Upload Gagal',e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='Upload Realisasi'; }
+}
+
+async function verifyToken() {
+  const token=v('inp-token');
+  const btn=document.getElementById('btn-verify'), msg=document.getElementById('token-msg');
+  if(!token){Swal.fire('Error','Token tidak boleh kosong.','error');return;}
+  btn.disabled=true; btn.textContent='Memeriksa...';
+  try {
+    const res=await api({action:'verifyToken',token});
+    if(res.status==='success'&&res.data?.valid){
+      S.adminToken=token; S.isAdmin=true;
+      msg.innerHTML='<span style="color:#16A34A;font-weight:600">✅ Token valid</span>';
+      document.getElementById('token-badge').className='badge b-green'; document.getElementById('token-badge').textContent='Admin';
+      document.getElementById('upload-panel').classList.remove('hidden');
+      document.getElementById('nav-pagu').classList.remove('hidden');
+      document.getElementById('inp-token').style.borderColor='#86EFAC';
+      syncUploadPeriode(); loadLog();
+    } else {
+      msg.innerHTML='<span style="color:#EF4444">❌ Token salah</span>';
+      document.getElementById('inp-token').style.borderColor='#FCA5A5';
+    }
+  } catch(e){ msg.innerHTML=`<span style="color:#EF4444">❌ ${e.message}</span>`; }
+  finally { btn.disabled=false; btn.textContent='Verifikasi'; }
+}
+
+async function loadLog() {
+  const tahun=v('up-tahun'), bulan=v('up-bulan'), periode=tahun+'-'+bulan;
+  document.getElementById('up-periode-label').textContent=`Menampilkan log periode ${periode}`;
+  const tbody=document.querySelector('#t-log tbody');
+  tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state" style="padding:16px"><div class="spin"></div></div></td></tr>`;
+  try {
+    const res=await api({action:'getUploadLog'});
+    const all=res.data||[];
+    const forP=all.filter(l=>String(l.periode)===String(periode));
+    const hasRUP=forP.some(l=>l.jenis_data==='RUP'), hasReal=forP.some(l=>l.jenis_data==='REALISASI');
+    const warn=document.getElementById('log-banner-warn'), ok=document.getElementById('log-banner-ok');
+    if(hasRUP&&hasReal){warn.style.display='none';ok.style.display='block';ok.textContent='✅ RUP dan Realisasi sudah diupload untuk periode '+periode+'.';}
+    else if(hasRUP&&!hasReal){warn.style.display='block';warn.textContent='⚠ Realisasi belum diupload untuk periode '+periode+'.';ok.style.display='none';}
+    else{warn.style.display='block';warn.textContent=all.length?`⚠ Tidak ada upload untuk periode ${periode}. Riwayat semua periode ditampilkan di bawah.`:'⚠ Belum ada data upload.';ok.style.display='none';}
+    const show=forP.length>0?forP:all.slice(0,100);
+    if(!all.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state" style="padding:16px"><p>Belum ada riwayat upload.</p></div></td></tr>`;return;}
+    tbody.innerHTML=show.map(l=>{
+      const cur=String(l.periode)===String(periode);
+      const uid=encodeURIComponent(JSON.stringify({upload_id:l.upload_id,periode:l.periode,jenis_data:l.jenis_data}));
+      const jBdg=l.jenis_data==='RUP'?badge('b-blue','RUP'):badge('b-green','REALISASI');
+      const waktu=l.uploaded_at?new Date(l.uploaded_at).toLocaleString('id-ID'):'-';
+      const stEl=l.status==='SUCCESS'?'<span style="color:#16A34A;font-weight:700;font-size:11px">SUCCESS</span>':'<span style="color:#EF4444;font-weight:700;font-size:11px">'+(l.status||'?')+'</span>';
+      return`<tr style="opacity:${cur?1:.45}">
+        <td style="text-align:center;width:36px"><input type="checkbox" class="chk-log" data-item="${uid}" onclick="updSel()" style="cursor:pointer;accent-color:#2563EB"/></td>
+        <td class="mono" style="font-size:11px;font-weight:700;color:${cur?'#2563EB':'#94A3B8'}">${l.periode||'—'}</td>
+        <td>${jBdg}</td>
+        <td class="mono" style="font-size:11px">${l.nama_file||'—'}</td>
+        <td class="mono text-center" style="font-size:11px">${Number(l.jumlah_record||0).toLocaleString('id-ID')}</td>
+        <td style="font-size:11px;white-space:nowrap">${waktu}</td>
+        <td>${stEl}</td>
+        <td style="font-size:11px;color:#64748B">${l.catatan||'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){tbody.innerHTML=`<tr><td colspan="8"><div class="error-state">⚠ ${e.message}</div></td></tr>`;}
+}
+
+function updSel() {
+  const n=document.querySelectorAll('.chk-log:checked').length;
+  document.getElementById('sel-count').textContent=n;
+  document.getElementById('btn-hapus-log').classList.toggle('hidden',n===0);
+  const total=document.querySelectorAll('.chk-log').length, ca=document.getElementById('chk-all');
+  if(ca){ca.checked=n===total&&total>0; ca.indeterminate=n>0&&n<total;}
+}
+
+function selAll(el) { document.querySelectorAll('.chk-log').forEach(c=>c.checked=el.checked); updSel(); }
+
+async function hapusLogTerpilih() {
+  const checked=document.querySelectorAll('.chk-log:checked');
+  if(!checked.length)return;
+  const items=[]; checked.forEach(c=>{try{items.push(JSON.parse(decodeURIComponent(c.dataset.item)));}catch(e){}});
+  const conf=await Swal.fire({
+    title:'Hapus '+items.length+' item?',
+    html:'<ul style="text-align:left;font-size:13px">'+items.map(i=>`<li><b>${i.periode}</b> — ${i.jenis_data}</li>`).join('')+'</ul><p style="font-size:12px;color:#EF4444;margin-top:8px">Matching & aggregate terkait juga akan dihapus.</p>',
+    icon:'warning',showCancelButton:true,confirmButtonColor:'#EF4444',cancelButtonText:'Batal',confirmButtonText:'Ya, Hapus!'
+  });
+  if(!conf.isConfirmed)return;
+  try{const res=await api({action:'deleteByLog',token:S.adminToken,items});Swal.fire('✅ Berhasil',res.message,'success');await init();loadLog();}
+  catch(e){Swal.fire('❌ Error',e.message,'error');}
+}
+
+async function hapusPeriode() {
+  const p=v('del-periode');
+  if(!p||!/^\d{4}-\d{2}$/.test(p)){Swal.fire('Error','Format harus YYYY-MM, contoh: 2026-05','error');return;}
+  const conf=await Swal.fire({title:'Hapus periode '+p+'?',text:'Semua data tidak dapat dipulihkan.',icon:'warning',showCancelButton:true,confirmButtonColor:'#EF4444',cancelButtonText:'Batal',confirmButtonText:'Ya, Hapus!'});
+  if(!conf.isConfirmed)return;
+  const res=await api({action:'deletePeriode',token:S.adminToken,periode:p});
+  Swal.fire(res.status==='success'?'✅ Berhasil':'❌ Error', res.message, res.status==='success'?'success':'error');
+  loadLog();
+}
+
+function syncUploadPeriode() {
+  const selT=document.getElementById('up-tahun'); if(!selT)return;
+  const tahunSet=[...new Set(S.periodes.map(p=>String(p).split('-')[0]))].sort().reverse();
+  const thisYear=String(new Date().getFullYear());
+  if(!tahunSet.includes(thisYear))tahunSet.unshift(thisYear);
+  selT.innerHTML=tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
+  if(S.latestPeriode){
+    const[th,bl]=String(S.latestPeriode).split('-');
+    if(th)selT.value=th;
+    if(bl)document.getElementById('up-bulan').value=bl;
+  }
+  const periode=selT.value+'-'+(document.getElementById('up-bulan').value||'01');
+  document.getElementById('up-periode-label').textContent=`Periode aktif: ${periode}`;
+}
+
+['up-tahun','up-bulan'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('change',()=>{ if(S.isAdmin)loadLog(); });
+});
+
+// ============================================================
+// DOWNLOAD CSV
+// ============================================================
+async function downloadCSV(type) {
+  Swal.fire({title:'Menyiapkan CSV...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try {
+    let rows=[], headers=[], filename='';
+    if(type==='efi'){
+      const res=await api({action:'listEfisiensi',tahun:document.getElementById('g-tahun').value,...Object.fromEntries(Object.entries(S.efiF).filter(([,v])=>v))});
+      rows=(res.data?.by_opd||[]).map(r=>[r.nama_satker,r.total_pagu,r.total_kontrak,r.efisiensi,r.persen_efisiensi,r.jumlah]);
+      headers=['Nama Satker','Total Pagu','Total Kontrak','Efisiensi (Rp)','% Efisiensi','Jml Paket'];
+      filename='Efisiensi_'+document.getElementById('g-tahun').value+'.csv';
+    } else if(type==='rup'){
+      const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
+      rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.cara_pengadaan,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.kode_rup,r.sumber_dana,r.produk_dalam_negeri,r.pagu]);
+      headers=['Nama Satker','Cara Pengadaan','Metode Pengadaan','Jenis Pengadaan','Nama Paket','Kode RUP','Sumber Dana','PDN','Total Pagu'];
+      filename='RUP_'+getPeriode()+'.csv';
+    } else {
+      const res=await api({action:'listRealisasi',periode:getPeriode(),...Object.fromEntries(Object.entries(S.realF).filter(([,v])=>v)),page:1,per_page:99999});
+      rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.kode_paket,r.kode_rup,r.sumber_transaksi,r.sumber_dana,r.nama_penyedia,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.status_paket,r.nilai_kontrak]);
+      headers=['Nama Satker','Kode Paket','Kode RUP','Sumber Transaksi','Sumber Dana','Nama Penyedia','Metode','Jenis','Nama Paket','Status','Total Nilai'];
+      filename='Realisasi_'+getPeriode()+'.csv';
+    }
+    const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+    a.download=filename; a.click();
+    Swal.close();
+  } catch(e){Swal.fire('❌ Error',e.message,'error');}
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+const v = id => document.getElementById(id)?.value?.trim()||'';
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+</body>
+</html>
 <html lang="id">
 <head>
 <meta charset="UTF-8"/>
