@@ -574,18 +574,94 @@ table.dt tr:hover td{background:#FAFBFF}
   <!-- ===================== EFISIENSI ===================== -->
   <section id="sec-efisiensi" class="section">
     <h1 class="page-title">Analisis Efisiensi</h1>
-    <div class="summary-grid-4" id="efi-kpi">
-      <div class="scard"><div class="scard-label">Total Pagu RUP</div><div class="scard-value" id="efi-pagu">—</div></div>
-      <div class="scard green"><div class="scard-label">Total Kontrak</div><div class="scard-value" id="efi-kontrak">—</div></div>
-      <div class="scard yellow"><div class="scard-label">Nilai Efisiensi</div><div class="scard-value" id="efi-nilai">—</div></div>
-      <div class="scard purple"><div class="scard-label">% Efisiensi</div><div class="scard-value" id="efi-pct">—</div></div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-header" id="fh-efi">
+        <div>
+          <div class="filter-title">Filter Data</div>
+          <div class="filter-sub">Filter berpengaruh pada KPI, jumlah paket, dan tabel per satker</div>
+        </div>
+        <svg class="filter-chevron open" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="filter-body" id="fb-efi">
+        <div class="filter-grid">
+          <div class="fld" style="grid-column:span 2">
+            <label>Satuan Kerja</label>
+            <select id="efi-satker"><option value="">Semua Satuan Kerja</option></select>
+          </div>
+          <div class="fld">
+            <label>Sumber Transaksi</label>
+            <select id="efi-transaksi"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="efi-metode"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Status Paket</label>
+            <select id="efi-status"><option value="">Semua status</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="applyEfi()">Terapkan</button>
+          <button class="btn btn-ghost btn-icon" onclick="resetEfi()" title="Reset filter">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
+
+    <!-- KPI 6 kartu: 2 baris -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+      <div class="scard">
+        <div class="scard-label">Total Pagu RUP</div>
+        <div class="scard-value" id="efi-pagu">—</div>
+        <div class="scard-sub">Keseluruhan periode</div>
+      </div>
+      <div class="scard green">
+        <div class="scard-label">Total Kontrak</div>
+        <div class="scard-value" id="efi-kontrak">—</div>
+        <div class="scard-sub">Keseluruhan periode</div>
+      </div>
+      <div class="scard yellow">
+        <div class="scard-label">% Efisiensi</div>
+        <div class="scard-value" id="efi-pct">—</div>
+        <div class="scard-sub" id="efi-nilai-sub">—</div>
+      </div>
+    </div>
+    <!-- KPI filtered -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
+        <div class="scard-sub" id="efi-filter-desc">Belum ada filter aktif</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Kontrak (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-kontrak-f">—</div>
+        <div class="scard-sub" id="efi-efi-f-label">—</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #0EA5E9">
+        <div class="scard-label" style="color:#0369A1">Jumlah Paket (Hasil Filter)</div>
+        <div class="scard-value" style="font-size:20px" id="efi-paket-f">—</div>
+        <div class="scard-sub" id="efi-pct-f">—</div>
+      </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card"><div class="chart-title">Tren Pagu vs Kontrak per Periode</div><div style="height:220px"><canvas id="c-tren"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Top 10 OPD — Efisiensi Tertinggi</div><div style="height:220px"><canvas id="c-opd"></canvas></div></div>
     </div>
+
     <div class="tbl-wrap">
-      <div class="tbl-topbar"><span class="tbl-topbar-info">Efisiensi per Satuan Kerja</span></div>
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('efi')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download CSV
+        </button>
+      </div>
       <div class="tbl-scroll">
         <table class="dt">
           <thead><tr>
@@ -774,6 +850,7 @@ const S = {
   rupPage: 1, realPage: 1,
   rupF: {}, realF: {},
   efiCharts: {},
+  efiF: {},
 };
 
 // ============================================================
@@ -945,6 +1022,7 @@ function initFilterToggle(headerId, bodyId, chevronSelector) {
 }
 initFilterToggle('fh-rup',  'fb-rup');
 initFilterToggle('fh-real', 'fb-real');
+initFilterToggle('fh-efi', 'fb-efi');
 
 // Enter key search
 ['rup-kode','rup-nama'].forEach(id => document.getElementById(id).addEventListener('keydown', e => e.key==='Enter' && applyRUP()));
@@ -1139,6 +1217,26 @@ function resetReal() {
 function pageReal(d) { loadReal(S.realPage + d); }
 
 // ============================================================
+// EFISIENSI FILTER
+// ============================================================
+function applyEfi() {
+  S.efiF = {
+    satker:   v('efi-satker')    || undefined,
+    transaksi:v('efi-transaksi') || undefined,
+    metode:   v('efi-metode')    || undefined,
+    status:   v('efi-status')    || undefined,
+  };
+  loadEfisiensi();
+}
+function resetEfi() {
+  S.efiF = {};
+  ['efi-satker','efi-transaksi','efi-metode','efi-status'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  loadEfisiensi();
+}
+
+// ============================================================
 // EFISIENSI
 // ============================================================
 async function loadEfisiensi() {
@@ -1147,14 +1245,22 @@ async function loadEfisiensi() {
   try {
     const tahun = document.getElementById('g-tahun').value;
     const [efiRes, trenRes] = await Promise.all([
-      api({action:'listEfisiensi', tahun}),
+      api({
+        action: 'listEfisiensi', tahun,
+        kode_satker:      S.efiF.satker    || undefined,
+        sumber_transaksi: S.efiF.transaksi || undefined,
+        metode_pengadaan: S.efiF.metode    || undefined,
+        status_paket:     S.efiF.status    || undefined,
+      }),
       api({action:'dashboardTren'}),
     ]);
 
-    const {aggregate=[], by_opd=[]} = efiRes.data||{};
+    const d    = efiRes.data||{};
+    const {aggregate=[], by_opd=[], total_pagu_filtered=0,
+           total_kontrak_filtered=0, total_paket_filtered=0, enums={}} = d;
     const tren = trenRes.data||[];
 
-    // KPI from all aggregate for selected year
+    // KPI Global (dari aggregate — tidak dipengaruhi filter transaksi/metode/status)
     const total_pagu    = aggregate.reduce((s,r)=>s+(Number(r.total_pagu)||0),0);
     const total_kontrak = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak)||0),0);
     const total_efi     = total_pagu - total_kontrak;
@@ -1162,10 +1268,29 @@ async function loadEfisiensi() {
 
     document.getElementById('efi-pagu').textContent    = IDR(total_pagu);
     document.getElementById('efi-kontrak').textContent = IDR(total_kontrak);
-    document.getElementById('efi-nilai').textContent   = IDR(total_efi);
     document.getElementById('efi-pct').textContent     = p_efi.toFixed(2)+'%';
+    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi: ' + IDR(total_efi);
 
-    // Trend chart
+    // KPI Filtered
+    const efi_f   = total_pagu_filtered - total_kontrak_filtered;
+    const pct_f   = total_pagu_filtered>0 ? (efi_f/total_pagu_filtered*100) : 0;
+    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.status;
+    document.getElementById('efi-pagu-f').textContent    = IDR(total_pagu_filtered);
+    document.getElementById('efi-kontrak-f').textContent = IDR(total_kontrak_filtered);
+    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered);
+    document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDR(efi_f);
+    document.getElementById('efi-pct-f').textContent = 'Efisiensi: ' + pct_f.toFixed(2)+'%';
+    document.getElementById('efi-filter-desc').textContent = hasFilter
+      ? 'Filter aktif: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.status].filter(Boolean).join(', ')||'Satker terpilih'
+      : 'Belum ada filter aktif';
+
+    // Fill enum dropdowns
+    fillSatker('efi-satker',   enums.satker,           S.efiF.satker);
+    fillSelect('efi-transaksi',enums.sumber_transaksi,  S.efiF.transaksi);
+    fillSelect('efi-metode',   enums.metode_pengadaan,  S.efiF.metode);
+    fillSelect('efi-status',   enums.status_paket,      S.efiF.status, 'Semua status');
+
+    // Trend chart (pakai aggregate global — tidak terpengaruh filter)
     if (S.efiCharts.tren) S.efiCharts.tren.destroy();
     const ctx1 = document.getElementById('c-tren');
     S.efiCharts.tren = new Chart(ctx1, {
@@ -1182,7 +1307,7 @@ async function loadEfisiensi() {
         scales:{y:{ticks:{callback:v=>IDR(v),font:{size:10}},grid:{color:'#F1F5F9'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
 
-    // OPD chart
+    // OPD chart — top 10 dari hasil filter
     const top10 = by_opd.slice(0,10);
     if (S.efiCharts.opd) S.efiCharts.opd.destroy();
     const ctx2 = document.getElementById('c-opd');
@@ -1201,6 +1326,10 @@ async function loadEfisiensi() {
         plugins:{legend:{display:false}},
         scales:{x:{ticks:{callback:v=>IDR(v),font:{size:9}},grid:{color:'#F1F5F9'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
     });
+
+    // Info tabel
+    document.getElementById('efi-tbl-info').textContent =
+      `Efisiensi per Satuan Kerja — ${fmt(by_opd.length)} OPD${hasFilter?' (hasil filter)':''}`;
 
     // Table
     document.getElementById('efi-tbody').innerHTML = by_opd.length
@@ -1473,7 +1602,12 @@ async function downloadCSV(type) {
   Swal.fire({title:'Menyiapkan CSV...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try {
     let rows=[], headers=[], filename='';
-    if(type==='rup'){
+    if(type==='efi'){
+      const res=await api({action:'listEfisiensi',tahun:document.getElementById('g-tahun').value,...Object.fromEntries(Object.entries(S.efiF).filter(([,v])=>v))});
+      rows=(res.data?.by_opd||[]).map(r=>[r.nama_satker,r.total_pagu,r.total_kontrak,r.efisiensi,r.persen_efisiensi,r.jumlah]);
+      headers=['Nama Satker','Total Pagu','Total Kontrak','Efisiensi (Rp)','% Efisiensi','Jml Paket'];
+      filename='Efisiensi_'+document.getElementById('g-tahun').value+'.csv';
+    } else if(type==='rup'){
       const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
       rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.cara_pengadaan,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.kode_rup,r.sumber_dana,r.produk_dalam_negeri,r.pagu]);
       headers=['Nama Satker','Cara Pengadaan','Metode Pengadaan','Jenis Pengadaan','Nama Paket','Kode RUP','Sumber Dana','PDN','Total Pagu'];
