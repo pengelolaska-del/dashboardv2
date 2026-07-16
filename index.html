@@ -837,6 +837,7 @@ table.dt tr:hover td{background:#FAFBFF}
         <div class="tbl-scroll" style="max-height:520px;overflow-y:auto">
           <table class="dt" id="t-um-real"><thead><tr>
             <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th><th class="text-right">Kontrak</th>
+            <th class="text-right" style="width:160px">Pagu Manual</th><th class="text-center" style="width:110px">Aksi</th>
           </tr></thead><tbody></tbody></table>
         </div>
       </div>
@@ -846,15 +847,7 @@ table.dt tr:hover td{background:#FAFBFF}
   <!-- ===================== EDIT PAGU (MANUAL) ===================== -->
   <section id="sec-pagu" class="section">
     <h1 class="page-title">Edit Pagu Manual</h1>
-    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Isi pagu secara manual untuk paket realisasi yang belum memiliki pasangan RUP (mis. carry-over anggaran). Nilai ini otomatis dipakai pada perhitungan Efisiensi.</p>
-
-    <div class="upload-card" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div>
-        <div class="upload-card-title" style="margin-bottom:2px">Bawa Pagu ke Bulan Berikutnya</div>
-        <p style="font-size:12px;color:#64748B">Menyalin semua entri pagu manual periode <b id="pagu-periode-aktif">—</b> ke periode berikutnya (entri yang sudah ada di bulan tujuan tidak akan ditimpa).</p>
-      </div>
-      <button class="btn btn-primary" onclick="carryForwardPagu()">↷ Bawa ke Bulan Berikutnya</button>
-    </div>
+    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Isi pagu secara manual untuk paket realisasi yang belum memiliki pasangan RUP (mis. carry-over anggaran). Pagu manual tersimpan berdasarkan <b>kode paket</b> — sekali diisi, otomatis berlaku di periode manapun yang memuat kode paket yang sama, dan langsung dipakai pada perhitungan Efisiensi.</p>
 
     <div class="tbl-wrap">
       <div class="tbl-topbar">
@@ -1406,19 +1399,106 @@ async function loadEfisiensi() {
 }
 
 // ============================================================
-// UNMATCHED — paket tanpa pasangan RUP ↔ Realisasi
+// PAGU MANUAL — dipakai bersama oleh menu Unmatched & Edit Pagu
+// Pagu manual bersifat GLOBAL per kode_paket: sekali diisi,
+// otomatis berlaku untuk periode lain dengan kode paket sama.
 // ============================================================
-function fillTbl(id, rows, cols) {
-  document.querySelector(id+' tbody').innerHTML = rows?.length
-    ? rows.map(r=>`<tr>${cols.map(c=>`<td style="font-size:12px">${c(r)}</td>`).join('')}</tr>`).join('')
-    : `<tr><td colspan="${cols.length}"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+async function fetchManualPaguMap() {
+  const res = await api({action:'listManualPagu'});
+  if (res.status!=='success') throw new Error(res.message||'Gagal memuat pagu manual.');
+  const map = {};
+  (res.data||[]).forEach(r => { map[r.kode_paket] = r; });
+  return map;
 }
 
+function manualPaguRowHtml(r, manualMap) {
+  const m = manualMap[r.kode_paket];
+  const safeSatker = String(r.nama_satker||'').replace(/"/g,'&quot;');
+  const safePaket  = String(r.nama_paket_realisasi||'').replace(/"/g,'&quot;');
+  return `<tr data-kode="${r.kode_paket}" data-satker="${safeSatker}" data-paket="${safePaket}" data-pagu="${m?m.pagu_manual:''}">
+    <td style="font-size:12px">${r.nama_satker||'—'}</td>
+    <td style="font-size:12px">${r.nama_paket_realisasi||'—'}</td>
+    <td><span class="mono" style="color:#64748B;font-size:11px">${r.kode_paket||'—'}</span></td>
+    <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
+    <td class="mono text-right" style="font-weight:600;color:${m?'#16A34A':'#94A3B8'}">${m?IDRf(m.pagu_manual):'—'}</td>
+    <td class="text-center" style="white-space:nowrap">
+      <button class="btn ${m?'btn-ghost':'btn-primary'} btn-sm" onclick="openManualPaguModal(this)">${m?'✎ Edit':'+ Pagu'}</button>
+      ${m ? `<button class="btn btn-ghost btn-sm" onclick="deleteManualPaguRow(this)" title="Hapus pagu manual" style="margin-left:4px">🗑</button>` : ''}
+    </td>
+  </tr>`;
+}
+
+async function openManualPaguModal(btn) {
+  if (!S.isAdmin) {
+    Swal.fire({icon:'warning', title:'Login Admin Diperlukan', text:'Verifikasi token admin di menu Upload Data terlebih dahulu untuk menambahkan pagu manual.'});
+    return;
+  }
+  const tr = btn.closest('tr');
+  const kode_paket  = tr.dataset.kode;
+  const nama_satker = tr.dataset.satker;
+  const nama_paket  = tr.dataset.paket;
+
+  const { value: pagu, isConfirmed } = await Swal.fire({
+    title: 'Pagu Manual',
+    html: `<div style="text-align:left;font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.6">
+             <div><b>Kode Paket:</b> ${kode_paket}</div>
+             <div><b>Nama Paket:</b> ${nama_paket||'—'}</div>
+             <div><b>Satker:</b> ${nama_satker||'—'}</div>
+           </div>`,
+    input: 'number',
+    inputLabel: 'Nilai Pagu (Rp) — berlaku untuk semua periode dengan kode paket ini',
+    inputValue: tr.dataset.pagu || '',
+    inputAttributes: { min:0, step:1 },
+    showCancelButton: true,
+    confirmButtonText: 'Simpan',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#2563EB',
+    inputValidator: v => (v===''||isNaN(v)||Number(v)<0) ? 'Isi nilai pagu yang valid (≥ 0).' : undefined,
+  });
+  if (!isConfirmed) return;
+
+  try {
+    const res = await api({
+      action:'saveManualPagu', token:S.adminToken, periode:getPeriode(),
+      kode_paket, nama_paket, nama_satker, pagu_manual: Number(pagu),
+    });
+    if (res.status!=='success') throw new Error(res.message||'Gagal menyimpan pagu manual.');
+    Swal.fire({icon:'success', title:'Tersimpan', text:'Pagu manual berlaku untuk semua periode dengan kode paket ini.', timer:1800, showConfirmButton:false});
+    refreshManualPaguViews();
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
+}
+
+async function deleteManualPaguRow(btn) {
+  const tr = btn.closest('tr');
+  const kode_paket = tr.dataset.kode;
+  if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
+  const conf = await Swal.fire({title:'Hapus pagu manual?', text:'Kode paket '+kode_paket+' akan kembali tanpa pagu di semua periode.', icon:'warning', showCancelButton:true, confirmButtonText:'Hapus', confirmButtonColor:'#DC2626'});
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({action:'deleteManualPagu', token:S.adminToken, kode_paket});
+    if (res.status!=='success') throw new Error(res.message||'Gagal menghapus pagu manual.');
+    refreshManualPaguViews();
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
+}
+
+function refreshManualPaguViews() {
+  const active = document.querySelector('.nav-link.active')?.dataset.s;
+  if      (active==='unmatched') loadUnmatched();
+  else if (active==='pagu')      loadPagu();
+}
+
+// ============================================================
+// UNMATCHED — paket realisasi tanpa pasangan RUP
+// ============================================================
 async function loadUnmatched() {
   document.getElementById('um-kpi').innerHTML = `<div class="scard"><div class="spin"></div></div>`;
+  document.querySelector('#t-um-real tbody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
   try {
     const periode = getPeriode();
-    const res = await api({action:'unmatchedData', periode});
+    const [res, manualMap] = await Promise.all([
+      api({action:'unmatchedData', periode}),
+      fetchManualPaguMap(),
+    ]);
     if (res.status!=='success') throw new Error(res.message||'Gagal memuat data unmatched.');
     const d = res.data||{};
     const unmatchedReal = d.unmatched_realisasi || [];
@@ -1430,12 +1510,9 @@ async function loadUnmatched() {
       {lbl:'Unmatched Realisasi', val:fmt(unmatchedReal.length)},
     ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
 
-    fillTbl('#t-um-real', unmatchedReal, [
-      r=>r.nama_satker||'—',
-      r=>r.nama_paket_realisasi||'—',
-      r=>`<span class="mono" style="color:#64748B">${r.kode_paket||'—'}</span>`,
-      r=>IDRf(r.nilai_kontrak),
-    ]);
+    document.querySelector('#t-um-real tbody').innerHTML = unmatchedReal.length
+      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap)).join('')
+      : `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
 
     updateUnmatchedBadge(unmatchedReal.length);
   } catch(e) {
@@ -1457,97 +1534,24 @@ function updateUnmatchedBadge(total) {
 async function loadPagu() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
   const periode = getPeriode();
-  document.getElementById('pagu-periode-aktif').textContent = periode || '—';
   document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
   try {
-    const [umRes, mpRes] = await Promise.all([
+    const [umRes, manualMap] = await Promise.all([
       api({action:'unmatchedData', periode}),
-      api({action:'listManualPagu', token:S.adminToken, periode}),
+      fetchManualPaguMap(),
     ]);
     if (umRes.status!=='success') throw new Error(umRes.message||'Gagal memuat data unmatched.');
-    if (mpRes.status!=='success') throw new Error(mpRes.message||'Gagal memuat pagu manual.');
 
     const unmatchedReal = umRes.data?.unmatched_realisasi || [];
-    const manualMap = {};
-    (mpRes.data||[]).forEach(r => { manualMap[r.kode_paket] = r; });
-
     document.getElementById('pagu-tbl-info').textContent =
       `Paket Realisasi Tanpa Pagu — ${fmt(unmatchedReal.length)} paket, periode ${periode||'—'}`;
 
     document.getElementById('pagu-tbody').innerHTML = unmatchedReal.length
-      ? unmatchedReal.map(r => {
-          const m   = manualMap[r.kode_paket];
-          const val = m ? Number(m.pagu_manual) : '';
-          return `<tr data-kode="${r.kode_paket}" data-satker="${(r.nama_satker||'').replace(/"/g,'&quot;')}" data-paket="${(r.nama_paket_realisasi||'').replace(/"/g,'&quot;')}">
-            <td style="font-size:12px">${r.nama_satker||'—'}</td>
-            <td style="font-size:12px">${r.nama_paket_realisasi||'—'}</td>
-            <td class="mono" style="font-size:11px;color:#94A3B8">${r.kode_paket}</td>
-            <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
-            <td class="text-right">
-              <input type="number" min="0" step="1" value="${val}" placeholder="0"
-                class="pagu-input" style="width:150px;text-align:right;border:1px solid #E2E8F0;border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px"/>
-            </td>
-            <td class="text-center" style="white-space:nowrap">
-              <button class="btn btn-primary btn-sm" onclick="savePaguRow(this)">Simpan</button>
-              ${m ? `<button class="btn btn-ghost btn-sm" onclick="deletePaguRow(this)" title="Hapus pagu manual" style="margin-left:4px">🗑</button>` : ''}
-            </td>
-          </tr>`;
-        }).join('')
+      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap)).join('')
       : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><p>Semua paket realisasi periode ini sudah memiliki pasangan RUP.</p></div></td></tr>`;
   } catch(e) {
     document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
-}
-
-async function savePaguRow(btn) {
-  const tr = btn.closest('tr');
-  const kode_paket   = tr.dataset.kode;
-  const nama_satker  = tr.dataset.satker;
-  const nama_paket   = tr.dataset.paket;
-  const input = tr.querySelector('.pagu-input');
-  const pagu_manual = Number(input.value);
-  if (input.value==='' || isNaN(pagu_manual) || pagu_manual < 0) {
-    Swal.fire('Error','Isi nilai pagu yang valid (≥ 0) terlebih dahulu.','error'); return;
-  }
-  const origLabel = btn.textContent;
-  btn.disabled = true; btn.textContent = '...';
-  try {
-    const res = await api({
-      action:'saveManualPagu', token:S.adminToken, periode:getPeriode(),
-      kode_paket, nama_paket, nama_satker, pagu_manual,
-    });
-    if (res.status!=='success') throw new Error(res.message||'Gagal menyimpan pagu manual.');
-    Swal.fire({icon:'success',title:'Tersimpan',timer:1000,showConfirmButton:false});
-    loadPagu();
-  } catch(e) { Swal.fire('Error', e.message, 'error'); btn.disabled=false; btn.textContent=origLabel; }
-}
-
-async function deletePaguRow(btn) {
-  const tr = btn.closest('tr');
-  const kode_paket = tr.dataset.kode;
-  const conf = await Swal.fire({title:'Hapus pagu manual?',icon:'warning',showCancelButton:true,confirmButtonText:'Hapus',confirmButtonColor:'#DC2626'});
-  if (!conf.isConfirmed) return;
-  try {
-    const res = await api({action:'deleteManualPagu', token:S.adminToken, periode:getPeriode(), kode_paket});
-    if (res.status!=='success') throw new Error(res.message||'Gagal menghapus pagu manual.');
-    loadPagu();
-  } catch(e) { Swal.fire('Error', e.message, 'error'); }
-}
-
-async function carryForwardPagu() {
-  const periode = getPeriode();
-  if (!periode) { Swal.fire('Error','Pilih periode terlebih dahulu.','error'); return; }
-  const conf = await Swal.fire({
-    title:'Bawa pagu manual ke bulan berikutnya?',
-    text:`Semua entri pagu manual periode ${periode} akan disalin ke periode berikutnya (tidak menimpa entri yang sudah ada).`,
-    icon:'question', showCancelButton:true, confirmButtonText:'Ya, Bawa',
-  });
-  if (!conf.isConfirmed) return;
-  try {
-    const res = await api({action:'carryForwardPagu', token:S.adminToken, periode});
-    if (res.status!=='success') throw new Error(res.message||'Gagal membawa pagu manual.');
-    Swal.fire('✅ Berhasil', res.message, 'success');
-  } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
 
 // ============================================================
@@ -1647,17 +1651,32 @@ async function uploadReal() {
   const btn=document.getElementById('btn-real'); btn.disabled=true;
   try {
     const rows=parseCSV(await realFile.text());
+
+    // Step 1: Upload data realisasi
+    btn.textContent='📤 Mengupload...';
     const r=await uploadChunked('uploadRealisasi',rows,periode,realFile.name,'prog-real-fill','prog-real-pct','prog-real-lbl','prog-real-wrap');
-    const d=r.lastRes?.data||{};
-    Swal.fire('✅ Upload Realisasi Berhasil',
+
+    // Step 2: Jalankan matching engine (request terpisah)
+    btn.textContent='⚙️ Matching...';
+    Swal.fire({title:'⚙️ Menjalankan Matching Engine',html:`Upload selesai: <b>${r.total.toLocaleString('id-ID')}</b> record.<br><small style="color:#94A3B8">Proses matching 30–90 detik, jangan tutup halaman...</small>`,allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+
+    const matchRes = await api({action:'runMatching', token:S.adminToken, periode});
+    if(matchRes.status!=='success') throw new Error('Matching gagal: '+(matchRes.message||'unknown'));
+
+    const md = matchRes.data||{};
+    Swal.fire('✅ Upload & Matching Berhasil',
       `<b>${r.total.toLocaleString('id-ID')}</b> record diproses.<br>` +
-      `Matched: <b>${d.matched??'—'}</b> | Unmatched: <b>${d.unmatched??'—'}</b> | Orphan: <b>${d.orphan??'—'}</b>`,
+      `Matched: <b>${md.matched??'—'}</b> | Unmatched: <b>${md.unmatched??'—'}</b> | Orphan: <b>${md.orphan??'—'}</b>`,
       'success');
-    realFile=null; document.getElementById('lbl-real').textContent='Klik atau drag file CSV di sini';
-    document.getElementById('prog-real-wrap').classList.add('hidden'); btn.disabled=true;
-    await init();
+
+    realFile=null;
+    document.getElementById('lbl-real').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-real-wrap').classList.add('hidden');
+    btn.disabled=true;
+    await init(); loadLog();
   } catch(e){ Swal.fire('❌ Upload Gagal',e.message,'error'); }
-  finally { btn.disabled=false; }
+  finally { btn.disabled=false; btn.textContent='Upload Realisasi'; }
+}
 }
 
 async function verifyToken() {
