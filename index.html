@@ -867,7 +867,10 @@ table.dt tr:hover td{background:#FAFBFF}
       <div class="tbl-wrap">
         <div class="tbl-topbar">
           <span class="tbl-topbar-info" id="um-tbl-info">Unmatched Realisasi — paket realisasi tanpa kode RUP</span>
-          <button class="btn btn-ghost btn-sm" onclick="loadUnmatched()">↻ Refresh</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan untuk periode ini (perlu login admin)">⚙ Jalankan Ulang Matching</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadUnmatched()">↻ Refresh</button>
+          </div>
         </div>
         <div class="tbl-scroll" style="max-height:520px;overflow-y:auto">
           <table class="dt" id="t-um-real"><thead><tr>
@@ -1600,6 +1603,30 @@ function resetUmFilter() {
   loadUnmatched(1);
 }
 function pageUnmatched(d) { loadUnmatched((S.umPage||1) + d); }
+
+async function rerunMatchingForPeriode() {
+  if (!S.isAdmin) {
+    Swal.fire('Perlu Login Admin', 'Silakan login di menu Upload Data terlebih dahulu (masukkan token admin), lalu kembali ke halaman ini.', 'warning');
+    return;
+  }
+  const periode = getPeriode();
+  const conf = await Swal.fire({
+    title: 'Jalankan ulang matching?',
+    html: `Ini akan menghitung ulang pencocokan RUP ↔ Realisasi untuk periode <b>${periode}</b>.<br><small style="color:#94A3B8">Proses bisa memakan waktu beberapa puluh detik.</small>`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Jalankan', cancelButtonText: 'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  Swal.fire({ title: '⚙️ Menjalankan Matching Engine', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const res = await api({ action: 'runMatching', token: S.adminToken, periode });
+    if (res.status !== 'success') throw new Error(res.message || 'Matching gagal.');
+    const d = res.data || {};
+    Swal.fire('✅ Matching Selesai', `Matched: <b>${d.matched ?? '—'}</b> | Unmatched: <b>${d.unmatched ?? '—'}</b> | Orphan: <b>${d.orphan ?? '—'}</b>`, 'success');
+    loadUnmatched(1);
+  } catch (e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  }
+}
 
 function updateUnmatchedBadge(total) {
   const b = document.getElementById('nav-unmatched-badge');
