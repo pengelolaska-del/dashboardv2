@@ -281,6 +281,36 @@ table.dt tr:hover td{background:#FAFBFF}
   .filter-grid{grid-template-columns:1fr}
   .filter-row2,.filter-row3{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   MODAL — Rincian Paket (Efisiensi)
+   ============================================================ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15,28,46,.55);z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.modal-overlay.hidden{display:none}
+.modal-box{
+  background:#fff;border-radius:14px;width:100%;max-width:1100px;max-height:88vh;
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.modal-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;border-bottom:1px solid #E5E9F0;
+}
+.modal-head h3{font-size:15px;font-weight:800;color:#0F1C2E}
+.modal-head p{font-size:11.5px;color:#94A3B8;margin-top:2px}
+.modal-close{
+  width:32px;height:32px;border:none;background:#F1F5F9;border-radius:8px;
+  cursor:pointer;color:#475569;font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.modal-close:hover{background:#E2E8F0}
+.modal-body{flex:1;overflow-y:auto;padding:0}
+.modal-foot{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 20px;border-top:1px solid #F1F5F9;background:#FAFBFC;
+}
 </style>
 </head>
 <body>
@@ -672,9 +702,9 @@ table.dt tr:hover td{background:#FAFBFF}
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
-        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('efi')">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Download CSV
+        <button class="btn btn-ghost btn-sm" onclick="openEfiDetail()">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Lihat Rincian Paket
         </button>
       </div>
       <div class="tbl-scroll">
@@ -914,6 +944,46 @@ table.dt tr:hover td{background:#FAFBFF}
   </section>
 
 </div><!-- /main -->
+
+<!-- ======================================================
+     MODAL — RINCIAN PAKET EFISIENSI
+     ====================================================== -->
+<div class="modal-overlay hidden" id="modal-efi-detail">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h3>Rincian Paket — Hasil Filter Efisiensi</h3>
+        <p id="efi-modal-sub">Mengikuti filter yang aktif di halaman Efisiensi</p>
+      </div>
+      <button class="modal-close" onclick="closeEfiDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th style="width:40px">No</th>
+            <th style="min-width:170px">OPD</th>
+            <th style="min-width:140px">Nama Penyedia</th>
+            <th>Jenis Pengadaan</th>
+            <th style="min-width:220px">Nama Paket</th>
+            <th class="text-right">Pagu RUP</th>
+            <th class="text-right">Total Nilai</th>
+            <th class="text-right">Efisiensi</th>
+          </tr></thead>
+          <tbody id="efi-modal-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="tbl-pagination-info" id="efi-modal-info"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="page-btn" id="efi-modal-prev" onclick="pageEfiDetail(-1)">‹</button>
+        <span class="page-num" id="efi-modal-pgnum"></span>
+        <button class="page-btn" id="efi-modal-next" onclick="pageEfiDetail(1)">›</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================
      JAVASCRIPT
@@ -1446,6 +1516,60 @@ async function loadEfisiensi() {
     document.getElementById('efi-tbody').innerHTML = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
 }
+
+// ============================================================
+// EFISIENSI — MODAL RINCIAN PAKET
+// ============================================================
+async function openEfiDetail(page=1) {
+  S.efiDetailPage = page;
+  document.getElementById('modal-efi-detail').classList.remove('hidden');
+  document.getElementById('efi-modal-tbody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
+
+  const tahun = document.getElementById('g-tahun').value;
+  const filterDesc = [S.efiF.transaksi, S.efiF.metode, S.efiF.status].filter(Boolean).join(', ');
+  document.getElementById('efi-modal-sub').textContent = filterDesc
+    ? `Filter aktif: ${filterDesc}${S.efiF.satker?' | Satker terpilih':''} — Tahun ${tahun}`
+    : `Semua paket ter-matched — Tahun ${tahun}${S.efiF.satker?' | Satker terpilih':''}`;
+
+  try {
+    const res = await api({
+      action: 'listEfisiensiDetail', tahun, page, per_page: 50,
+      kode_satker:      S.efiF.satker    || undefined,
+      sumber_transaksi: S.efiF.transaksi || undefined,
+      metode_pengadaan: S.efiF.metode    || undefined,
+      status_paket:     S.efiF.status    || undefined,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian paket.');
+    const d = res.data || {};
+    const items = d.items || [];
+
+    document.getElementById('efi-modal-tbody').innerHTML = items.length
+      ? items.map((r,i) => `<tr>
+          <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*50+i+1}</td>
+          <td style="font-size:12px">${r.nama_satker||'—'}</td>
+          <td style="font-size:12px">${r.nama_penyedia||'—'}</td>
+          <td style="font-size:11.5px;color:#475569">${r.jenis_pengadaan||'—'}</td>
+          <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,60)}${(r.nama_paket||'').length>60?'…':''}</td>
+          <td class="mono text-right">${IDRf(r.pagu_rup)}</td>
+          <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
+          <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada paket untuk filter yang dipilih.</p></div></td></tr>`;
+
+    document.getElementById('efi-modal-info').textContent =
+      d.total ? `Menampilkan ${(page-1)*50+1}–${Math.min(page*50,d.total)} dari ${fmt(d.total)} paket` : '';
+    document.getElementById('efi-modal-pgnum').textContent = `${page} / ${d.total_pages||1}`;
+    document.getElementById('efi-modal-prev').disabled = page <= 1;
+    document.getElementById('efi-modal-next').disabled = page >= (d.total_pages||1);
+  } catch(e) {
+    document.getElementById('efi-modal-tbody').innerHTML = `<tr><td colspan="8"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+function closeEfiDetail() {
+  document.getElementById('modal-efi-detail').classList.add('hidden');
+}
+function pageEfiDetail(d) { openEfiDetail((S.efiDetailPage||1) + d); }
 
 // ============================================================
 // PAGU MANUAL — dipakai bersama oleh menu Unmatched & Edit Pagu
