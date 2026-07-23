@@ -644,6 +644,16 @@ table.dt tr:hover td{background:#FAFBFF}
             <select id="efi-metode"><option value="">Semua</option></select>
           </div>
           <div class="fld">
+            <label>Jenis Pengadaan</label>
+            <select id="efi-jenis"><option value="">Semua</option>
+              <option>Barang</option>
+              <option>Jasa Konsultansi</option>
+              <option>Jasa Lainnya</option>
+              <option>Pekerjaan Konstruksi</option>
+              <option>Swakelola</option>
+            </select>
+          </div>
+          <div class="fld">
             <label>Status Paket</label>
             <select id="efi-status"><option value="">Semua status</option></select>
           </div>
@@ -949,28 +959,53 @@ table.dt tr:hover td{background:#FAFBFF}
      MODAL — RINCIAN PAKET EFISIENSI
      ====================================================== -->
 <div class="modal-overlay hidden" id="modal-efi-detail">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:1000px;width:96%">
     <div class="modal-head">
       <div>
         <h3>Rincian Paket — Hasil Filter Efisiensi</h3>
-        <p id="efi-modal-sub">Mengikuti filter yang aktif di halaman Efisiensi</p>
+        <p id="efi-modal-sub" style="font-size:11.5px;color:#64748B;margin:2px 0 0">Mengikuti filter yang aktif di halaman Efisiensi</p>
       </div>
       <button class="modal-close" onclick="closeEfiDetail()">✕</button>
     </div>
-    <div class="modal-body">
+
+    <!-- KPI bar ringkasan terfilter -->
+    <div id="efi-modal-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 18px;background:#F8FAFC;border-bottom:1px solid #E5E9F0">
+      <div style="text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Jumlah Paket</div>
+        <div id="efi-modal-kpi-jml" style="font-size:20px;font-weight:800;color:#0F1C2E;margin-top:2px">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Pagu RUP</div>
+        <div id="efi-modal-kpi-pagu" style="font-size:16px;font-weight:700;color:#2563EB;margin-top:2px;font-family:monospace">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Nilai Kontrak</div>
+        <div id="efi-modal-kpi-kontrak" style="font-size:16px;font-weight:700;color:#475569;margin-top:2px;font-family:monospace">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Efisiensi</div>
+        <div id="efi-modal-kpi-efi" style="font-size:16px;font-weight:700;margin-top:2px;font-family:monospace">—</div>
+        <div id="efi-modal-kpi-pct" style="font-size:10px;color:#64748B;margin-top:1px">—</div>
+      </div>
+    </div>
+
+    <div class="modal-body" style="padding:0">
       <div class="tbl-scroll">
         <table class="dt">
           <thead><tr>
             <th style="width:40px">No</th>
-            <th style="min-width:170px">OPD</th>
-            <th style="min-width:140px">Nama Penyedia</th>
-            <th>Jenis Pengadaan</th>
-            <th style="min-width:220px">Nama Paket</th>
-            <th class="text-right">Pagu RUP</th>
-            <th class="text-right">Total Nilai</th>
-            <th class="text-right">Efisiensi</th>
+            <th style="min-width:160px">OPD</th>
+            <th style="min-width:130px">Nama Penyedia</th>
+            <th style="min-width:110px">Jenis</th>
+            <th style="min-width:200px">Nama Paket</th>
+            <th style="min-width:80px">Status</th>
+            <th class="text-right;min-width:120px">Pagu RUP</th>
+            <th class="text-right;min-width:120px">Total Nilai</th>
+            <th class="text-right;min-width:110px">Efisiensi</th>
           </tr></thead>
-          <tbody id="efi-modal-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="efi-modal-tbody">
+            <tr><td colspan="9"><div class="empty-state"><div class="spin"></div></div></td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -1392,13 +1427,14 @@ function applyEfi() {
     satker:   v('efi-satker')    || undefined,
     transaksi:v('efi-transaksi') || undefined,
     metode:   v('efi-metode')    || undefined,
+    jenis:    v('efi-jenis')     || undefined,
     status:   v('efi-status')    || undefined,
   };
   loadEfisiensi();
 }
 function resetEfi() {
   S.efiF = {};
-  ['efi-satker','efi-transaksi','efi-metode','efi-status'].forEach(id => {
+  ['efi-satker','efi-transaksi','efi-metode','efi-jenis','efi-status'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
   loadEfisiensi();
@@ -1412,12 +1448,16 @@ async function loadEfisiensi() {
     `<tr><td colspan="7"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat analisis efisiensi...</p></div></td></tr>`;
   try {
     const tahun = document.getElementById('g-tahun').value;
+    const bulan = document.getElementById('g-bulan').value;
     const [efiRes, trenRes] = await Promise.all([
       api({
-        action: 'listEfisiensi', tahun,
+        action:           'listEfisiensi',
+        tahun,
+        periode:          (bulan && bulan !== '') ? tahun+'-'+bulan : undefined,
         kode_satker:      S.efiF.satker    || undefined,
         sumber_transaksi: S.efiF.transaksi || undefined,
         metode_pengadaan: S.efiF.metode    || undefined,
+        jenis_pengadaan:  S.efiF.jenis     || undefined,
         status_paket:     S.efiF.status    || undefined,
       }),
       api({action:'dashboardTren'}),
@@ -1442,14 +1482,14 @@ async function loadEfisiensi() {
     // KPI Filtered
     const efi_f   = total_pagu_filtered - total_kontrak_filtered;
     const pct_f   = total_pagu_filtered>0 ? (efi_f/total_pagu_filtered*100) : 0;
-    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.status;
+    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.jenis||S.efiF.status;
     document.getElementById('efi-pagu-f').textContent    = IDR(total_pagu_filtered);
     document.getElementById('efi-kontrak-f').textContent = IDR(total_kontrak_filtered);
-    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered);
+    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered) + ' paket';
     document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDR(efi_f);
     document.getElementById('efi-pct-f').textContent = 'Efisiensi: ' + pct_f.toFixed(2)+'%';
     document.getElementById('efi-filter-desc').textContent = hasFilter
-      ? 'Filter aktif: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.status].filter(Boolean).join(', ')||'Satker terpilih'
+      ? 'Filter: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.jenis,S.efiF.status].filter(Boolean).join(' · ')||(S.efiF.satker?'Satker terpilih':'')
       : 'Belum ada filter aktif';
 
     // Fill enum dropdowns
@@ -1520,49 +1560,92 @@ async function loadEfisiensi() {
 // ============================================================
 // EFISIENSI — MODAL RINCIAN PAKET
 // ============================================================
+// ============================================================
+// EFISIENSI — MODAL RINCIAN PAKET
+// ============================================================
 async function openEfiDetail(page=1) {
   S.efiDetailPage = page;
   document.getElementById('modal-efi-detail').classList.remove('hidden');
-  document.getElementById('efi-modal-tbody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
+  document.getElementById('efi-modal-tbody').innerHTML =
+    `<tr><td colspan="9"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
 
-  const tahun = document.getElementById('g-tahun').value;
-  const filterDesc = [S.efiF.transaksi, S.efiF.metode, S.efiF.status].filter(Boolean).join(', ');
+  // Reset KPI bar
+  ['kpi-jml','kpi-pagu','kpi-kontrak','kpi-efi','kpi-pct'].forEach(id => {
+    const el = document.getElementById('efi-modal-' + id);
+    if (el) el.textContent = '—';
+  });
+
+  const tahun      = document.getElementById('g-tahun').value;
+  const bulan      = document.getElementById('g-bulan').value;
+  const filterDesc = [S.efiF.transaksi, S.efiF.metode, S.efiF.status, S.efiF.jenis].filter(Boolean).join(' · ');
   document.getElementById('efi-modal-sub').textContent = filterDesc
-    ? `Filter aktif: ${filterDesc}${S.efiF.satker?' | Satker terpilih':''} — Tahun ${tahun}`
-    : `Semua paket ter-matched — Tahun ${tahun}${S.efiF.satker?' | Satker terpilih':''}`;
+    ? `Filter aktif: ${filterDesc}${S.efiF.satker?' · Satker terpilih':''} — Tahun ${tahun}`
+    : `Semua paket ter-matched — Tahun ${tahun}${S.efiF.satker?' · Satker terpilih':''}`;
 
   try {
     const res = await api({
-      action: 'listEfisiensiDetail', tahun, page, per_page: 50,
+      action:           'listEfisiensiDetail',
+      tahun,
+      periode:          (bulan && bulan !== '') ? tahun+'-'+bulan : undefined,
+      page,
+      per_page:         50,
       kode_satker:      S.efiF.satker    || undefined,
       sumber_transaksi: S.efiF.transaksi || undefined,
       metode_pengadaan: S.efiF.metode    || undefined,
+      jenis_pengadaan:  S.efiF.jenis     || undefined,
       status_paket:     S.efiF.status    || undefined,
     });
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian paket.');
-    const d = res.data || {};
+    const d     = res.data || {};
     const items = d.items || [];
 
-    document.getElementById('efi-modal-tbody').innerHTML = items.length
-      ? items.map((r,i) => `<tr>
-          <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*50+i+1}</td>
-          <td style="font-size:12px">${r.nama_satker||'—'}</td>
-          <td style="font-size:12px">${r.nama_penyedia||'—'}</td>
-          <td style="font-size:11.5px;color:#475569">${r.jenis_pengadaan||'—'}</td>
-          <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,60)}${(r.nama_paket||'').length>60?'…':''}</td>
-          <td class="mono text-right">${IDRf(r.pagu_rup)}</td>
-          <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
-          <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
-        </tr>`).join('')
-      : `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada paket untuk filter yang dipilih.</p></div></td></tr>`;
+    // ── Update KPI bar ──
+    const efiClr = (d.total_efisiensi||0) < 0 ? '#EF4444' : '#16A34A';
+    document.getElementById('efi-modal-kpi-jml').textContent     = fmt(d.total||0) + ' paket';
+    document.getElementById('efi-modal-kpi-pagu').textContent    = IDRf(d.total_pagu||0);
+    document.getElementById('efi-modal-kpi-kontrak').textContent = IDRf(d.total_kontrak||0);
+    document.getElementById('efi-modal-kpi-efi').textContent     = IDRf(d.total_efisiensi||0);
+    document.getElementById('efi-modal-kpi-efi').style.color     = efiClr;
+    document.getElementById('efi-modal-kpi-pct').textContent     =
+      `Efisiensi ${pct(d.persen_efisiensi||0)}`;
 
+    // ── Tabel paket ──
+    document.getElementById('efi-modal-tbody').innerHTML = items.length
+      ? items.map((r, i) => {
+          const stBadge = r.status_paket === 'Selesai'   ? 'b-green'
+                        : r.status_paket === 'Sedang Berjalan' ? 'b-yellow'
+                        : r.status_paket === 'Belum Berproses' ? 'b-gray'
+                        : 'b-gray';
+          return `<tr>
+            <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*50+i+1}</td>
+            <td style="font-size:11.5px;font-weight:600">${r.nama_satker||'—'}</td>
+            <td style="font-size:11.5px">${r.nama_penyedia||'—'}</td>
+            <td style="font-size:11px;color:#475569">${r.jenis_pengadaan||'—'}</td>
+            <td style="font-size:11.5px" title="${r.nama_paket||''}">${
+              (r.nama_paket||'—').length > 55
+                ? (r.nama_paket||'—').slice(0,55)+'…'
+                : (r.nama_paket||'—')
+            }</td>
+            <td>${r.status_paket ? badge(stBadge, r.status_paket) : '—'}</td>
+            <td class="mono text-right" style="font-size:11.5px">${IDRf(r.pagu_rup)}</td>
+            <td class="mono text-right" style="font-size:11.5px">${IDRf(r.nilai_kontrak)}</td>
+            <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700;font-size:11.5px">${IDRf(r.efisiensi)}</td>
+          </tr>`;
+        }).join('')
+      : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div>
+           <p>Tidak ada paket untuk filter yang dipilih.</p></div></td></tr>`;
+
+    // ── Pagination info ──
+    const from = (page-1)*50+1, to = Math.min(page*50, d.total||0);
     document.getElementById('efi-modal-info').textContent =
-      d.total ? `Menampilkan ${(page-1)*50+1}–${Math.min(page*50,d.total)} dari ${fmt(d.total)} paket` : '';
+      d.total ? `Menampilkan ${fmt(from)}–${fmt(to)} dari ${fmt(d.total)} paket` : 'Tidak ada data';
     document.getElementById('efi-modal-pgnum').textContent = `${page} / ${d.total_pages||1}`;
     document.getElementById('efi-modal-prev').disabled = page <= 1;
     document.getElementById('efi-modal-next').disabled = page >= (d.total_pages||1);
+
   } catch(e) {
-    document.getElementById('efi-modal-tbody').innerHTML = `<tr><td colspan="8"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+    document.getElementById('efi-modal-tbody').innerHTML =
+      `<tr><td colspan="9"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
 }
 
