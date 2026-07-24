@@ -50,15 +50,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .nav-link:hover svg{opacity:1}
 .nav-link.active{background:rgba(59,130,246,.18);color:#60A5FA}
 .nav-link.active svg{opacity:1;color:#3B82F6}
-.nav-link{position:relative}
-.nav-badge{
-  margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
-  background:#EF4444;color:#fff;font-size:10px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;
-}
-.nav-badge.b-zero{background:#334155;color:#64748B}
-.nav-badge.hidden{display:none}
-.nav-lock{margin-left:auto;opacity:.5;flex-shrink:0;width:12px;height:12px}
 .sb-footer{margin-top:auto;padding:12px 16px 16px;font-size:10.5px;color:#334155;border-top:1px solid rgba(255,255,255,.05)}
 
 /* ============================================================
@@ -281,36 +272,6 @@ table.dt tr:hover td{background:#FAFBFF}
   .filter-grid{grid-template-columns:1fr}
   .filter-row2,.filter-row3{grid-template-columns:1fr}
 }
-
-/* ============================================================
-   MODAL — Rincian Paket (Efisiensi)
-   ============================================================ */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(15,28,46,.55);z-index:1000;
-  display:flex;align-items:center;justify-content:center;padding:24px;
-}
-.modal-overlay.hidden{display:none}
-.modal-box{
-  background:#fff;border-radius:14px;width:100%;max-width:1100px;max-height:88vh;
-  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);
-}
-.modal-head{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:16px 20px;border-bottom:1px solid #E5E9F0;
-}
-.modal-head h3{font-size:15px;font-weight:800;color:#0F1C2E}
-.modal-head p{font-size:11.5px;color:#94A3B8;margin-top:2px}
-.modal-close{
-  width:32px;height:32px;border:none;background:#F1F5F9;border-radius:8px;
-  cursor:pointer;color:#475569;font-size:16px;display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.modal-close:hover{background:#E2E8F0}
-.modal-body{flex:1;overflow-y:auto;padding:0}
-.modal-foot{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:10px 20px;border-top:1px solid #F1F5F9;background:#FAFBFC;
-}
 </style>
 </head>
 <body>
@@ -348,12 +309,6 @@ table.dt tr:hover td{background:#FAFBFF}
     Efisiensi
   </button>
 
-  <button class="nav-link" data-s="unmatched">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18.364 5.636a9 9 0 11-12.728 0M12 3v9"/></svg>
-    Unmatched
-    <span class="nav-badge hidden" id="nav-unmatched-badge">0</span>
-  </button>
-
   <div class="sb-section" style="margin-top:10px">Kelola</div>
 
   <button class="nav-link" data-s="upload">
@@ -361,9 +316,9 @@ table.dt tr:hover td{background:#FAFBFF}
     Upload Data
   </button>
 
-  <button class="nav-link hidden" id="nav-pagu" data-s="pagu">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .672-3 1.5S10.343 11 12 11s3 .672 3 1.5-1.343 1.5-3 1.5m0-6V6m0 1.5V8m0 8v1.5m0-1.5V16m0 4a8 8 0 100-16 8 8 0 000 16z"/></svg>
-    Edit Pagu
+  <button class="nav-link hidden" id="nav-kualitas" data-s="kualitas">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+    Kualitas Data
   </button>
 
   <div class="sb-footer" id="sb-period">Periode: —</div>
@@ -644,16 +599,6 @@ table.dt tr:hover td{background:#FAFBFF}
             <select id="efi-metode"><option value="">Semua</option></select>
           </div>
           <div class="fld">
-            <label>Jenis Pengadaan</label>
-            <select id="efi-jenis"><option value="">Semua</option>
-              <option>Barang</option>
-              <option>Jasa Konsultansi</option>
-              <option>Jasa Lainnya</option>
-              <option>Pekerjaan Konstruksi</option>
-              <option>Swakelola</option>
-            </select>
-          </div>
-          <div class="fld">
             <label>Status Paket</label>
             <select id="efi-status"><option value="">Semua status</option></select>
           </div>
@@ -712,9 +657,9 @@ table.dt tr:hover td{background:#FAFBFF}
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
-        <button class="btn btn-ghost btn-sm" onclick="openEfiDetail()">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Lihat Rincian Paket
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('efi')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download CSV
         </button>
       </div>
       <div class="tbl-scroll">
@@ -863,162 +808,27 @@ table.dt tr:hover td{background:#FAFBFF}
     </div>
   </section>
 
-  <!-- ===================== UNMATCHED ===================== -->
-  <section id="sec-unmatched" class="section">
-    <h1 class="page-title">Paket Tanpa Pasangan (Unmatched)</h1>
-    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Menampilkan paket realisasi pada periode terpilih yang belum memiliki kode RUP. Catat <b>kode paket</b>-nya untuk menambahkan pagu secara manual di menu Edit Pagu.</p>
-
-    <div class="filter-panel">
-      <div class="filter-header" id="fh-um">
-        <div>
-          <div class="filter-title">Filter Data</div>
-          <div class="filter-sub">Filter paket unmatched berdasarkan sumber transaksi & metode pengadaan</div>
-        </div>
-        <svg class="filter-chevron open" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 9l-7 7-7-7"/></svg>
-      </div>
-      <div class="filter-body" id="fb-um">
-        <div class="filter-grid" style="grid-template-columns:repeat(2,1fr)">
-          <div class="fld">
-            <label>Sumber Transaksi</label>
-            <select id="um-transaksi" onchange="applyUmFilter()"><option value="">Semua</option></select>
-          </div>
-          <div class="fld">
-            <label>Metode Pengadaan</label>
-            <select id="um-metode" onchange="applyUmFilter()"><option value="">Semua</option></select>
-          </div>
-        </div>
-        <div class="filter-row2" style="grid-template-columns:2fr auto">
-          <div class="fld">
-            <label>Cari Kode RUP / Kode Paket / Nama Paket / Satker</label>
-            <input id="um-search" type="text" placeholder="Ketik untuk mencari..." onkeydown="event.key==='Enter'&&applyUmFilter()"/>
-          </div>
-          <div style="display:flex;gap:6px;align-items:end">
-            <button class="btn btn-primary" onclick="applyUmFilter()">Cari</button>
-            <button class="btn btn-ghost btn-icon" onclick="resetUmFilter()" title="Reset filter">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-          </div>
+  <!-- ===================== KUALITAS ===================== -->
+  <section id="sec-kualitas" class="section">
+    <h1 class="page-title">Kualitas Data</h1>
+    <div class="summary-grid-4" style="grid-template-columns:repeat(3,1fr)" id="kual-kpi"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched RUP <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span></p>
+        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
+          <table class="dt" id="t-um-rup"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Pagu</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
-    </div>
-
-    <div class="summary-grid-4" style="grid-template-columns:repeat(4,1fr)" id="um-kpi"></div>
-    <div style="margin-top:16px">
-      <div class="tbl-wrap">
-        <div class="tbl-topbar">
-          <span class="tbl-topbar-info" id="um-tbl-info">Unmatched Realisasi — paket realisasi tanpa kode RUP</span>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan untuk periode ini (perlu login admin)">⚙ Jalankan Ulang Matching</button>
-            <button class="btn btn-ghost btn-sm" onclick="loadUnmatched()">↻ Refresh</button>
-          </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched Realisasi <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP)</span></p>
+        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
+          <table class="dt" id="t-um-real"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Kontrak</th></tr></thead><tbody></tbody></table>
         </div>
-        <div class="tbl-scroll" style="max-height:520px;overflow-y:auto">
-          <table class="dt" id="t-um-real"><thead><tr>
-            <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th>
-            <th>Sumber Transaksi</th><th>Metode Pengadaan</th>
-            <th class="text-right">Kontrak</th>
-            <th class="text-right" style="width:160px">Pagu Manual</th><th class="text-center" style="width:110px">Aksi</th>
-          </tr></thead><tbody></tbody></table>
-        </div>
-        <div class="tbl-pagination">
-          <span class="tbl-pagination-info" id="um-pg-info"></span>
-          <button class="page-btn" id="um-prev" onclick="pageUnmatched(-1)">‹</button>
-          <span class="page-num" id="um-pg-num"></span>
-          <button class="page-btn" id="um-next" onclick="pageUnmatched(1)">›</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== EDIT PAGU (MANUAL) ===================== -->
-  <section id="sec-pagu" class="section">
-    <h1 class="page-title">Edit Pagu Manual</h1>
-    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">Isi pagu secara manual untuk paket realisasi yang belum memiliki pasangan RUP (mis. carry-over anggaran). Pagu manual tersimpan berdasarkan <b>kode paket</b> — sekali diisi, otomatis berlaku di periode manapun yang memuat kode paket yang sama, dan langsung dipakai pada perhitungan Efisiensi.</p>
-
-    <div class="tbl-wrap">
-      <div class="tbl-topbar">
-        <span class="tbl-topbar-info" id="pagu-tbl-info">Paket Realisasi Tanpa Pagu</span>
-        <button class="btn btn-ghost btn-sm" onclick="loadPagu()">↻ Refresh</button>
-      </div>
-      <div class="tbl-scroll">
-        <table class="dt">
-          <thead><tr>
-            <th>Satker</th><th>Nama Paket</th><th>Kode Paket</th>
-            <th class="text-right">Kontrak</th><th class="text-right" style="width:180px">Pagu Manual</th>
-            <th class="text-center" style="width:90px">Aksi</th>
-          </tr></thead>
-          <tbody id="pagu-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
-        </table>
       </div>
     </div>
   </section>
 
 </div><!-- /main -->
-
-<!-- ======================================================
-     MODAL — RINCIAN PAKET EFISIENSI
-     ====================================================== -->
-<div class="modal-overlay hidden" id="modal-efi-detail">
-  <div class="modal-box" style="max-width:1000px;width:96%">
-    <div class="modal-head">
-      <div>
-        <h3>Rincian Paket — Hasil Filter Efisiensi</h3>
-        <p id="efi-modal-sub" style="font-size:11.5px;color:#64748B;margin:2px 0 0">Mengikuti filter yang aktif di halaman Efisiensi</p>
-      </div>
-      <button class="modal-close" onclick="closeEfiDetail()">✕</button>
-    </div>
-
-    <!-- KPI bar ringkasan terfilter -->
-    <div id="efi-modal-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 18px;background:#F8FAFC;border-bottom:1px solid #E5E9F0">
-      <div style="text-align:center">
-        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Jumlah Paket</div>
-        <div id="efi-modal-kpi-jml" style="font-size:20px;font-weight:800;color:#0F1C2E;margin-top:2px">—</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Pagu RUP</div>
-        <div id="efi-modal-kpi-pagu" style="font-size:16px;font-weight:700;color:#2563EB;margin-top:2px;font-family:monospace">—</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Nilai Kontrak</div>
-        <div id="efi-modal-kpi-kontrak" style="font-size:16px;font-weight:700;color:#475569;margin-top:2px;font-family:monospace">—</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em">Total Efisiensi</div>
-        <div id="efi-modal-kpi-efi" style="font-size:16px;font-weight:700;margin-top:2px;font-family:monospace">—</div>
-        <div id="efi-modal-kpi-pct" style="font-size:10px;color:#64748B;margin-top:1px">—</div>
-      </div>
-    </div>
-
-    <div class="modal-body" style="padding:0">
-      <div class="tbl-scroll">
-        <table class="dt">
-          <thead><tr>
-            <th style="width:40px">No</th>
-            <th style="min-width:160px">OPD</th>
-            <th style="min-width:130px">Nama Penyedia</th>
-            <th style="min-width:110px">Jenis</th>
-            <th style="min-width:200px">Nama Paket</th>
-            <th style="min-width:80px">Status</th>
-            <th class="text-right;min-width:120px">Pagu RUP</th>
-            <th class="text-right;min-width:120px">Total Nilai</th>
-            <th class="text-right;min-width:110px">Efisiensi</th>
-          </tr></thead>
-          <tbody id="efi-modal-tbody">
-            <tr><td colspan="9"><div class="empty-state"><div class="spin"></div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <span class="tbl-pagination-info" id="efi-modal-info"></span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="page-btn" id="efi-modal-prev" onclick="pageEfiDetail(-1)">‹</button>
-        <span class="page-num" id="efi-modal-pgnum"></span>
-        <button class="page-btn" id="efi-modal-next" onclick="pageEfiDetail(1)">›</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ============================================================
      JAVASCRIPT
@@ -1041,7 +851,6 @@ const S = {
   rupF: {}, realF: {},
   efiCharts: {},
   efiF: {},
-  umF: {},
 };
 
 // ============================================================
@@ -1141,14 +950,6 @@ async function init() {
     const active = document.querySelector('.nav-link.active')?.dataset.s || 'rup';
     await loadSection(active, true);
 
-    // Isi badge Unmatched di sidebar (non-blocking)
-    if (active !== 'unmatched') {
-      api({action:'unmatchedData', periode:latest_periode}).then(r => {
-        const d = r.data||{};
-        updateUnmatchedBadge((d.total_realisasi||0) - (d.total_matched||0));
-      }).catch(()=>{});
-    }
-
   } catch(e) { showConnErr(e.message); }
 }
 
@@ -1179,8 +980,7 @@ async function loadSection(name, skipNav=false) {
   if      (name==='rup')       await loadRUP(1);
   else if (name==='realisasi') await loadReal(1);
   else if (name==='efisiensi') await loadEfisiensi();
-  else if (name==='unmatched') await loadUnmatched();
-  else if (name==='pagu')      await loadPagu();
+  else if (name==='kualitas')  await loadKualitas();
   else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
 }
 
@@ -1208,8 +1008,6 @@ function onPeriodChange() {
   if      (active==='rup')       loadRUP(1);
   else if (active==='realisasi') loadReal(1);
   else if (active==='efisiensi') loadEfisiensi();
-  else if (active==='unmatched') loadUnmatched();
-  else if (active==='pagu')      loadPagu();
 }
 
 // Filter toggle
@@ -1225,7 +1023,6 @@ function initFilterToggle(headerId, bodyId, chevronSelector) {
 initFilterToggle('fh-rup',  'fb-rup');
 initFilterToggle('fh-real', 'fb-real');
 initFilterToggle('fh-efi', 'fb-efi');
-initFilterToggle('fh-um',  'fb-um');
 
 // Enter key search
 ['rup-kode','rup-nama'].forEach(id => document.getElementById(id).addEventListener('keydown', e => e.key==='Enter' && applyRUP()));
@@ -1427,14 +1224,13 @@ function applyEfi() {
     satker:   v('efi-satker')    || undefined,
     transaksi:v('efi-transaksi') || undefined,
     metode:   v('efi-metode')    || undefined,
-    jenis:    v('efi-jenis')     || undefined,
     status:   v('efi-status')    || undefined,
   };
   loadEfisiensi();
 }
 function resetEfi() {
   S.efiF = {};
-  ['efi-satker','efi-transaksi','efi-metode','efi-jenis','efi-status'].forEach(id => {
+  ['efi-satker','efi-transaksi','efi-metode','efi-status'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
   loadEfisiensi();
@@ -1448,16 +1244,12 @@ async function loadEfisiensi() {
     `<tr><td colspan="7"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat analisis efisiensi...</p></div></td></tr>`;
   try {
     const tahun = document.getElementById('g-tahun').value;
-    const bulan = document.getElementById('g-bulan').value;
     const [efiRes, trenRes] = await Promise.all([
       api({
-        action:           'listEfisiensi',
-        tahun,
-        periode:          (bulan && bulan !== '') ? tahun+'-'+bulan : undefined,
+        action: 'listEfisiensi', tahun,
         kode_satker:      S.efiF.satker    || undefined,
         sumber_transaksi: S.efiF.transaksi || undefined,
         metode_pengadaan: S.efiF.metode    || undefined,
-        jenis_pengadaan:  S.efiF.jenis     || undefined,
         status_paket:     S.efiF.status    || undefined,
       }),
       api({action:'dashboardTren'}),
@@ -1482,14 +1274,14 @@ async function loadEfisiensi() {
     // KPI Filtered
     const efi_f   = total_pagu_filtered - total_kontrak_filtered;
     const pct_f   = total_pagu_filtered>0 ? (efi_f/total_pagu_filtered*100) : 0;
-    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.jenis||S.efiF.status;
+    const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.status;
     document.getElementById('efi-pagu-f').textContent    = IDR(total_pagu_filtered);
     document.getElementById('efi-kontrak-f').textContent = IDR(total_kontrak_filtered);
-    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered) + ' paket';
+    document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered);
     document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDR(efi_f);
     document.getElementById('efi-pct-f').textContent = 'Efisiensi: ' + pct_f.toFixed(2)+'%';
     document.getElementById('efi-filter-desc').textContent = hasFilter
-      ? 'Filter: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.jenis,S.efiF.status].filter(Boolean).join(' · ')||(S.efiF.satker?'Satker terpilih':'')
+      ? 'Filter aktif: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.status].filter(Boolean).join(', ')||'Satker terpilih'
       : 'Belum ada filter aktif';
 
     // Fill enum dropdowns
@@ -1558,315 +1350,27 @@ async function loadEfisiensi() {
 }
 
 // ============================================================
-// EFISIENSI — MODAL RINCIAN PAKET
+// KUALITAS DATA
 // ============================================================
-// ============================================================
-// EFISIENSI — MODAL RINCIAN PAKET
-// ============================================================
-async function openEfiDetail(page=1) {
-  S.efiDetailPage = page;
-  document.getElementById('modal-efi-detail').classList.remove('hidden');
-  document.getElementById('efi-modal-tbody').innerHTML =
-    `<tr><td colspan="9"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
-
-  // Reset KPI bar
-  ['kpi-jml','kpi-pagu','kpi-kontrak','kpi-efi','kpi-pct'].forEach(id => {
-    const el = document.getElementById('efi-modal-' + id);
-    if (el) el.textContent = '—';
-  });
-
-  const tahun      = document.getElementById('g-tahun').value;
-  const bulan      = document.getElementById('g-bulan').value;
-  const filterDesc = [S.efiF.transaksi, S.efiF.metode, S.efiF.status, S.efiF.jenis].filter(Boolean).join(' · ');
-  document.getElementById('efi-modal-sub').textContent = filterDesc
-    ? `Filter aktif: ${filterDesc}${S.efiF.satker?' · Satker terpilih':''} — Tahun ${tahun}`
-    : `Semua paket ter-matched — Tahun ${tahun}${S.efiF.satker?' · Satker terpilih':''}`;
-
-  try {
-    const res = await api({
-      action:           'listEfisiensiDetail',
-      tahun,
-      periode:          (bulan && bulan !== '') ? tahun+'-'+bulan : undefined,
-      page,
-      per_page:         50,
-      kode_satker:      S.efiF.satker    || undefined,
-      sumber_transaksi: S.efiF.transaksi || undefined,
-      metode_pengadaan: S.efiF.metode    || undefined,
-      jenis_pengadaan:  S.efiF.jenis     || undefined,
-      status_paket:     S.efiF.status    || undefined,
-    });
-    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian paket.');
-    const d     = res.data || {};
-    const items = d.items || [];
-
-    // ── Update KPI bar ──
-    const efiClr = (d.total_efisiensi||0) < 0 ? '#EF4444' : '#16A34A';
-    document.getElementById('efi-modal-kpi-jml').textContent     = fmt(d.total||0) + ' paket';
-    document.getElementById('efi-modal-kpi-pagu').textContent    = IDRf(d.total_pagu||0);
-    document.getElementById('efi-modal-kpi-kontrak').textContent = IDRf(d.total_kontrak||0);
-    document.getElementById('efi-modal-kpi-efi').textContent     = IDRf(d.total_efisiensi||0);
-    document.getElementById('efi-modal-kpi-efi').style.color     = efiClr;
-    document.getElementById('efi-modal-kpi-pct').textContent     =
-      `Efisiensi ${pct(d.persen_efisiensi||0)}`;
-
-    // ── Tabel paket ──
-    document.getElementById('efi-modal-tbody').innerHTML = items.length
-      ? items.map((r, i) => {
-          const stBadge = r.status_paket === 'Selesai'   ? 'b-green'
-                        : r.status_paket === 'Sedang Berjalan' ? 'b-yellow'
-                        : r.status_paket === 'Belum Berproses' ? 'b-gray'
-                        : 'b-gray';
-          return `<tr>
-            <td class="mono" style="color:#94A3B8;font-size:11px">${(page-1)*50+i+1}</td>
-            <td style="font-size:11.5px;font-weight:600">${r.nama_satker||'—'}</td>
-            <td style="font-size:11.5px">${r.nama_penyedia||'—'}</td>
-            <td style="font-size:11px;color:#475569">${r.jenis_pengadaan||'—'}</td>
-            <td style="font-size:11.5px" title="${r.nama_paket||''}">${
-              (r.nama_paket||'—').length > 55
-                ? (r.nama_paket||'—').slice(0,55)+'…'
-                : (r.nama_paket||'—')
-            }</td>
-            <td>${r.status_paket ? badge(stBadge, r.status_paket) : '—'}</td>
-            <td class="mono text-right" style="font-size:11.5px">${IDRf(r.pagu_rup)}</td>
-            <td class="mono text-right" style="font-size:11.5px">${IDRf(r.nilai_kontrak)}</td>
-            <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700;font-size:11.5px">${IDRf(r.efisiensi)}</td>
-          </tr>`;
-        }).join('')
-      : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div>
-           <p>Tidak ada paket untuk filter yang dipilih.</p></div></td></tr>`;
-
-    // ── Pagination info ──
-    const from = (page-1)*50+1, to = Math.min(page*50, d.total||0);
-    document.getElementById('efi-modal-info').textContent =
-      d.total ? `Menampilkan ${fmt(from)}–${fmt(to)} dari ${fmt(d.total)} paket` : 'Tidak ada data';
-    document.getElementById('efi-modal-pgnum').textContent = `${page} / ${d.total_pages||1}`;
-    document.getElementById('efi-modal-prev').disabled = page <= 1;
-    document.getElementById('efi-modal-next').disabled = page >= (d.total_pages||1);
-
-  } catch(e) {
-    document.getElementById('efi-modal-tbody').innerHTML =
-      `<tr><td colspan="9"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
-  }
-}
-
-function closeEfiDetail() {
-  document.getElementById('modal-efi-detail').classList.add('hidden');
-}
-function pageEfiDetail(d) { openEfiDetail((S.efiDetailPage||1) + d); }
-
-// ============================================================
-// PAGU MANUAL — dipakai bersama oleh menu Unmatched & Edit Pagu
-// Pagu manual bersifat GLOBAL per kode_paket: sekali diisi,
-// otomatis berlaku untuk periode lain dengan kode paket sama.
-// ============================================================
-async function fetchManualPaguMap() {
-  const res = await api({action:'listManualPagu'});
-  if (res.status!=='success') throw new Error(res.message||'Gagal memuat pagu manual.');
-  const map = {};
-  (res.data||[]).forEach(r => { map[r.kode_paket] = r; });
-  return map;
-}
-
-function manualPaguRowHtml(r, manualMap, extra=false) {
-  const m = manualMap[r.kode_paket];
-  const safeSatker = String(r.nama_satker||'').replace(/"/g,'&quot;');
-  const safePaket  = String(r.nama_paket_realisasi||'').replace(/"/g,'&quot;');
-  const extraCols = extra ? `
-    <td style="font-size:11.5px;white-space:nowrap">${r.sumber_transaksi||'—'}</td>
-    <td style="font-size:11.5px">${r.metode_pengadaan?mbadge(r.metode_pengadaan):'—'}</td>` : '';
-  return `<tr data-kode="${r.kode_paket}" data-satker="${safeSatker}" data-paket="${safePaket}" data-pagu="${m?m.pagu_manual:''}">
-    <td style="font-size:12px">${r.nama_satker||'—'}</td>
-    <td style="font-size:12px">${r.nama_paket_realisasi||'—'}</td>
-    <td><span class="mono" style="color:#64748B;font-size:11px">${r.kode_paket||'—'}</span></td>
-    ${extraCols}
-    <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
-    <td class="mono text-right" style="font-weight:600;color:${m?'#16A34A':'#94A3B8'}">${m?IDRf(m.pagu_manual):'—'}</td>
-    <td class="text-center" style="white-space:nowrap">
-      <button class="btn ${m?'btn-ghost':'btn-primary'} btn-sm" onclick="openManualPaguModal(this)">${m?'✎ Edit':'+ Pagu'}</button>
-      ${m ? `<button class="btn btn-ghost btn-sm" onclick="deleteManualPaguRow(this)" title="Hapus pagu manual" style="margin-left:4px">🗑</button>` : ''}
-    </td>
-  </tr>`;
-}
-
-async function openManualPaguModal(btn) {
-  if (!S.isAdmin) {
-    Swal.fire({icon:'warning', title:'Login Admin Diperlukan', text:'Verifikasi token admin di menu Upload Data terlebih dahulu untuk menambahkan pagu manual.'});
-    return;
-  }
-  const tr = btn.closest('tr');
-  const kode_paket  = tr.dataset.kode;
-  const nama_satker = tr.dataset.satker;
-  const nama_paket  = tr.dataset.paket;
-
-  const { value: pagu, isConfirmed } = await Swal.fire({
-    title: 'Pagu Manual',
-    html: `<div style="text-align:left;font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.6">
-             <div><b>Kode Paket:</b> ${kode_paket}</div>
-             <div><b>Nama Paket:</b> ${nama_paket||'—'}</div>
-             <div><b>Satker:</b> ${nama_satker||'—'}</div>
-           </div>`,
-    input: 'number',
-    inputLabel: 'Nilai Pagu (Rp) — berlaku untuk semua periode dengan kode paket ini',
-    inputValue: tr.dataset.pagu || '',
-    inputAttributes: { min:0, step:1 },
-    showCancelButton: true,
-    confirmButtonText: 'Simpan',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#2563EB',
-    inputValidator: v => (v===''||isNaN(v)||Number(v)<0) ? 'Isi nilai pagu yang valid (≥ 0).' : undefined,
-  });
-  if (!isConfirmed) return;
-
-  try {
-    const res = await api({
-      action:'saveManualPagu', token:S.adminToken, periode:getPeriode(),
-      kode_paket, nama_paket, nama_satker, pagu_manual: Number(pagu),
-    });
-    if (res.status!=='success') throw new Error(res.message||'Gagal menyimpan pagu manual.');
-    Swal.fire({icon:'success', title:'Tersimpan', text:'Pagu manual berlaku untuk semua periode dengan kode paket ini.', timer:1800, showConfirmButton:false});
-    refreshManualPaguViews();
-  } catch(e) { Swal.fire('Error', e.message, 'error'); }
-}
-
-async function deleteManualPaguRow(btn) {
-  const tr = btn.closest('tr');
-  const kode_paket = tr.dataset.kode;
+async function loadKualitas() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
-  const conf = await Swal.fire({title:'Hapus pagu manual?', text:'Kode paket '+kode_paket+' akan kembali tanpa pagu di semua periode.', icon:'warning', showCancelButton:true, confirmButtonText:'Hapus', confirmButtonColor:'#DC2626'});
-  if (!conf.isConfirmed) return;
   try {
-    const res = await api({action:'deleteManualPagu', token:S.adminToken, kode_paket});
-    if (res.status!=='success') throw new Error(res.message||'Gagal menghapus pagu manual.');
-    refreshManualPaguViews();
-  } catch(e) { Swal.fire('Error', e.message, 'error'); }
-}
-
-function refreshManualPaguViews() {
-  const active = document.querySelector('.nav-link.active')?.dataset.s;
-  if      (active==='unmatched') loadUnmatched();
-  else if (active==='pagu')      loadPagu();
-}
-
-// ============================================================
-// UNMATCHED — paket realisasi tanpa pasangan RUP
-// ============================================================
-async function loadUnmatched(page=1) {
-  S.umPage = page;
-  document.getElementById('um-kpi').innerHTML = `<div class="scard"><div class="spin"></div></div>`;
-  document.querySelector('#t-um-real tbody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
-  try {
-    const periode = getPeriode();
-    const [res, manualMap] = await Promise.all([
-      api({action:'unmatchedData', periode, page, per_page:100,
-        sumber_transaksi: S.umF?.transaksi || undefined,
-        metode_pengadaan: S.umF?.metode    || undefined,
-        search:           S.umF?.search    || undefined,
-      }),
-      fetchManualPaguMap(),
-    ]);
-    if (res.status!=='success') throw new Error(res.message||'Gagal memuat data unmatched.');
+    const res = await api({action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode});
     const d = res.data||{};
-    const unmatchedReal   = d.unmatched_realisasi || [];
-    const totalUnmatched  = d.total_realisasi - d.total_matched; // total SEBENARNYA, tidak terpotong pagination
-
-    document.getElementById('um-kpi').innerHTML = [
+    document.getElementById('kual-kpi').innerHTML = [
       {lbl:'Matching Rate', val:pct(d.matching_rate)},
       {lbl:'Total Realisasi', val:fmt(d.total_realisasi)},
       {lbl:'Total Matched', val:fmt(d.total_matched)},
-      {lbl:'Unmatched Realisasi', val:fmt(totalUnmatched)},
     ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
 
-    if (d.enums) {
-      fillSelect('um-transaksi', d.enums.sumber_transaksi, S.umF?.transaksi);
-      fillSelect('um-metode',    d.enums.metode_pengadaan, S.umF?.metode);
-    }
-
-    document.querySelector('#t-um-real tbody').innerHTML = unmatchedReal.length
-      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap, true)).join('')
-      : `<tr><td colspan="8"><div class="empty-state" style="padding:16px"><p>Tidak ada data untuk filter/pencarian yang dipilih.</p></div></td></tr>`;
-
-    const totalFiltered = d.total_unmatched_realisasi ?? unmatchedReal.length;
-    document.getElementById('um-tbl-info').textContent =
-      totalFiltered ? `Menampilkan ${(page-1)*100+1}–${Math.min(page*100,totalFiltered)} dari ${fmt(totalFiltered)} paket unmatched` : 'Unmatched Realisasi — paket realisasi tanpa kode RUP';
-    document.getElementById('um-pg-info').textContent = '';
-    document.getElementById('um-pg-num').textContent  = `${page} / ${d.total_pages||1}`;
-    document.getElementById('um-prev').disabled = page <= 1;
-    document.getElementById('um-next').disabled = page >= (d.total_pages||1);
-
-    updateUnmatchedBadge(totalUnmatched);
-  } catch(e) {
-    document.getElementById('um-kpi').innerHTML = `<div class="error-state">⚠ ${e.message}</div>`;
-  }
-}
-
-function applyUmFilter() {
-  S.umF = { transaksi: v('um-transaksi'), metode: v('um-metode'), search: v('um-search') };
-  loadUnmatched(1);
-}
-function resetUmFilter() {
-  S.umF = {};
-  ['um-transaksi','um-metode'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('um-search').value = '';
-  loadUnmatched(1);
-}
-function pageUnmatched(d) { loadUnmatched((S.umPage||1) + d); }
-
-async function rerunMatchingForPeriode() {
-  if (!S.isAdmin) {
-    Swal.fire('Perlu Login Admin', 'Silakan login di menu Upload Data terlebih dahulu (masukkan token admin), lalu kembali ke halaman ini.', 'warning');
-    return;
-  }
-  const periode = getPeriode();
-  const conf = await Swal.fire({
-    title: 'Jalankan ulang matching?',
-    html: `Ini akan menghitung ulang pencocokan RUP ↔ Realisasi untuk periode <b>${periode}</b>.<br><small style="color:#94A3B8">Proses bisa memakan waktu beberapa puluh detik.</small>`,
-    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Jalankan', cancelButtonText: 'Batal',
-  });
-  if (!conf.isConfirmed) return;
-  Swal.fire({ title: '⚙️ Menjalankan Matching Engine', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-  try {
-    const res = await api({ action: 'runMatching', token: S.adminToken, periode });
-    if (res.status !== 'success') throw new Error(res.message || 'Matching gagal.');
-    const d = res.data || {};
-    Swal.fire('✅ Matching Selesai', `Matched: <b>${d.matched ?? '—'}</b> | Unmatched: <b>${d.unmatched ?? '—'}</b> | Orphan: <b>${d.orphan ?? '—'}</b>`, 'success');
-    loadUnmatched(1);
-  } catch (e) {
-    Swal.fire('❌ Gagal', e.message, 'error');
-  }
-}
-
-function updateUnmatchedBadge(total) {
-  const b = document.getElementById('nav-unmatched-badge');
-  if (!b) return;
-  b.textContent = fmt(total);
-  b.classList.toggle('hidden', !total);
-  b.classList.toggle('b-zero', !total);
-}
-
-// ============================================================
-// EDIT PAGU MANUAL
-// ============================================================
-async function loadPagu() {
-  if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
-  const periode = getPeriode();
-  document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr>`;
-  try {
-    const [umRes, manualMap] = await Promise.all([
-      api({action:'unmatchedData', periode}),
-      fetchManualPaguMap(),
-    ]);
-    if (umRes.status!=='success') throw new Error(umRes.message||'Gagal memuat data unmatched.');
-
-    const unmatchedReal = umRes.data?.unmatched_realisasi || [];
-    document.getElementById('pagu-tbl-info').textContent =
-      `Paket Realisasi Tanpa Pagu — ${fmt(unmatchedReal.length)} paket, periode ${periode||'—'}`;
-
-    document.getElementById('pagu-tbody').innerHTML = unmatchedReal.length
-      ? unmatchedReal.map(r => manualPaguRowHtml(r, manualMap)).join('')
-      : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><p>Semua paket realisasi periode ini sudah memiliki pasangan RUP.</p></div></td></tr>`;
-  } catch(e) {
-    document.getElementById('pagu-tbody').innerHTML = `<tr><td colspan="6"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
-  }
+    const fillTbl = (id, rows, cols) => {
+      document.querySelector(id+' tbody').innerHTML = rows?.length
+        ? rows.map(r=>`<tr>${cols.map(c=>`<td style="font-size:12px">${c(r)}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${cols.length}"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+    };
+    fillTbl('#t-um-rup',  d.unmatched_rup,         [r=>r.nama_satker, r=>r.nama_paket_rup||'—', r=>IDRf(r.pagu_rup)]);
+    fillTbl('#t-um-real', d.unmatched_realisasi,    [r=>r.nama_satker, r=>r.nama_paket_realisasi||'—', r=>IDRf(r.nilai_kontrak)]);
+  } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
 
 // ============================================================
@@ -1966,31 +1470,17 @@ async function uploadReal() {
   const btn=document.getElementById('btn-real'); btn.disabled=true;
   try {
     const rows=parseCSV(await realFile.text());
-
-    // Step 1: Upload data realisasi
-    btn.textContent='📤 Mengupload...';
     const r=await uploadChunked('uploadRealisasi',rows,periode,realFile.name,'prog-real-fill','prog-real-pct','prog-real-lbl','prog-real-wrap');
-
-    // Step 2: Jalankan matching engine (request terpisah)
-    btn.textContent='⚙️ Matching...';
-    Swal.fire({title:'⚙️ Menjalankan Matching Engine',html:`Upload selesai: <b>${r.total.toLocaleString('id-ID')}</b> record.<br><small style="color:#94A3B8">Proses matching 30–90 detik, jangan tutup halaman...</small>`,allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-
-    const matchRes = await api({action:'runMatching', token:S.adminToken, periode});
-    if(matchRes.status!=='success') throw new Error('Matching gagal: '+(matchRes.message||'unknown'));
-
-    const md = matchRes.data||{};
-    Swal.fire('✅ Upload & Matching Berhasil',
+    const d=r.lastRes?.data||{};
+    Swal.fire('✅ Upload Realisasi Berhasil',
       `<b>${r.total.toLocaleString('id-ID')}</b> record diproses.<br>` +
-      `Matched: <b>${md.matched??'—'}</b> | Unmatched: <b>${md.unmatched??'—'}</b> | Orphan: <b>${md.orphan??'—'}</b>`,
+      `Matched: <b>${d.matched??'—'}</b> | Unmatched: <b>${d.unmatched??'—'}</b> | Orphan: <b>${d.orphan??'—'}</b>`,
       'success');
-
-    realFile=null;
-    document.getElementById('lbl-real').textContent='Klik atau drag file CSV di sini';
-    document.getElementById('prog-real-wrap').classList.add('hidden');
-    btn.disabled=true;
-    await init(); loadLog();
+    realFile=null; document.getElementById('lbl-real').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-real-wrap').classList.add('hidden'); btn.disabled=true;
+    await init();
   } catch(e){ Swal.fire('❌ Upload Gagal',e.message,'error'); }
-  finally { btn.disabled=false; btn.textContent='Upload Realisasi'; }
+  finally { btn.disabled=false; }
 }
 
 async function verifyToken() {
@@ -2005,7 +1495,7 @@ async function verifyToken() {
       msg.innerHTML='<span style="color:#16A34A;font-weight:600">✅ Token valid</span>';
       document.getElementById('token-badge').className='badge b-green'; document.getElementById('token-badge').textContent='Admin';
       document.getElementById('upload-panel').classList.remove('hidden');
-      document.getElementById('nav-pagu').classList.remove('hidden');
+      document.getElementById('nav-kualitas').classList.remove('hidden');
       document.getElementById('inp-token').style.borderColor='#86EFAC';
       syncUploadPeriode(); loadLog();
     } else {
