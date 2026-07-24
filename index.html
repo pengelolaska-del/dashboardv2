@@ -930,8 +930,11 @@ async function init() {
     S.latestPeriode = latest_periode;
     S.satkerList = satker_list;
 
-    // Isi dropdown tahun di topbar
-    const tahunSet = [...new Set(periodes.map(p=>String(p).split('-')[0]))].sort().reverse();
+    // Isi dropdown tahun di topbar — gabung dari data + range 2023 s/d tahun ini
+    const thisYr  = new Date().getFullYear();
+    const manYrs  = []; for(let y=2023;y<=thisYr+1;y++) manYrs.push(String(y));
+    const fromData= periodes.map(p=>String(p).split('-')[0]);
+    const tahunSet= [...new Set([...fromData,...manYrs])].sort().reverse();
     const gT = document.getElementById('g-tahun');
     gT.innerHTML = tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
     if (tahunSet.length) gT.value = tahunSet[0];
@@ -1577,18 +1580,30 @@ async function hapusPeriode() {
 }
 
 function syncUploadPeriode() {
-  const selT=document.getElementById('up-tahun'); if(!selT)return;
-  const tahunSet=[...new Set(S.periodes.map(p=>String(p).split('-')[0]))].sort().reverse();
-  const thisYear=String(new Date().getFullYear());
-  if(!tahunSet.includes(thisYear))tahunSet.unshift(thisYear);
-  selT.innerHTML=tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
-  if(S.latestPeriode){
-    const[th,bl]=String(S.latestPeriode).split('-');
-    if(th)selT.value=th;
-    if(bl)document.getElementById('up-bulan').value=bl;
+  const selT = document.getElementById('up-tahun'); if(!selT) return;
+
+  // Gabungkan: tahun dari data yang sudah ada + range tahun manual (2023 s/d tahun ini + 1)
+  const fromData   = S.periodes.map(p => String(p).split('-')[0]);
+  const thisYear   = new Date().getFullYear();
+  const manualYears = [];
+  for (let y = 2023; y <= thisYear + 1; y++) manualYears.push(String(y));
+
+  // Gabung + deduplikasi + sort descending
+  const tahunSet = [...new Set([...fromData, ...manualYears])].sort().reverse();
+
+  selT.innerHTML = tahunSet.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  // Set ke periode terbaru jika ada, atau tahun ini
+  if (S.latestPeriode) {
+    const [th, bl] = String(S.latestPeriode).split('-');
+    if (th) selT.value = th;
+    if (bl) document.getElementById('up-bulan').value = bl;
+  } else {
+    selT.value = String(thisYear);
   }
-  const periode=selT.value+'-'+(document.getElementById('up-bulan').value||'01');
-  document.getElementById('up-periode-label').textContent=`Periode aktif: ${periode}`;
+
+  const periode = selT.value + '-' + (document.getElementById('up-bulan').value || '01');
+  document.getElementById('up-periode-label').textContent = `Periode aktif: ${periode}`;
 }
 
 ['up-tahun','up-bulan'].forEach(id=>{
