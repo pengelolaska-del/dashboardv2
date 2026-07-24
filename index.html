@@ -1402,35 +1402,89 @@ setupDrop('drop-real','file-real','lbl-real','btn-real', f=>{
   const btn=document.getElementById('btn-real'); btn.disabled=false;
 });
 
+// ============================================================
+// HEADER ALIAS MAP — normalisasi nama kolom CSV
+// Mendukung: snake_case (export baru 2025), Title Case (SIRUP lama),
+// variasi format 2023/2024 (nilai_umk, E-Katalog 5.0, dll)
+// ============================================================
+const HEADER_ALIAS_MAP = {
+  // === RUP ===
+  'nama_instansi':           'Nama Instansi',
+  'nama_satuan_kerja':       'Nama Satuan Kerja',
+  'tahun_anggaran':          'Tahun Anggaran',
+  'cara_pengadaan':          'Cara Pengadaan',
+  'metode_pengadaan':        'Metode Pengadaan',
+  'jenis_pengadaan':         'Jenis Pengadaan',
+  'nama_paket':              'Nama Paket',
+  'kode_rup':                'Kode RUP',
+  'sumber_dana':             'Sumber Dana',
+  'produk_dalam_negeri':     'Produk Dalam Negeri',
+  'total_nilai':             'Total Nilai (Rp)',
+  'total nilai (rp)':        'Total Nilai (Rp)',
+  'total_nilai_(rp)':        'Total Nilai (Rp)',
+  'total nilai':             'Total Nilai (Rp)',
+  'nilai_pagu':              'Total Nilai (Rp)',
+  'pagu':                    'Total Nilai (Rp)',
+  // === Realisasi ===
+  'kode_paket':              'Kode Paket',
+  'kode paket':              'Kode Paket',
+  'sumber_transaksi':        'Sumber Transaksi',
+  'sumber transaksi':        'Sumber Transaksi',
+  'nama_penyedia':           'Nama Penyedia',
+  'nama penyedia':           'Nama Penyedia',
+  'status_paket':            'Status Paket',
+  'status paket':            'Status Paket',
+  'nilai_pdn':               'Nilai PDN (Rp)',
+  'nilai pdn (rp)':          'Nilai PDN (Rp)',
+  'nilai pdn':               'Nilai PDN (Rp)',
+  'nilai_umk':               'Nilai UMK (Rp)',  // Kolom tambahan 2023/2024/2025
+  'nilai umk (rp)':          'Nilai UMK (Rp)',
+  'nilai umk':               'Nilai UMK (Rp)',
+  'nilai_kontrak':           'Total Nilai (Rp)',
+};
+
+function normalizeHeaderName(h) {
+  const k = String(h||'').trim().toLowerCase();
+  return HEADER_ALIAS_MAP[k] || String(h||'').trim();
+}
+
 function parseCSV(text) {
   const norm = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-  function parseRow(s,pos) {
-    const vals=[];
-    while(pos<=s.length){
-      if(s[pos]==='"'){
-        let val='',p=pos+1;
-        while(p<s.length){if(s[p]==='"'){if(s[p+1]==='"'){val+='"';p+=2;}else{p++;break;}}else val+=s[p++];}
+  function parseRow(s, pos) {
+    const vals = [];
+    while (pos <= s.length) {
+      if (s[pos] === '"') {
+        let val='', p=pos+1;
+        while (p < s.length) {
+          if (s[p]==='"') { if(s[p+1]==='"'){val+='"';p+=2;}else{p++;break;} }
+          else val += s[p++];
+        }
         vals.push(val); if(s[p]===',')p++; pos=p;
       } else {
         let end=pos; while(end<s.length&&s[end]!==','&&s[end]!=='\n')end++;
         vals.push(s.slice(pos,end).trim()); pos=s[end]===','?end+1:end;
       }
-      if(pos>=s.length||(pos>0&&(s[pos-1]==='\n'||(pos<s.length&&s[pos]==='\n'))))break;
+      if (pos>=s.length || (pos>0&&(s[pos-1]==='\n'||(pos<s.length&&s[pos]==='\n')))) break;
     }
-    return{vals,nextPos:pos};
+    return { vals, nextPos: pos };
   }
   const rows=[]; let pos=0;
-  while(pos<norm.length){
-    if(norm[pos]==='\n'){pos++;continue;}
-    const{vals,nextPos}=parseRow(norm,pos);
-    if(vals.length)rows.push(vals); pos=nextPos;
-    if(pos<norm.length&&norm[pos]==='\n')pos++;
+  while (pos < norm.length) {
+    if (norm[pos]==='\n'){pos++;continue;}
+    const {vals,nextPos} = parseRow(norm, pos);
+    if (vals.length) rows.push(vals); pos=nextPos;
+    if (pos<norm.length&&norm[pos]==='\n') pos++;
   }
-  if(rows.length<2)return[];
-  const headers=rows[0].map(h=>h.replace(/^"|"$/g,'').trim());
-  return rows.slice(1).filter(r=>r.some(x=>x.trim()!=='')).map(vals=>{
-    const obj={}; headers.forEach((h,i)=>{obj[h]=(vals[i]!==undefined?vals[i]:'').trim();}); return obj;
-  });
+  if (rows.length < 2) return [];
+  // Normalisasi header: hapus BOM, trim, konversi ke Title Case standar
+  const headers = rows[0].map(h => normalizeHeaderName(h.replace(/^\uFEFF/,'')));
+  return rows.slice(1)
+    .filter(r => r.some(x => x.trim() !== ''))
+    .map(vals => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (vals[i] !== undefined ? vals[i] : '').trim(); });
+      return obj;
+    });
 }
 
 async function uploadChunked(action, rows, periode, namaFile, pfill, ppct, plbl, pwrap) {
