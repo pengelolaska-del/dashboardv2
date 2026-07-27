@@ -460,9 +460,22 @@ thead .col-sep-h{
             <label>Jenis Pengadaan</label>
             <select id="rup-jenis"><option value="">Semua</option></select>
           </div>
-          <div class="fld" style="grid-column:span 2">
+          <div class="fld">
             <label>Sumber Dana</label>
             <select id="rup-sumber"><option value="">Semua sumber dana</option></select>
+          </div>
+          <!-- Filter baru: Status Realisasi -->
+          <div class="fld">
+            <label>Status Realisasi
+              <span style="font-size:10px;background:#EFF6FF;color:#1D4ED8;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px">Baru</span>
+            </label>
+            <select id="rup-status-real">
+              <option value="">Semua Status</option>
+              <option value="Belum Berproses">⏳ Belum Berproses</option>
+              <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
+              <option value="Selesai">✅ Selesai</option>
+              <option value="Dibatalkan">❌ Dibatalkan</option>
+            </select>
           </div>
         </div>
         <div class="filter-row2">
@@ -484,7 +497,8 @@ thead .col-sep-h{
       </div>
     </div>
 
-    <div class="summary-grid">
+    <!-- Summary cards status realisasi global -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr) repeat(4,1fr);gap:10px;margin-bottom:14px" id="rup-summary-global">
       <div class="scard">
         <div class="scard-label">Jumlah Paket RUP</div>
         <div class="scard-value" id="rup-s-total">—</div>
@@ -495,32 +509,86 @@ thead .col-sep-h{
         <div class="scard-value" id="rup-s-pagu">—</div>
         <div class="scard-sub" id="rup-s-pagu-sub"></div>
       </div>
+      <!-- Breakdown status realisasi — diklik untuk filter -->
+      <div class="scard" style="border-top:3px solid #94A3B8;cursor:pointer" onclick="filterRupStatus('Belum Berproses')" title="Klik untuk filter">
+        <div class="scard-label">⏳ Belum Berproses</div>
+        <div class="scard-value" id="rup-s-belum" style="color:#64748B">—</div>
+        <div class="scard-sub">Klik untuk filter</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #CA8A04;cursor:pointer" onclick="filterRupStatus('Sedang Berjalan')" title="Klik untuk filter">
+        <div class="scard-label">🔄 Sedang Berjalan</div>
+        <div class="scard-value" id="rup-s-berjalan" style="color:#CA8A04">—</div>
+        <div class="scard-sub">Klik untuk filter</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #16A34A;cursor:pointer" onclick="filterRupStatus('Selesai')" title="Klik untuk filter">
+        <div class="scard-label">✅ Selesai</div>
+        <div class="scard-value" id="rup-s-selesai" style="color:#16A34A">—</div>
+        <div class="scard-sub">Klik untuk filter</div>
+      </div>
+      <div class="scard" style="border-top:3px solid #DC2626;cursor:pointer" onclick="filterRupStatus('Dibatalkan')" title="Klik untuk filter">
+        <div class="scard-label">❌ Dibatalkan</div>
+        <div class="scard-value" id="rup-s-batal" style="color:#DC2626">—</div>
+        <div class="scard-sub">Klik untuk filter</div>
+      </div>
+    </div>
+
+    <!-- Panel ringkasan per Jenis Pengadaan -->
+    <div id="rup-jenis-panel" style="margin-bottom:14px;display:none">
+      <div style="font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Ringkasan per Jenis Pengadaan
+        <span style="font-size:10px;color:#94A3B8;font-weight:400">— klik baris untuk filter</span>
+      </div>
+      <div class="tbl-scroll">
+        <table class="dt" id="t-rup-jenis">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Jenis Pengadaan</th>
+              <th class="text-right" style="min-width:60px">Total</th>
+              <th class="text-right" style="min-width:90px;color:#94A3B8">⏳ Belum</th>
+              <th class="text-right" style="min-width:90px;color:#CA8A04">🔄 Sedang</th>
+              <th class="text-right" style="min-width:90px;color:#16A34A">✅ Selesai</th>
+              <th class="text-right" style="min-width:90px;color:#DC2626">❌ Batal</th>
+              <th class="text-right" style="min-width:130px">Total Pagu</th>
+              <th class="text-right" style="min-width:130px">Total Kontrak</th>
+              <th class="text-right" style="min-width:60px">% Selesai</th>
+            </tr>
+          </thead>
+          <tbody id="rup-jenis-tbody">
+            <tr><td colspan="9" style="text-align:center;padding:14px;color:#94A3B8;font-size:12px">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="rup-tbl-info"></span>
-        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('rup')">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Download CSV
-        </button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span id="rup-status-tag" style="display:none;font-size:11px;background:#FEF9C3;color:#92400E;padding:3px 10px;border-radius:99px;font-weight:600"></span>
+          <button class="btn btn-ghost btn-sm" onclick="downloadCSV('rup')">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Download CSV
+          </button>
+        </div>
       </div>
       <div class="tbl-scroll">
         <table class="dt">
           <thead><tr>
             <th style="width:40px">No</th>
-            <th style="min-width:180px">Nama Satuan Kerja</th>
-            <th>Cara Pengadaan</th>
-            <th>Metode Pengadaan</th>
+            <th style="min-width:160px">Nama Satuan Kerja</th>
+            <th>Metode</th>
             <th>Jenis Pengadaan</th>
             <th style="min-width:220px">Nama Paket</th>
             <th>Kode RUP</th>
             <th>Sumber Dana</th>
-            <th>PDN</th>
-            <th class="text-right" style="min-width:140px">Total Nilai (Rp)</th>
+            <th class="text-right" style="min-width:130px">Pagu (Rp)</th>
+            <th style="min-width:120px;text-align:center">Status Realisasi</th>
+            <th style="min-width:130px">Penyedia</th>
+            <th class="text-right" style="min-width:130px">Nilai Kontrak (Rp)</th>
           </tr></thead>
           <tbody id="rup-tbody">
-            <tr><td colspan="10"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data...</p></div></td></tr>
+            <tr><td colspan="11"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat data...</p></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -835,6 +903,30 @@ thead .col-sep-h{
             Download CSV
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Rekap Status Proses per Jenis Pengadaan -->
+    <div class="tbl-wrap" style="margin-bottom:14px">
+      <div class="tbl-topbar">
+        <span class="tbl-topbar-info">📊 Rekap Status Proses per Jenis Pengadaan</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Jenis Pengadaan</th>
+              <th style="text-align:right">Total Paket</th>
+              <th style="text-align:right">✅ Sudah Berproses</th>
+              <th style="text-align:right">⏳ Belum Berproses</th>
+              <th style="text-align:right">Progress</th>
+            </tr>
+          </thead>
+          <tbody id="recap-jenis-tbody">
+            <tr><td colspan="5"><div class="empty-state"><div class="spin"></div>
+              <p style="margin-top:10px">Memuat rekap...</p></div></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1249,7 +1341,7 @@ async function loadSection(name, skipNav=false) {
   }
   if      (name==='rup')       await loadRUP(1);
   else if (name==='realisasi') await loadReal(1);
-  else if (name==='sandingan') await loadSandingan(1);
+  else if (name==='sandingan') { await loadSandingan(1); await loadRecapJenis(); }
   else if (name==='efisiensi') await loadEfisiensi();
   else if (name==='kualitas')  await loadKualitas();
   else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
@@ -1964,6 +2056,63 @@ function readSandFilter() {
     search:           v('sand-search'),
   };
 }
+
+// ── Rekap status proses per jenis pengadaan ─────────────────
+// Klik nama jenis untuk langsung filter tabel sandingan di bawah,
+// klik angka "sudah/belum" untuk sekalian filter status realisasinya.
+async function loadRecapJenis() {
+  const tbody = document.getElementById('recap-jenis-tbody');
+  try {
+    const tahun = v('g-tahun');
+    const bulan = v('g-bulan');
+    const res = await api({
+      action:  'recapJenisPengadaan',
+      tahun,
+      periode: bulan ? tahun + '-' + bulan : undefined,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rekap jenis pengadaan.');
+
+    const jenisList = res.data?.jenis || [];
+    if (!jenisList.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Belum ada data.</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = jenisList.map(j => `
+      <tr>
+        <td>
+          <a href="#" style="font-weight:600;color:#1E3A5F" onclick="filterSandByJenis('${escJs(j.jenis_pengadaan)}');return false">
+            ${j.jenis_pengadaan}
+          </a>
+        </td>
+        <td style="text-align:right">${fmt(j.total)}</td>
+        <td style="text-align:right">
+          <a href="#" style="color:#16A34A;font-weight:600" onclick="filterSandByJenis('${escJs(j.jenis_pengadaan)}');return false" title="Klik untuk lihat paket yang sudah berproses">
+            ${fmt(j.sudah_berproses)}
+          </a>
+        </td>
+        <td style="text-align:right">
+          <a href="#" style="color:#CA8A04;font-weight:600" onclick="filterSandByJenis('${escJs(j.jenis_pengadaan)}','Belum Berproses');return false" title="Klik untuk lihat paket yang belum berproses">
+            ${fmt(j.belum_berproses)}
+          </a>
+        </td>
+        <td style="text-align:right;font-size:11.5px;color:#475569">${j.persen_progress}%</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>${err.message}</p></div></td></tr>`;
+  }
+}
+
+// Set filter jenis (dan opsional status) di panel Sandingan lalu reload tabel
+function filterSandByJenis(jenisPengadaan, statusPaket) {
+  document.getElementById('sand-jenis').value  = jenisPengadaan || '';
+  document.getElementById('sand-status').value = statusPaket    || '';
+  applySand();
+  document.getElementById('sec-sandingan').scrollIntoView({ behavior:'smooth' });
+}
+
+function escJs(s) { return String(s||'').replace(/'/g, "\\'"); }
 
 async function loadSandingan(page=1) {
   SAND.page = page;
