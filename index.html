@@ -143,6 +143,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard{
   background:#fff;border-radius:12px;padding:18px 22px;
   border:1px solid #E5E9F0;position:relative;overflow:hidden;
+  min-width:0; /* cegah kartu meluber di grid saat angka pagu ditampilkan lengkap */
 }
 .scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#3B82F6)}
 .scard.green::before{--accent:#16A34A}
@@ -150,8 +151,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard.red::before{--accent:#DC2626}
 .scard.purple::before{--accent:#7C3AED}
 .scard-label{font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.scard-value{font-size:24px;font-weight:800;color:#0F1C2E;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.scard-sub{font-size:11px;color:#94A3B8;margin-top:4px}
+.scard-value{
+  font-size:clamp(15px,1.6vw,24px);font-weight:800;color:#0F1C2E;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  word-break:break-word;overflow-wrap:anywhere;line-height:1.25;
+}
+.scard-sub{font-size:11px;color:#94A3B8;margin-top:4px;word-break:break-word}
 
 /* ============================================================
    TABLE
@@ -333,6 +338,7 @@ thead .col-sep-h{
 ::-webkit-scrollbar-thumb:hover{background:#94A3B8}
 
 /* Responsive */
+@media(max-width:1300px){.summary-grid-3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1200px){.filter-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){.filter-grid{grid-template-columns:repeat(2,1fr)}.summary-grid-4{grid-template-columns:repeat(2,1fr)}.summary-grid-3{grid-template-columns:repeat(2,1fr)}.chart-grid-2{grid-template-columns:1fr}}
 @media(max-width:768px){
@@ -1636,19 +1642,19 @@ async function loadEfisiensi() {
     const total_efi     = total_pagu - total_kontrak;
     const p_efi         = total_pagu>0 ? (total_efi/total_pagu*100) : 0;
 
-    document.getElementById('efi-pagu').textContent    = IDR(total_pagu);
-    document.getElementById('efi-kontrak').textContent = IDR(total_kontrak);
+    document.getElementById('efi-pagu').textContent    = IDRf(total_pagu);
+    document.getElementById('efi-kontrak').textContent = IDRf(total_kontrak);
     document.getElementById('efi-pct').textContent     = p_efi.toFixed(2)+'%';
-    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi: ' + IDR(total_efi);
+    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi: ' + IDRf(total_efi);
 
     // KPI Filtered
     const efi_f   = total_pagu_filtered - total_kontrak_filtered;
     const pct_f   = total_pagu_filtered>0 ? (efi_f/total_pagu_filtered*100) : 0;
     const hasFilter = S.efiF.satker||S.efiF.transaksi||S.efiF.metode||S.efiF.status;
-    document.getElementById('efi-pagu-f').textContent    = IDR(total_pagu_filtered);
-    document.getElementById('efi-kontrak-f').textContent = IDR(total_kontrak_filtered);
+    document.getElementById('efi-pagu-f').textContent    = IDRf(total_pagu_filtered);
+    document.getElementById('efi-kontrak-f').textContent = IDRf(total_kontrak_filtered);
     document.getElementById('efi-paket-f').textContent   = fmt(total_paket_filtered);
-    document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDR(efi_f);
+    document.getElementById('efi-efi-f-label').textContent = 'Efisiensi: ' + IDRf(efi_f);
     document.getElementById('efi-pct-f').textContent = 'Efisiensi: ' + pct_f.toFixed(2)+'%';
     document.getElementById('efi-filter-desc').textContent = hasFilter
       ? 'Filter aktif: '+[S.efiF.transaksi,S.efiF.metode,S.efiF.status].filter(Boolean).join(', ')||'Satker terpilih'
