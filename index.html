@@ -498,7 +498,7 @@ thead .col-sep-h{
     </div>
 
     <!-- Summary cards status realisasi global -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr) repeat(4,1fr);gap:10px;margin-bottom:14px" id="rup-summary-global">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" id="rup-summary-global">
       <div class="scard">
         <div class="scard-label">Jumlah Paket RUP</div>
         <div class="scard-value" id="rup-s-total">—</div>
@@ -506,29 +506,19 @@ thead .col-sep-h{
       </div>
       <div class="scard green">
         <div class="scard-label">Total Nilai Pagu</div>
-        <div class="scard-value" id="rup-s-pagu">—</div>
+        <div class="scard-value" id="rup-s-pagu" style="font-size:18px">—</div>
         <div class="scard-sub" id="rup-s-pagu-sub"></div>
       </div>
-      <!-- Breakdown status realisasi — diklik untuk filter -->
-      <div class="scard" style="border-top:3px solid #94A3B8;cursor:pointer" onclick="filterRupStatus('Belum Berproses')" title="Klik untuk filter">
-        <div class="scard-label">⏳ Belum Berproses</div>
-        <div class="scard-value" id="rup-s-belum" style="color:#64748B">—</div>
-        <div class="scard-sub">Klik untuk filter</div>
+      <!-- Breakdown Cara Pengadaan: Penyedia vs Swakelola — klik untuk filter -->
+      <div class="scard" style="border-top:3px solid #2563EB;cursor:pointer" onclick="filterRupCara('Penyedia')" title="Klik untuk filter">
+        <div class="scard-label">🏢 Paket Penyedia</div>
+        <div class="scard-value" id="rup-s-penyedia" style="color:#2563EB">—</div>
+        <div class="scard-sub" id="rup-s-penyedia-pagu">Klik untuk filter</div>
       </div>
-      <div class="scard" style="border-top:3px solid #CA8A04;cursor:pointer" onclick="filterRupStatus('Sedang Berjalan')" title="Klik untuk filter">
-        <div class="scard-label">🔄 Sedang Berjalan</div>
-        <div class="scard-value" id="rup-s-berjalan" style="color:#CA8A04">—</div>
-        <div class="scard-sub">Klik untuk filter</div>
-      </div>
-      <div class="scard" style="border-top:3px solid #16A34A;cursor:pointer" onclick="filterRupStatus('Selesai')" title="Klik untuk filter">
-        <div class="scard-label">✅ Selesai</div>
-        <div class="scard-value" id="rup-s-selesai" style="color:#16A34A">—</div>
-        <div class="scard-sub">Klik untuk filter</div>
-      </div>
-      <div class="scard" style="border-top:3px solid #DC2626;cursor:pointer" onclick="filterRupStatus('Dibatalkan')" title="Klik untuk filter">
-        <div class="scard-label">❌ Dibatalkan</div>
-        <div class="scard-value" id="rup-s-batal" style="color:#DC2626">—</div>
-        <div class="scard-sub">Klik untuk filter</div>
+      <div class="scard" style="border-top:3px solid #0891B2;cursor:pointer" onclick="filterRupCara('Swakelola')" title="Klik untuk filter">
+        <div class="scard-label">🛠️ Paket Swakelola</div>
+        <div class="scard-value" id="rup-s-swakelola" style="color:#0891B2">—</div>
+        <div class="scard-sub" id="rup-s-swakelola-pagu">Klik untuk filter</div>
       </div>
     </div>
 
@@ -1438,9 +1428,18 @@ async function loadRUP(page=1) {
 
     // Summary
     document.getElementById('rup-s-total').textContent   = fmt(d.total);
-    document.getElementById('rup-s-pagu').textContent    = IDR(d.total_pagu);
+    document.getElementById('rup-s-pagu').textContent    = IDRf(d.total_pagu);
     document.getElementById('rup-s-sub').textContent     = `Halaman ${page} dari ${d.total_pages}`;
     document.getElementById('rup-s-pagu-sub').textContent = `Periode: ${getPeriode()}`;
+
+    // Breakdown Cara Pengadaan (Penyedia vs Swakelola)
+    const cara = d.cara_summary || [];
+    const cPenyedia  = cara.find(c => c.cara_pengadaan === 'Penyedia')  || { total:0, total_pagu:0 };
+    const cSwakelola = cara.find(c => c.cara_pengadaan === 'Swakelola') || { total:0, total_pagu:0 };
+    document.getElementById('rup-s-penyedia').textContent       = fmt(cPenyedia.total);
+    document.getElementById('rup-s-penyedia-pagu').textContent  = IDRf(cPenyedia.total_pagu);
+    document.getElementById('rup-s-swakelola').textContent      = fmt(cSwakelola.total);
+    document.getElementById('rup-s-swakelola-pagu').textContent = IDRf(cSwakelola.total_pagu);
 
     // Fill enums on first page
     if (page === 1 && d.enums) {
@@ -1476,6 +1475,12 @@ async function loadRUP(page=1) {
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="10"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
+}
+
+// Set filter Cara Pengadaan (Penyedia/Swakelola) dari kartu ringkasan lalu reload
+function filterRupCara(cara) {
+  document.getElementById('rup-cara').value = cara;
+  applyRUP();
 }
 
 function applyRUP() {
