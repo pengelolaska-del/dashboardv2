@@ -137,7 +137,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
    SUMMARY CARDS
    ============================================================ */
 .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+.summary-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
 .summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .scard{
   background:#fff;border-radius:12px;padding:18px 22px;
   border:1px solid #E5E9F0;position:relative;overflow:hidden;
@@ -332,13 +334,13 @@ thead .col-sep-h{
 
 /* Responsive */
 @media(max-width:1200px){.filter-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.filter-grid{grid-template-columns:repeat(2,1fr)}.summary-grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.filter-grid{grid-template-columns:repeat(2,1fr)}.summary-grid-4{grid-template-columns:repeat(2,1fr)}.summary-grid-3{grid-template-columns:repeat(2,1fr)}.chart-grid-2{grid-template-columns:1fr}}
 @media(max-width:768px){
   #sidebar{transform:translateX(-230px)}
   #main{margin-left:0}
   .sidebar-open #sidebar{transform:none}
   .sidebar-open #main{margin-left:0}
-  .summary-grid,.summary-grid-4{grid-template-columns:1fr}
+  .summary-grid,.summary-grid-4,.summary-grid-3{grid-template-columns:1fr}
   .filter-grid{grid-template-columns:1fr}
   .filter-row2,.filter-row3{grid-template-columns:1fr}
 }
@@ -746,7 +748,7 @@ thead .col-sep-h{
     </div>
 
     <!-- KPI 6 kartu: 2 baris -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+    <div class="summary-grid-3">
       <div class="scard">
         <div class="scard-label">Total Pagu RUP</div>
         <div class="scard-value" id="efi-pagu">—</div>
@@ -764,7 +766,7 @@ thead .col-sep-h{
       </div>
     </div>
     <!-- KPI filtered -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+    <div class="summary-grid-3">
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
         <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
@@ -782,7 +784,7 @@ thead .col-sep-h{
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="chart-grid-2">
       <div class="chart-card"><div class="chart-title">Tren Pagu vs Kontrak per Periode</div><div style="height:220px"><canvas id="c-tren"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Top 10 OPD — Efisiensi Tertinggi</div><div style="height:220px"><canvas id="c-opd"></canvas></div></div>
     </div>
