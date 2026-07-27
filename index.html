@@ -14,7 +14,7 @@
    ============================================================ */
 *{margin:0;padding:0;box-sizing:border-box}
 html{font-size:14px}
-body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;min-height:100vh;display:flex}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;min-height:100vh;display:flex;overflow-x:hidden}
 
 /* ============================================================
    SIDEBAR
@@ -55,7 +55,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 /* ============================================================
    MAIN LAYOUT
    ============================================================ */
-#main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+#main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;max-width:100%}
 
 /* TOPBAR */
 #topbar{
@@ -83,7 +83,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 /* ============================================================
    SECTIONS
    ============================================================ */
-.section{display:none;flex:1;padding:22px 24px}
+.section{display:none;flex:1;padding:22px 24px;min-width:0;max-width:100%}
 .section.active{display:block}
 .page-title{font-size:20px;font-weight:800;color:#0F1C2E;margin-bottom:18px;letter-spacing:-.02em}
 
@@ -161,7 +161,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 /* ============================================================
    TABLE
    ============================================================ */
-.tbl-wrap{background:#fff;border-radius:12px;border:1px solid #E5E9F0;overflow:hidden}
+.tbl-wrap{background:#fff;border-radius:12px;border:1px solid #E5E9F0;overflow:hidden;max-width:100%}
 .tbl-topbar{
   display:flex;justify-content:space-between;align-items:center;
   padding:10px 14px;border-bottom:1px solid #F1F5F9;background:#FAFBFC;
@@ -338,6 +338,7 @@ thead .col-sep-h{
 ::-webkit-scrollbar-thumb:hover{background:#94A3B8}
 
 /* Responsive */
+@media(max-width:1400px){.filter-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:1300px){.summary-grid-3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1200px){.filter-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){.filter-grid{grid-template-columns:repeat(2,1fr)}.summary-grid-4{grid-template-columns:repeat(2,1fr)}.summary-grid-3{grid-template-columns:repeat(2,1fr)}.chart-grid-2{grid-template-columns:1fr}}
