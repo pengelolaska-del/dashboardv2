@@ -1339,6 +1339,11 @@ const sbadge   = s  => {
 };
 const caraBadge = c => badge(c==='Swakelola'?'b-sky':'b-blue', c||'—');
 const pdnBadge  = p => badge(p==='Ya'?'b-teal':'b-gray', p==='Ya'?'PDN':'Non-PDN');
+// Penanda kecil untuk pagu yang berasal dari input manual (sheet _PAGU),
+// bukan dari RUP asli — dipasang di sebelah nilai pagu.
+const manualPaguMark = () =>
+  `<span title="Pagu diinput manual, bukan dari RUP" style="display:inline-block;margin-left:5px;padding:1px 5px;
+    border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">✏ Manual</span>`;
 
 // ============================================================
 // API
@@ -1886,7 +1891,7 @@ async function loadKualitas() {
           return `<tr>
             <td style="font-size:12px">${r.nama_satker||'—'}</td>
             <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_realisasi||''}">${r.nama_paket_realisasi||'—'}</td>
-            <td style="font-size:11px;font-family:monospace;color:#2563EB">${kp||'—'}</td>
+            <td style="font-size:11px;font-family:monospace;color:#2563EB">${kp||'—'}${hasPagu ? manualPaguMark() : ''}</td>
             <td style="font-size:12px;text-align:right">${IDRf(r.nilai_kontrak)}</td>
             <td style="text-align:center">${paguBtn}</td>
           </tr>`;
@@ -2239,7 +2244,7 @@ function syncUploadPeriode() {
 // sebagai tombol di dalam modal.
 // ============================================================
 async function fetchDetailData(type) {
-  let rows=[], headers=[], filename='';
+  let rows=[], headers=[], filename='', manualFlags=null, paguColIdx=-1;
   if(type==='efi'){
     // Rincian Paket — ambil per-paket detail (mengikuti filter Efisiensi aktif)
     const tahun = document.getElementById('g-tahun').value;
@@ -2253,10 +2258,12 @@ async function fetchDetailData(type) {
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian paket.');
     const items = res.data?.items || [];
     headers = ['OPD','Nama Penyedia','Jenis Pengadaan','Nama Paket','Pagu RUP','Total Nilai','Efisiensi'];
+    paguColIdx = 4;
     rows = items.map(r => [
       r.nama_satker||'—', r.nama_penyedia||'—', r.jenis_pengadaan||'—', r.nama_paket||'—',
       r.pagu_rup||0, r.nilai_kontrak||0, r.efisiensi||0,
     ]);
+    manualFlags = items.map(r => !!r.is_manual_pagu);
     filename = 'RincianPaket_Efisiensi_' + tahun + '.csv';
   } else if(type==='rup'){
     const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
@@ -2275,6 +2282,7 @@ async function fetchDetailData(type) {
     if (res.status !== 'success') throw new Error(res.message);
     const items = res.data?.items || [];
     headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
+    paguColIdx = 7;
     rows = items.map(r => [
       r.kode_satker, r.nama_satker, r.nama_paket_rup, r.kode_rup,
       r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
@@ -2283,6 +2291,7 @@ async function fetchDetailData(type) {
       r.nilai_kontrak||0,
       r.ada_realisasi ? (r.pagu||0)-(r.nilai_kontrak||0) : '',
     ]);
+    manualFlags = items.map(r => !!r.is_manual_pagu);
     filename=`Sandingan_RUP_${tahun}${bulan?'_'+bulan:''}.csv`;
   } else {
     const res=await api({action:'listRealisasi',periode:getPeriode(),...Object.fromEntries(Object.entries(S.realF).filter(([,v])=>v)),page:1,per_page:99999});
@@ -2290,7 +2299,7 @@ async function fetchDetailData(type) {
     headers=['Nama Satker','Kode Paket','Kode RUP','Sumber Transaksi','Sumber Dana','Nama Penyedia','Metode','Jenis','Nama Paket','Status','Total Nilai'];
     filename='Realisasi_'+getPeriode()+'.csv';
   }
-  return {headers, rows, filename};
+  return {headers, rows, filename, manualFlags, paguColIdx};
 }
 
 function exportRowsToCSV(headers, rows, filename) {
@@ -2302,12 +2311,16 @@ function exportRowsToCSV(headers, rows, filename) {
 async function showDetailPaket(type) {
   Swal.fire({title:'Memuat detail paket...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try {
-    const {headers, rows, filename} = await fetchDetailData(type);
+    const {headers, rows, filename, manualFlags, paguColIdx} = await fetchDetailData(type);
     Swal.close();
     if (!rows.length) { Swal.fire('Tidak ada data','Tidak ada paket yang cocok dengan filter saat ini.','info'); return; }
 
     const theadHtml = '<tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr>';
-    const tbodyHtml = rows.map(r=>'<tr>'+r.map(c=>`<td>${c===''||c==null?'—':String(c)}</td>`).join('')+'</tr>').join('');
+    const tbodyHtml = rows.map((r,ri)=>'<tr>'+r.map((c,ci)=>{
+      const val = c===''||c==null?'—':String(c);
+      const mark = (ci===paguColIdx && manualFlags && manualFlags[ri]) ? manualPaguMark() : '';
+      return `<td>${val}${mark}</td>`;
+    }).join('')+'</tr>').join('');
     const html = `
       <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
         Menampilkan <b>${rows.length.toLocaleString('id-ID')}</b> paket sesuai filter yang aktif.
@@ -2601,7 +2614,7 @@ async function loadSandingan(page=1) {
         <td class="col-koderup">${r.kode_rup||'—'}</td>
         <td class="col-metode">${mbadge(r.metode_pengadaan_rup||r.metode_pengadaan||'')}</td>
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
-        <td class="col-pagu mono" style="color:#1D4ED8;font-weight:600;font-size:12px">${IDRf(r.pagu||0)}</td>
+        <td class="col-pagu mono" style="color:#1D4ED8;font-weight:600;font-size:12px">${IDRf(r.pagu||0)}${r.is_manual_pagu ? manualPaguMark() : ''}</td>
         <!-- Pemisah -->
         <td class="col-sep" style="background:#E8EFFE!important;border:none"></td>
         <!-- Kolom Realisasi -->
