@@ -451,7 +451,12 @@ thead .col-sep-h{
         <div class="filter-grid">
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
-            <select id="rup-satker"></select>
+            <div class="combo">
+              <input type="text" class="combo-search" id="rup-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                     onfocus="comboOpen('rup-satker')" oninput="comboFilter('rup-satker')" onblur="comboBlurClose('rup-satker')">
+              <input type="hidden" id="rup-satker">
+              <div class="combo-list hidden" id="rup-satker-list"></div>
+            </div>
           </div>
           <div class="fld">
             <label>Cara Pengadaan</label>
@@ -616,7 +621,12 @@ thead .col-sep-h{
         <div class="filter-grid">
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
-            <select id="real-satker"></select>
+            <div class="combo">
+              <input type="text" class="combo-search" id="real-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                     onfocus="comboOpen('real-satker')" oninput="comboFilter('real-satker')" onblur="comboBlurClose('real-satker')">
+              <input type="hidden" id="real-satker">
+              <div class="combo-list hidden" id="real-satker-list"></div>
+            </div>
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
@@ -730,7 +740,12 @@ thead .col-sep-h{
         <div class="filter-grid">
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
-            <select id="efi-satker"><option value="">Semua Satuan Kerja</option></select>
+            <div class="combo">
+              <input type="text" class="combo-search" id="efi-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                     onfocus="comboOpen('efi-satker')" oninput="comboFilter('efi-satker')" onblur="comboBlurClose('efi-satker')">
+              <input type="hidden" id="efi-satker">
+              <div class="combo-list hidden" id="efi-satker-list"></div>
+            </div>
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
