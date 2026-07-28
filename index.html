@@ -116,6 +116,26 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .fld input::placeholder{color:#CBD5E1}
 
 /* ============================================================
+   SEARCHABLE COMBOBOX (Satuan Kerja, dsb.)
+   ============================================================ */
+.combo{position:relative}
+.combo-search.has-value{color:#1A2332;font-weight:600}
+.combo-list{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:60;
+  background:#fff;border:1px solid #E2E8F0;border-radius:9px;
+  box-shadow:0 8px 24px rgba(15,28,46,.14);
+  max-height:230px;overflow-y:auto;padding:4px;
+}
+.combo-list.hidden{display:none}
+.combo-item{
+  padding:7px 10px;font-size:12.5px;color:#1A2332;border-radius:6px;
+  cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.combo-item:hover,.combo-item.hi{background:#EFF6FF;color:#1D4ED8}
+.combo-item.combo-all{color:#64748B;font-weight:600;border-bottom:1px solid #F1F5F9;margin-bottom:3px;border-radius:6px 6px 0 0}
+.combo-empty{padding:10px;font-size:12px;color:#94A3B8;text-align:center}
+
+/* ============================================================
    BUTTONS
    ============================================================ */
 .btn{
@@ -1522,13 +1542,101 @@ function fillSelect(selId, opts, curVal, firstLabel='Semua') {
   sel.value = saved || '';
 }
 
-function fillSatker(selId, list, curVal) {
-  const sel = document.getElementById(selId);
-  if (!sel) return;
-  const saved = curVal !== undefined ? curVal : sel.value;
-  sel.innerHTML = `<option value="">Semua Satuan Kerja</option>` +
-    (list||[]).map(s => `<option value="${s.k||s.kode_satker}">${s.n||s.nama_satker}</option>`).join('');
-  sel.value = saved || '';
+// ============================================================
+// SEARCHABLE COMBOBOX (dipakai untuk filter Satuan Kerja)
+// Markup yang dibutuhkan untuk tiap instance (baseId = mis. 'real-satker'):
+//   <input id="{baseId}-q">     -> teks yang diketik & ditampilkan user
+//   <input id="{baseId}" type="hidden"> -> value asli (kode_satker) yang dikirim ke API
+//   <div id="{baseId}-list">   -> daftar opsi hasil pencarian
+// ============================================================
+const COMBO_DATA = {};   // { [baseId]: [{k, n}, ...] }
+const COMBO_HI   = {};   // index item yang sedang di-highlight (untuk navigasi keyboard)
+
+function comboEsc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Isi data + set pilihan awal (curVal = kode yang sedang aktif, kalau ada)
+function fillSatker(baseId, list, curVal) {
+  COMBO_DATA[baseId] = (list || []).map(s => ({ k: String(s.k ?? s.kode_satker ?? ''), n: s.n ?? s.nama_satker ?? '' }));
+  const hidden = document.getElementById(baseId);
+  const saved  = curVal !== undefined ? curVal : (hidden ? hidden.value : '');
+  comboSetValue(baseId, saved || '');
+}
+
+// Set value combobox secara terprogram (dipakai fillSatker & saat reset)
+function comboSetValue(baseId, kode) {
+  const hidden = document.getElementById(baseId);
+  const q      = document.getElementById(baseId + '-q');
+  if (!hidden || !q) return;
+  const item = (COMBO_DATA[baseId] || []).find(x => x.k === String(kode));
+  hidden.value = kode ? String(kode) : '';
+  q.value = item ? item.n : '';
+  q.classList.toggle('has-value', !!item);
+}
+
+function comboClear(baseId) {
+  comboSetValue(baseId, '');
+  const list = document.getElementById(baseId + '-list');
+  if (list) list.classList.add('hidden');
+}
+
+function comboRenderList(baseId, keyword) {
+  const listEl = document.getElementById(baseId + '-list');
+  if (!listEl) return;
+  const data = COMBO_DATA[baseId] || [];
+  const kw   = (keyword || '').trim().toLowerCase();
+  const filtered = kw ? data.filter(x => x.n.toLowerCase().includes(kw)) : data;
+
+  const allItem = `<div class="combo-item combo-all" onmousedown="event.preventDefault();comboChoose('${baseId}','')">Semua Satuan Kerja</div>`;
+  if (!filtered.length) {
+    listEl.innerHTML = allItem + `<div class="combo-empty">Tidak ada satuan kerja yang cocok</div>`;
+    return;
+  }
+  listEl.innerHTML = allItem + filtered.map(x =>
+    `<div class="combo-item" onmousedown="event.preventDefault();comboChoose('${baseId}','${comboEsc(x.k)}')">${comboEsc(x.n)}</div>`
+  ).join('');
+  COMBO_HI[baseId] = -1;
+}
+
+function comboOpen(baseId) {
+  const q = document.getElementById(baseId + '-q');
+  comboRenderList(baseId, q ? q.value : '');
+  const list = document.getElementById(baseId + '-list');
+  if (list) list.classList.remove('hidden');
+}
+
+function comboFilter(baseId) {
+  const q = document.getElementById(baseId + '-q');
+  comboRenderList(baseId, q ? q.value : '');
+  const list = document.getElementById(baseId + '-list');
+  if (list) list.classList.remove('hidden');
+  // Kalau teks dikosongkan manual, ikut kosongkan pilihan aktif
+  if (q && !q.value) {
+    const hidden = document.getElementById(baseId);
+    if (hidden) hidden.value = '';
+    q.classList.remove('has-value');
+  }
+}
+
+function comboChoose(baseId, kode) {
+  comboSetValue(baseId, kode);
+  const list = document.getElementById(baseId + '-list');
+  if (list) list.classList.add('hidden');
+}
+
+// onblur: tutup list, dan kalau teks yang diketik tidak match satupun opsi, kembalikan ke pilihan valid terakhir
+function comboBlurClose(baseId) {
+  setTimeout(() => {
+    const list = document.getElementById(baseId + '-list');
+    if (list) list.classList.add('hidden');
+    const hidden = document.getElementById(baseId);
+    const q = document.getElementById(baseId + '-q');
+    if (!hidden || !q) return;
+    const item = (COMBO_DATA[baseId] || []).find(x => x.k === hidden.value);
+    q.value = item ? item.n : '';
+    q.classList.toggle('has-value', !!item);
+  }, 150); // delay agar onmousedown di combo-item sempat kena sebelum list ditutup
 }
 
 // ============================================================
@@ -1622,7 +1730,8 @@ function applyRUP() {
 }
 function resetRUP() {
   S.rupF = {};
-  ['rup-satker','rup-cara','rup-metode','rup-jenis','rup-sumber'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  comboClear('rup-satker');
+  ['rup-cara','rup-metode','rup-jenis','rup-sumber'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   ['rup-kode','rup-nama'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   loadRUP(1);
 }
@@ -1707,7 +1816,8 @@ function applyReal() {
 }
 function resetReal() {
   S.realF = {};
-  ['real-satker','real-transaksi','real-sumber','real-metode','real-status','real-jenis'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  comboClear('real-satker');
+  ['real-transaksi','real-sumber','real-metode','real-status','real-jenis'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   ['real-penyedia','real-nama','real-kode'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   loadReal(1);
 }
@@ -1727,7 +1837,8 @@ function applyEfi() {
 }
 function resetEfi() {
   S.efiF = {};
-  ['efi-satker','efi-transaksi','efi-metode','efi-status'].forEach(id => {
+  comboClear('efi-satker');
+  ['efi-transaksi','efi-metode','efi-status'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
   loadEfisiensi();
