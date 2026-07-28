@@ -1178,21 +1178,111 @@ thead .col-sep-h{
   <section id="sec-kualitas" class="section">
     <h1 class="page-title">Kualitas Data</h1>
     <div class="summary-grid-4" style="grid-template-columns:repeat(3,1fr)" id="kual-kpi"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <!-- Unmatched RUP -->
       <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched RUP <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span></p>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+          Unmatched RUP
+          <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
+        </p>
         <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
-          <table class="dt" id="t-um-rup"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Pagu</th></tr></thead><tbody></tbody></table>
+          <table class="dt" id="t-um-rup">
+            <thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Pagu</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
+
+      <!-- Unmatched Realisasi + tombol Set Pagu -->
       <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">Unmatched Realisasi <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP)</span></p>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+          Unmatched Realisasi
+          <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
+        </p>
         <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
-          <table class="dt" id="t-um-real"><thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Kontrak</th></tr></thead><tbody></tbody></table>
+          <table class="dt" id="t-um-real">
+            <thead>
+              <tr>
+                <th>Satker</th>
+                <th>Nama Paket</th>
+                <th>Kode Paket</th>
+                <th class="text-right">Kontrak</th>
+                <th class="text-center">Pagu Manual</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
+
+    <!-- Daftar Pagu Manual -->
+    <div style="margin-top:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
+          📋 Daftar Pagu Manual
+          <span style="font-weight:400;color:#94A3B8;margin-left:4px">— digunakan untuk hitung efisiensi paket tanpa kode RUP</span>
+        </p>
+        <button onclick="openPaguModal()" style="font-size:11px;background:#1E3A5F;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-weight:600">
+          + Tambah Pagu Manual
+        </button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="dt" id="t-manual-pagu">
+          <thead>
+            <tr>
+              <th>Kode Paket</th>
+              <th>Nama Paket</th>
+              <th>Nama Satker</th>
+              <th class="text-right">Pagu Manual</th>
+              <th>Diperbarui</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </section>
+
+  <!-- ============================================================
+       MODAL: INPUT / EDIT PAGU MANUAL
+       ============================================================ -->
+  <div id="modal-pagu" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,.18)">
+      <div style="padding:18px 22px 14px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px;font-weight:700;color:#1A2332" id="modal-pagu-title">Input Pagu Manual</span>
+        <button onclick="closePaguModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1">×</button>
+      </div>
+      <div style="padding:18px 22px">
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Kode Paket *</label>
+          <input id="mp-kode" type="text" placeholder="Contoh: 63882716" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+        </div>
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Paket</label>
+          <input id="mp-nama" type="text" placeholder="Nama paket pengadaan..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+        </div>
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Satker</label>
+          <input id="mp-satker" type="text" placeholder="Nama satuan kerja..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+        </div>
+        <div style="margin-bottom:6px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Pagu Manual (Rp) *</label>
+          <input id="mp-pagu" type="text" inputmode="numeric" placeholder="Contoh: 150000000" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+          <div id="mp-pagu-preview" style="font-size:11px;color:#16A34A;margin-top:4px;font-weight:600"></div>
+        </div>
+        <p style="font-size:11px;color:#94A3B8;margin-top:8px;line-height:1.5">
+          💡 Pagu manual digunakan untuk menghitung efisiensi paket realisasi yang tidak memiliki kode RUP. Nilai ini tidak mempengaruhi data RUP asli.
+        </p>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid #E2E8F0;display:flex;gap:10px">
+        <button onclick="closePaguModal()" style="flex:1;padding:9px;border:1.5px solid #CBD5E1;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;color:#475569">Batal</button>
+        <button onclick="savePagu()" id="btn-save-pagu" style="flex:2;padding:9px;border:none;border-radius:7px;background:#1E3A5F;color:#fff;font-size:13px;cursor:pointer;font-weight:700">Simpan Pagu</button>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /main -->
 
@@ -1739,26 +1829,174 @@ async function loadEfisiensi() {
 // ============================================================
 // KUALITAS DATA
 // ============================================================
+// ============================================================
+// KUALITAS DATA — loadKualitas + Manual Pagu
+// ============================================================
+
+// Cache pagu manual: kode_paket → pagu_manual
+let _manualPaguMap = {};
+
 async function loadKualitas() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
   try {
-    const res = await api({action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode});
-    const d = res.data||{};
+    // Paralel: unmatched + pagu manual
+    const [resUM, resPagu] = await Promise.all([
+      api({action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode}),
+      api({action:'listManualPagu'}),
+    ]);
+
+    const d = resUM.data||{};
+
+    // Bangun cache pagu manual
+    _manualPaguMap = {};
+    (resPagu.data||[]).forEach(r => { _manualPaguMap[String(r.kode_paket)] = r; });
+
+    // KPI cards
     document.getElementById('kual-kpi').innerHTML = [
-      {lbl:'Matching Rate', val:pct(d.matching_rate)},
-      {lbl:'Total Realisasi', val:fmt(d.total_realisasi)},
-      {lbl:'Total Matched', val:fmt(d.total_matched)},
+      {lbl:'Matching Rate',    val:pct(d.matching_rate)},
+      {lbl:'Total Realisasi',  val:fmt(d.total_realisasi)},
+      {lbl:'Total Matched',    val:fmt(d.total_matched)},
     ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
 
+    // Tabel Unmatched RUP (tidak berubah)
     const fillTbl = (id, rows, cols) => {
       document.querySelector(id+' tbody').innerHTML = rows?.length
         ? rows.map(r=>`<tr>${cols.map(c=>`<td style="font-size:12px">${c(r)}</td>`).join('')}</tr>`).join('')
         : `<tr><td colspan="${cols.length}"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
     };
-    fillTbl('#t-um-rup',  d.unmatched_rup,         [r=>r.nama_satker, r=>r.nama_paket_rup||'—', r=>IDRf(r.pagu_rup)]);
-    fillTbl('#t-um-real', d.unmatched_realisasi,    [r=>r.nama_satker, r=>r.nama_paket_realisasi||'—', r=>IDRf(r.nilai_kontrak)]);
+    fillTbl('#t-um-rup', d.unmatched_rup, [
+      r=>r.nama_satker,
+      r=>r.nama_paket_rup||'—',
+      r=>`<span style="text-align:right;display:block">${IDRf(r.pagu_rup)}</span>`,
+    ]);
+
+    // Tabel Unmatched Realisasi — dengan kolom Kode Paket + tombol Set Pagu
+    const umReal = d.unmatched_realisasi||[];
+    document.querySelector('#t-um-real tbody').innerHTML = umReal.length
+      ? umReal.map(r => {
+          const kp    = r.kode_paket||'';
+          const hasPagu = _manualPaguMap[kp];
+          const paguBtn = kp
+            ? `<button onclick='openPaguModal(${JSON.stringify({kode_paket:kp, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", pagu_manual:hasPagu?hasPagu.pagu_manual:""})})' 
+                style="font-size:10px;padding:3px 8px;border-radius:5px;cursor:pointer;font-weight:600;border:none;
+                       background:${hasPagu?'#DCFCE7':'#EFF6FF'};color:${hasPagu?'#16A34A':'#2563EB'}">
+                ${hasPagu?'✏ Edit':'+ Set Pagu'}
+              </button>`
+            : '<span style="color:#CBD5E1;font-size:11px">—</span>';
+          return `<tr>
+            <td style="font-size:12px">${r.nama_satker||'—'}</td>
+            <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_realisasi||''}">${r.nama_paket_realisasi||'—'}</td>
+            <td style="font-size:11px;font-family:monospace;color:#2563EB">${kp||'—'}</td>
+            <td style="font-size:12px;text-align:right">${IDRf(r.nilai_kontrak)}</td>
+            <td style="text-align:center">${paguBtn}</td>
+          </tr>`;
+        }).join('')
+      : `<tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+
+    // Tabel daftar pagu manual
+    renderManualPaguTable(resPagu.data||[]);
+
   } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
+
+function renderManualPaguTable(list) {
+  document.querySelector('#t-manual-pagu tbody').innerHTML = list.length
+    ? list.map(r => `<tr>
+        <td style="font-size:11px;font-family:monospace;color:#2563EB">${r.kode_paket||'—'}</td>
+        <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket||''}">${r.nama_paket||'—'}</td>
+        <td style="font-size:12px">${r.nama_satker||'—'}</td>
+        <td style="font-size:12px;text-align:right;font-weight:700;color:#1E3A5F">${IDRf(r.pagu_manual)}</td>
+        <td style="font-size:11px;color:#94A3B8">${r.updated_at?new Date(r.updated_at).toLocaleString('id-ID'):'-'}</td>
+        <td style="text-align:center">
+          <button onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket,nama_paket:r.nama_paket,nama_satker:r.nama_satker,pagu_manual:r.pagu_manual})})'
+            style="font-size:10px;padding:3px 8px;background:#FEF9C3;color:#854D0E;border:none;border-radius:5px;cursor:pointer;font-weight:600;margin-right:4px">
+            ✏ Edit
+          </button>
+          <button onclick="deletePagu('${r.kode_paket}')"
+            style="font-size:10px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;border-radius:5px;cursor:pointer;font-weight:600">
+            🗑
+          </button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual yang diinput.</p></div></td></tr>`;
+}
+
+// ── Modal Pagu Manual ──────────────────────────────────────
+
+function openPaguModal(prefill) {
+  const modal = document.getElementById('modal-pagu');
+  document.getElementById('mp-kode').value   = prefill?.kode_paket  || '';
+  document.getElementById('mp-nama').value   = prefill?.nama_paket  || '';
+  document.getElementById('mp-satker').value = prefill?.nama_satker || '';
+  document.getElementById('mp-pagu').value   = prefill?.pagu_manual ? String(prefill.pagu_manual) : '';
+  document.getElementById('mp-pagu-preview').textContent = prefill?.pagu_manual ? IDRf(prefill.pagu_manual) : '';
+  document.getElementById('modal-pagu-title').textContent = prefill?.pagu_manual ? 'Edit Pagu Manual' : 'Input Pagu Manual';
+  // Kunci kode_paket saat edit (tidak boleh diubah)
+  document.getElementById('mp-kode').readOnly = !!(prefill?.pagu_manual);
+  document.getElementById('mp-kode').style.background = prefill?.pagu_manual ? '#F8FAFC' : '#fff';
+  modal.style.display = 'flex';
+}
+
+function closePaguModal() {
+  document.getElementById('modal-pagu').style.display = 'none';
+  document.getElementById('mp-pagu-preview').textContent = '';
+}
+
+// Live preview nominal saat mengetik
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('mp-pagu');
+  if (inp) inp.addEventListener('input', () => {
+    const val = Number(String(inp.value).replace(/[^0-9]/g,''));
+    document.getElementById('mp-pagu-preview').textContent = val > 0 ? IDRf(val) : '';
+  });
+});
+
+async function savePagu() {
+  const kode_paket  = document.getElementById('mp-kode').value.trim();
+  const nama_paket  = document.getElementById('mp-nama').value.trim();
+  const nama_satker = document.getElementById('mp-satker').value.trim();
+  const rawPagu     = String(document.getElementById('mp-pagu').value).replace(/[^0-9]/g,'');
+  const pagu_manual = Number(rawPagu);
+
+  if (!kode_paket) { Swal.fire('Validasi','Kode Paket wajib diisi.','warning'); return; }
+  if (!pagu_manual || pagu_manual <= 0) { Swal.fire('Validasi','Pagu Manual harus lebih dari 0.','warning'); return; }
+
+  const btn = document.getElementById('btn-save-pagu');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    const res = await api({action:'saveManualPagu', token:S.adminToken, kode_paket, nama_paket, nama_satker, pagu_manual});
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
+    closePaguModal();
+    await loadKualitas(); // refresh tabel
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simpan Pagu';
+  }
+}
+
+async function deletePagu(kode_paket) {
+  const conf = await Swal.fire({
+    title:'Hapus pagu manual?',
+    html:`Kode Paket: <b>${kode_paket}</b><br>Data ini akan dihapus dari sheet <i>_PAGU</i>.`,
+    icon:'warning', showCancelButton:true,
+    confirmButtonColor:'#DC2626', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({action:'deleteManualPagu', token:S.adminToken, kode_paket});
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'Dihapus', timer:1200, showConfirmButton:false});
+    await loadKualitas();
+  } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
+}
+
+// Tutup modal kalau klik backdrop
+document.addEventListener('click', e => {
+  const modal = document.getElementById('modal-pagu');
+  if (modal && e.target === modal) closePaguModal();
+});
 
 // ============================================================
 // UPLOAD
