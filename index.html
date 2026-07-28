@@ -799,10 +799,15 @@ thead .col-sep-h{
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
-        <button class="btn btn-ghost btn-sm" onclick="showDetailPaket('efi')">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-          Detail Paket
-        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan untuk periode ini (perlu login admin)">
+            ⚙ Jalankan Ulang Matching
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="showDetailPaket('efi')">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            Lihat Rincian Paket
+          </button>
+        </div>
       </div>
       <div class="tbl-scroll">
         <table class="dt">
@@ -897,7 +902,10 @@ thead .col-sep-h{
           <button class="btn btn-ghost btn-icon" onclick="resetSand()" title="Reset filter">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-          <button class="btn btn-ghost" onclick="showDetailPaket('sand')" style="margin-left:auto">
+          <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan RUP ↔ Realisasi untuk periode ini (perlu login admin)" style="margin-left:auto">
+            ⚙ Jalankan Ulang Matching
+          </button>
+          <button class="btn btn-ghost" onclick="showDetailPaket('sand')">
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             Detail Paket
           </button>
@@ -1995,10 +2003,23 @@ function syncUploadPeriode() {
 async function fetchDetailData(type) {
   let rows=[], headers=[], filename='';
   if(type==='efi'){
-    const res=await api({action:'listEfisiensi',tahun:document.getElementById('g-tahun').value,...Object.fromEntries(Object.entries(S.efiF).filter(([,v])=>v))});
-    rows=(res.data?.by_opd||[]).map(r=>[r.nama_satker,r.total_pagu,r.total_kontrak,r.efisiensi,r.persen_efisiensi,r.jumlah]);
-    headers=['Nama Satker','Total Pagu','Total Kontrak','Efisiensi (Rp)','% Efisiensi','Jml Paket'];
-    filename='Efisiensi_'+document.getElementById('g-tahun').value+'.csv';
+    // Rincian Paket — ambil per-paket detail (mengikuti filter Efisiensi aktif)
+    const tahun = document.getElementById('g-tahun').value;
+    const res = await api({
+      action:'listEfisiensiDetail', tahun, page:1, per_page:99999,
+      kode_satker:      S.efiF.satker    || undefined,
+      sumber_transaksi: S.efiF.transaksi || undefined,
+      metode_pengadaan: S.efiF.metode    || undefined,
+      status_paket:     S.efiF.status    || undefined,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian paket.');
+    const items = res.data?.items || [];
+    headers = ['OPD','Nama Penyedia','Jenis Pengadaan','Nama Paket','Pagu RUP','Total Nilai','Efisiensi'];
+    rows = items.map(r => [
+      r.nama_satker||'—', r.nama_penyedia||'—', r.jenis_pengadaan||'—', r.nama_paket||'—',
+      r.pagu_rup||0, r.nilai_kontrak||0, r.efisiensi||0,
+    ]);
+    filename = 'RincianPaket_Efisiensi_' + tahun + '.csv';
   } else if(type==='rup'){
     const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
     rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.cara_pengadaan,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.kode_rup,r.sumber_dana,r.produk_dalam_negeri,r.pagu]);
@@ -2074,6 +2095,39 @@ async function showDetailPaket(type) {
       if (res.isDenied) exportRowsToCSV(headers, rows, filename);
     });
   } catch(e) { Swal.fire('❌ Error', e.message, 'error'); }
+}
+
+// ============================================================
+// MATCHING — Jalankan Ulang (admin only)
+// ============================================================
+async function rerunMatchingForPeriode() {
+  if (!S.isAdmin) {
+    Swal.fire('Perlu Login Admin', 'Silakan login di menu Upload Data terlebih dahulu (masukkan token admin), lalu kembali ke halaman ini.', 'warning');
+    return;
+  }
+  const periode = getPeriode();
+  if (!periode) { Swal.fire('Periode kosong', 'Pilih Tahun & Bulan pada filter global dulu.', 'info'); return; }
+  const conf = await Swal.fire({
+    title: 'Jalankan ulang matching?',
+    html: `Ini akan menghitung ulang pencocokan RUP ↔ Realisasi untuk periode <b>${periode}</b>.<br><small style="color:#94A3B8">Proses bisa memakan waktu beberapa puluh detik.</small>`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Jalankan', cancelButtonText: 'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  Swal.fire({ title: '⚙️ Menjalankan Matching Engine', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const res = await api({ action: 'runMatching', token: S.adminToken, periode });
+    if (res.status !== 'success') throw new Error(res.message || 'Matching gagal.');
+    const d = res.data || {};
+    await Swal.fire('✅ Matching Selesai',
+      `Matched: <b>${d.matched ?? '—'}</b> | Unmatched: <b>${d.unmatched ?? '—'}</b> | Orphan: <b>${d.orphan ?? '—'}</b>`,
+      'success');
+    // Refresh tampilan yang relevan bila fungsinya ada
+    if (typeof loadSandingan === 'function') loadSandingan(1);
+    if (typeof loadEfisiensi === 'function') loadEfisiensi();
+    if (typeof loadRecapJenis === 'function') loadRecapJenis();
+  } catch (e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  }
 }
 
 // ============================================================
