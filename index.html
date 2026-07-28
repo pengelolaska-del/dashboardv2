@@ -565,9 +565,9 @@ thead .col-sep-h{
         <span class="tbl-topbar-info" id="rup-tbl-info"></span>
         <div style="display:flex;gap:6px;align-items:center">
           <span id="rup-status-tag" style="display:none;font-size:11px;background:#FEF9C3;color:#92400E;padding:3px 10px;border-radius:99px;font-weight:600"></span>
-          <button class="btn btn-ghost btn-sm" onclick="downloadCSV('rup')">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Download CSV
+          <button class="btn btn-ghost btn-sm" onclick="showDetailPaket('rup')">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            Detail Paket
           </button>
         </div>
       </div>
@@ -678,9 +678,9 @@ thead .col-sep-h{
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="real-tbl-info"></span>
-        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('real')">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Download CSV
+        <button class="btn btn-ghost btn-sm" onclick="showDetailPaket('real')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Detail Paket
         </button>
       </div>
       <div class="tbl-scroll">
@@ -799,9 +799,9 @@ thead .col-sep-h{
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
-        <button class="btn btn-ghost btn-sm" onclick="downloadCSV('efi')">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Download CSV
+        <button class="btn btn-ghost btn-sm" onclick="showDetailPaket('efi')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Detail Paket
         </button>
       </div>
       <div class="tbl-scroll">
@@ -897,9 +897,9 @@ thead .col-sep-h{
           <button class="btn btn-ghost btn-icon" onclick="resetSand()" title="Reset filter">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-          <button class="btn btn-ghost" onclick="downloadSandCSV()" style="margin-left:auto">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Download CSV
+          <button class="btn btn-ghost" onclick="showDetailPaket('sand')" style="margin-left:auto">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            Detail Paket
           </button>
         </div>
       </div>
@@ -1235,7 +1235,9 @@ const mbadge   = m  => badge(METODE_COLOR[m]||'b-gray', m||'—');
 const sbadge   = s  => {
   const map = {'Selesai':'b-green','Sedang Berjalan':'b-yellow','Belum Berproses':'b-gray',
                'COMPLETED':'b-green','ON PROCESS':'b-yellow','PAKET SEDANG BERJALAN':'b-yellow','PAKET SELESAI':'b-green'};
-  return badge(map[s]||'b-gray', s||'—');
+  // Label tampilan saja — nilai data/filter/sorting di balik layar tetap 'Belum Berproses'
+  const displayMap = {'Belum Berproses':'Tidak Diketahui'};
+  return badge(map[s]||'b-gray', displayMap[s] || s || '—');
 };
 const caraBadge = c => badge(c==='Swakelola'?'b-sky':'b-blue', c||'—');
 const pdnBadge  = p => badge(p==='Ya'?'b-teal':'b-gray', p==='Ya'?'PDN':'Non-PDN');
@@ -1985,33 +1987,93 @@ function syncUploadPeriode() {
 });
 
 // ============================================================
-// DOWNLOAD CSV
+// DETAIL PAKET (dulu: Download CSV)
+// Mengambil data sesuai filter yang sedang aktif di menu terkait,
+// lalu ditampilkan dalam modal tabel. Export CSV masih tersedia
+// sebagai tombol di dalam modal.
 // ============================================================
-async function downloadCSV(type) {
-  Swal.fire({title:'Menyiapkan CSV...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+async function fetchDetailData(type) {
+  let rows=[], headers=[], filename='';
+  if(type==='efi'){
+    const res=await api({action:'listEfisiensi',tahun:document.getElementById('g-tahun').value,...Object.fromEntries(Object.entries(S.efiF).filter(([,v])=>v))});
+    rows=(res.data?.by_opd||[]).map(r=>[r.nama_satker,r.total_pagu,r.total_kontrak,r.efisiensi,r.persen_efisiensi,r.jumlah]);
+    headers=['Nama Satker','Total Pagu','Total Kontrak','Efisiensi (Rp)','% Efisiensi','Jml Paket'];
+    filename='Efisiensi_'+document.getElementById('g-tahun').value+'.csv';
+  } else if(type==='rup'){
+    const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
+    rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.cara_pengadaan,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.kode_rup,r.sumber_dana,r.produk_dalam_negeri,r.pagu]);
+    headers=['Nama Satker','Cara Pengadaan','Metode Pengadaan','Jenis Pengadaan','Nama Paket','Kode RUP','Sumber Dana','PDN','Total Pagu'];
+    filename='RUP_'+getPeriode()+'.csv';
+  } else if(type==='sand'){
+    const tahun = v('g-tahun'), bulan = v('g-bulan'), f = SAND.f;
+    const res = await api({
+      action:'listSandingan', tahun, periode: bulan ? tahun+'-'+bulan : undefined,
+      kode_satker:f.kode_satker||undefined, metode_pengadaan:f.metode_pengadaan||undefined,
+      jenis_pengadaan:f.jenis_pengadaan||undefined, status_paket:f.status_paket||undefined,
+      sumber_dana:f.sumber_dana||undefined, search:f.search||undefined,
+      page:1, per_page:99999,
+    });
+    if (res.status !== 'success') throw new Error(res.message);
+    const items = res.data?.items || [];
+    headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
+    rows = items.map(r => [
+      r.kode_satker, r.nama_satker, r.nama_paket_rup, r.kode_rup,
+      r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
+      r.sumber_dana, r.pagu||0,
+      r.status_realisasi||'Belum Terealisasi', r.nama_penyedia||'',
+      r.nilai_kontrak||0,
+      r.ada_realisasi ? (r.pagu||0)-(r.nilai_kontrak||0) : '',
+    ]);
+    filename=`Sandingan_RUP_${tahun}${bulan?'_'+bulan:''}.csv`;
+  } else {
+    const res=await api({action:'listRealisasi',periode:getPeriode(),...Object.fromEntries(Object.entries(S.realF).filter(([,v])=>v)),page:1,per_page:99999});
+    rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.kode_paket,r.kode_rup,r.sumber_transaksi,r.sumber_dana,r.nama_penyedia,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.status_paket,r.nilai_kontrak]);
+    headers=['Nama Satker','Kode Paket','Kode RUP','Sumber Transaksi','Sumber Dana','Nama Penyedia','Metode','Jenis','Nama Paket','Status','Total Nilai'];
+    filename='Realisasi_'+getPeriode()+'.csv';
+  }
+  return {headers, rows, filename};
+}
+
+function exportRowsToCSV(headers, rows, filename) {
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=filename; a.click();
+}
+
+async function showDetailPaket(type) {
+  Swal.fire({title:'Memuat detail paket...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try {
-    let rows=[], headers=[], filename='';
-    if(type==='efi'){
-      const res=await api({action:'listEfisiensi',tahun:document.getElementById('g-tahun').value,...Object.fromEntries(Object.entries(S.efiF).filter(([,v])=>v))});
-      rows=(res.data?.by_opd||[]).map(r=>[r.nama_satker,r.total_pagu,r.total_kontrak,r.efisiensi,r.persen_efisiensi,r.jumlah]);
-      headers=['Nama Satker','Total Pagu','Total Kontrak','Efisiensi (Rp)','% Efisiensi','Jml Paket'];
-      filename='Efisiensi_'+document.getElementById('g-tahun').value+'.csv';
-    } else if(type==='rup'){
-      const res=await api({action:'listRUP',periode:getPeriode(),...Object.fromEntries(Object.entries(S.rupF).filter(([,v])=>v)),page:1,per_page:99999});
-      rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.cara_pengadaan,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.kode_rup,r.sumber_dana,r.produk_dalam_negeri,r.pagu]);
-      headers=['Nama Satker','Cara Pengadaan','Metode Pengadaan','Jenis Pengadaan','Nama Paket','Kode RUP','Sumber Dana','PDN','Total Pagu'];
-      filename='RUP_'+getPeriode()+'.csv';
-    } else {
-      const res=await api({action:'listRealisasi',periode:getPeriode(),...Object.fromEntries(Object.entries(S.realF).filter(([,v])=>v)),page:1,per_page:99999});
-      rows=(res.data?.items||[]).map(r=>[r.nama_satker,r.kode_paket,r.kode_rup,r.sumber_transaksi,r.sumber_dana,r.nama_penyedia,r.metode_pengadaan,r.jenis_pengadaan,r.nama_paket,r.status_paket,r.nilai_kontrak]);
-      headers=['Nama Satker','Kode Paket','Kode RUP','Sumber Transaksi','Sumber Dana','Nama Penyedia','Metode','Jenis','Nama Paket','Status','Total Nilai'];
-      filename='Realisasi_'+getPeriode()+'.csv';
-    }
-    const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
-    a.download=filename; a.click();
+    const {headers, rows, filename} = await fetchDetailData(type);
     Swal.close();
-  } catch(e){Swal.fire('❌ Error',e.message,'error');}
+    if (!rows.length) { Swal.fire('Tidak ada data','Tidak ada paket yang cocok dengan filter saat ini.','info'); return; }
+
+    const theadHtml = '<tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+    const tbodyHtml = rows.map(r=>'<tr>'+r.map(c=>`<td>${c===''||c==null?'—':String(c)}</td>`).join('')+'</tr>').join('');
+    const html = `
+      <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
+        Menampilkan <b>${rows.length.toLocaleString('id-ID')}</b> paket sesuai filter yang aktif.
+      </div>
+      <div style="max-height:60vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
+        <table class="dt" style="width:100%;font-size:12px">
+          <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">${theadHtml}</thead>
+          <tbody>${tbodyHtml}</tbody>
+        </table>
+      </div>`;
+
+    Swal.fire({
+      title: '📋 Detail Paket',
+      html,
+      width: 1000,
+      showCloseButton: true,
+      showDenyButton: true,
+      denyButtonText: '⬇ Export CSV',
+      confirmButtonText: 'Tutup',
+      confirmButtonColor: '#64748B',
+      denyButtonColor: '#2563EB',
+    }).then(res => {
+      if (res.isDenied) exportRowsToCSV(headers, rows, filename);
+    });
+  } catch(e) { Swal.fire('❌ Error', e.message, 'error'); }
 }
 
 // ============================================================
@@ -2270,47 +2332,6 @@ async function loadSandingan(page=1) {
     tbody.innerHTML = `<tr><td colspan="12">
       <div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
-}
-
-// ── Download CSV sandingan ──────────────────────────────────
-async function downloadSandCSV() {
-  try {
-    const tahun = v('g-tahun');
-    const bulan = v('g-bulan');
-    const f     = SAND.f;
-    // Ambil semua data tanpa pagination
-    const res = await api({
-      action:           'listSandingan',
-      tahun,
-      periode:          bulan ? tahun + '-' + bulan : undefined,
-      kode_satker:      f.kode_satker      || undefined,
-      metode_pengadaan: f.metode_pengadaan || undefined,
-      jenis_pengadaan:  f.jenis_pengadaan  || undefined,
-      status_paket:     f.status_paket     || undefined,
-      sumber_dana:      f.sumber_dana      || undefined,
-      search:           f.search           || undefined,
-      page: 1, per_page: 99999,
-    });
-    if (res.status !== 'success') throw new Error(res.message);
-    const items = res.data?.items || [];
-    const hdr = ['No','Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP',
-                  'Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Pagu RUP',
-                  'Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
-    const rows = items.map((r,i) => [
-      i+1, r.kode_satker, r.nama_satker, r.nama_paket_rup, r.kode_rup,
-      r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
-      r.sumber_dana, r.pagu||0,
-      r.status_realisasi||'Belum Terealisasi', r.nama_penyedia||'',
-      r.nilai_kontrak||0,
-      r.ada_realisasi ? (r.pagu||0)-(r.nilai_kontrak||0) : '',
-    ]);
-    const csv = [hdr, ...rows].map(r => r.map(c => '"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
-    const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Sandingan_RUP_${tahun}${bulan?'_'+bulan:''}.csv`;
-    a.click();
-  } catch(e) { alert('Gagal download: ' + e.message); }
 }
 
 // ============================================================
