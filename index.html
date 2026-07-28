@@ -1888,7 +1888,7 @@ async function verifyToken() {
 async function loadLog() {
   const tahun=v('up-tahun'), bulan=v('up-bulan'), periode=tahun+'-'+bulan;
   document.getElementById('up-periode-label').textContent=`Menampilkan log periode ${periode}`;
-  const tbody=document.querySelector('#t-log tbody');
+  const tbody=document.querySelector('#t-log');
   tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state" style="padding:16px"><div class="spin"></div></div></td></tr>`;
   try {
     const res=await api({action:'getUploadLog'});
