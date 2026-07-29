@@ -161,6 +161,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 .chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.group-title{font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+.group-title::after{content:'';flex:1;height:1px;background:#E5E9F0}
+.seg-tabs{display:flex;background:#F1F5F9;border-radius:8px;padding:3px;gap:2px}
+.seg-tab{border:none;background:none;font-size:11.5px;font-weight:600;color:#64748B;padding:5px 12px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s;font-family:inherit}
+.seg-tab.active{background:#fff;color:#1E3A5F;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .scard{
   background:#fff;border-radius:12px;padding:18px 22px;
   border:1px solid #E5E9F0;position:relative;overflow:hidden;
@@ -821,6 +826,7 @@ thead .col-sep-h{
       </div>
     </div>
 
+    <div class="group-title">Ringkasan KPI</div>
     <!-- KPI 6 kartu: 2 baris -->
     <div class="summary-grid-3">
       <div class="scard">
@@ -840,7 +846,7 @@ thead .col-sep-h{
       </div>
     </div>
     <!-- KPI filtered -->
-    <div class="summary-grid-3">
+    <div class="summary-grid-3" style="margin-top:10px">
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
         <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
@@ -858,17 +864,19 @@ thead .col-sep-h{
       </div>
     </div>
 
+    <div class="group-title">Grafik</div>
     <div class="chart-grid-2">
       <div class="chart-card"><div class="chart-title">Tren Pagu vs Kontrak per Periode</div><div style="height:220px"><canvas id="c-tren"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Top 10 OPD — Efisiensi Tertinggi</div><div style="height:220px"><canvas id="c-opd"></canvas></div></div>
     </div>
-    <div class="chart-grid-2" style="margin-top:14px">
+    <div class="chart-grid-2">
       <div class="chart-card"><div class="chart-title">Top 10 OPD — Paket Terbanyak (Selesai)</div><div style="height:220px"><canvas id="c-opd-paket"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Top 10 Penyedia — Paket Terbanyak</div><div style="height:220px"><canvas id="c-penyedia-paket"></canvas></div></div>
     </div>
 
+    <div class="group-title">Rincian &amp; Data Per Satker</div>
     <!-- Tabel Rincian — fleksibel, isi ditentukan oleh batang chart yang diklik -->
-    <div class="tbl-wrap" style="margin-top:14px" id="analisis-detail-wrap">
+    <div class="tbl-wrap" id="analisis-detail-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="analisis-detail-title">📋 Rincian Paket — klik salah satu batang chart di atas</span>
         <button class="btn btn-ghost btn-sm hidden" id="analisis-detail-clear" onclick="clearAnalisisDetail()">✕ Tutup</button>
@@ -917,10 +925,15 @@ thead .col-sep-h{
       </div>
     </div>
 
-    <div class="tbl-wrap">
-      <div class="tbl-topbar">
+    <!-- Efisiensi per Satuan Kerja — dipisah tab Selesai vs Sedang Berjalan -->
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar" style="flex-wrap:wrap">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="seg-tabs" id="efi-opd-tabs">
+            <button class="seg-tab active" data-tab="selesai" onclick="switchEfiOpdTab('selesai')">✅ Selesai</button>
+            <button class="seg-tab" data-tab="berjalan" onclick="switchEfiOpdTab('berjalan')">🔄 Sedang Berjalan</button>
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan untuk periode ini (perlu login admin)">
             ⚙ Jalankan Ulang Matching
           </button>
@@ -2133,25 +2146,43 @@ async function loadEfisiensi() {
         onHover:(evt,els)=>{ evt.native.target.style.cursor = els.length ? 'pointer':'default'; }
       }
     });
-    document.getElementById('efi-tbl-info').textContent =
-      `Efisiensi per Satuan Kerja — ${fmt(by_opd.length)} OPD${hasFilter?' (hasil filter)':''}`;
-
-    // Table
-    document.getElementById('efi-tbody').innerHTML = by_opd.length
-      ? by_opd.map((r,i) => `<tr>
-          <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
-          <td style="font-size:12px">${r.nama_satker}</td>
-          <td class="mono text-right">${IDRf(r.total_pagu)}</td>
-          <td class="mono text-right">${IDRf(r.total_kontrak)}</td>
-          <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
-          <td class="text-center">${badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi))}</td>
-          <td class="mono text-center">${fmt(r.jumlah)}</td>
-        </tr>`).join('')
-      : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada data efisiensi. Upload RUP & Realisasi terlebih dahulu.</p></div></td></tr>`;
+    // Simpan dataset per-tab, render sesuai tab yg sedang aktif
+    S.efiOpdData = {
+      selesai:  d.by_opd_selesai  || [],
+      berjalan: d.by_opd_berjalan || [],
+    };
+    if (!S.efiOpdTab) S.efiOpdTab = 'selesai';
+    renderEfiOpdTable(S.efiOpdTab);
 
   } catch(e) {
     document.getElementById('efi-tbody').innerHTML = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
+}
+
+// Render tabel "Efisiensi per Satuan Kerja" untuk tab yang aktif (Selesai / Sedang Berjalan)
+function renderEfiOpdTable(tab) {
+  const list = (S.efiOpdData && S.efiOpdData[tab]) || [];
+  const label = tab === 'selesai' ? 'Selesai' : 'Sedang Berjalan (Indikatif)';
+  document.getElementById('efi-tbl-info').textContent =
+    `Efisiensi per Satuan Kerja — ${label} — ${fmt(list.length)} OPD`;
+
+  document.getElementById('efi-tbody').innerHTML = list.length
+    ? list.map((r,i) => `<tr>
+        <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
+        <td style="font-size:12px">${r.nama_satker}</td>
+        <td class="mono text-right">${IDRf(r.total_pagu)}</td>
+        <td class="mono text-right">${IDRf(r.total_kontrak)}</td>
+        <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
+        <td class="text-center">${badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi))}</td>
+        <td class="mono text-center">${fmt(r.jumlah)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada paket berstatus "${label}" untuk filter saat ini.</p></div></td></tr>`;
+}
+
+function switchEfiOpdTab(tab) {
+  S.efiOpdTab = tab;
+  document.querySelectorAll('#efi-opd-tabs .seg-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderEfiOpdTable(tab);
 }
 
 // ============================================================
