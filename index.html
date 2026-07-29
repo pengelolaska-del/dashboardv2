@@ -1365,6 +1365,19 @@ thead .col-sep-h{
         </div>
 
         <div id="so-fields-manual" style="display:none">
+          <div class="combo" style="margin-bottom:13px">
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Sandingkan dengan Paket Realisasi <span style="font-weight:400;color:#94A3B8">(opsional — pilih dari data Realisasi yang belum ter-match)</span></label>
+            <input id="so-real-q" class="combo-search" type="text" autocomplete="off" placeholder="Ketik kode paket / nama paket / nama penyedia..."
+                   style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"
+                   onfocus="soRealOpen()" oninput="soRealFilter()" onblur="soRealBlurClose()">
+            <input type="hidden" id="so-kode-paket-manual">
+            <input type="hidden" id="so-nama-paket-manual">
+            <div class="combo-list hidden" id="so-real-list"></div>
+            <div id="so-real-linked" style="display:none;margin-top:6px;font-size:11px;background:#F3E8FF;color:#7E22CE;border:1px solid #E9D5FF;border-radius:6px;padding:5px 9px">
+              🔗 Tersambung ke <span id="so-real-linked-label" style="font-weight:700"></span>
+              <button type="button" onclick="soRealUnlink()" style="background:none;border:none;color:#7E22CE;font-weight:700;cursor:pointer;float:right">Lepas ✕</button>
+            </div>
+          </div>
           <div style="margin-bottom:13px">
             <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Penyedia</label>
             <input id="so-penyedia" type="text" placeholder="Nama penyedia..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
@@ -2222,6 +2235,15 @@ function openStatusOverrideModal(row) {
   document.getElementById('so-nilai-preview').textContent = row.is_manual_status && row.override_type==='Manual' && row.nilai_kontrak ? IDRf(row.nilai_kontrak) : '';
   document.getElementById('so-status').value     = row.is_manual_status && row.override_type==='Manual' ? (row.status_realisasi||'Selesai') : 'Selesai';
 
+  // Link ke paket Realisasi asli (kalau override Manual sebelumnya dipilih dari pencarian)
+  const linked = row.is_manual_status && row.override_type==='Manual' && row.kode_paket;
+  document.getElementById('so-kode-paket-manual').value = linked ? row.kode_paket : '';
+  document.getElementById('so-nama-paket-manual').value = linked ? (row.nama_paket_realisasi||'') : '';
+  document.getElementById('so-real-q').value = '';
+  document.getElementById('so-real-linked').style.display = linked ? 'block' : 'none';
+  if (linked) document.getElementById('so-real-linked-label').textContent = `${row.kode_paket} — ${(row.nama_paket_realisasi||'').slice(0,45)}`;
+  SO_REAL_KODE_SATKER = row.kode_satker || '';   // dipakai untuk prioritaskan hasil pencarian dari satker yang sama
+
   const type = row.is_manual_status ? row.override_type : 'Dibatalkan';
   document.querySelector(`input[name="so-type"][value="${type}"]`).checked = true;
   soSwitchType();
@@ -2251,6 +2273,86 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ------------------------------------------------------------
+// Pencarian & pemilihan paket Realisasi yang belum ter-match,
+// untuk "disandingkan" langsung ke baris RUP saat override Manual.
+// ------------------------------------------------------------
+let SO_REAL_CACHE = null;        // cache list unmatched realisasi utk periode aktif
+let SO_REAL_PERIODE = null;      // periode yang sedang di-cache
+let SO_REAL_KODE_SATKER = '';    // satker baris RUP yang sedang diedit (utk prioritas urutan hasil)
+
+async function soRealFetch() {
+  const periode = getPeriode();
+  if (SO_REAL_CACHE && SO_REAL_PERIODE === periode) return SO_REAL_CACHE;
+  const res = await api({ action:'unmatchedData', token:S.adminToken, periode, per_page:500 });
+  SO_REAL_CACHE   = (res.status==='success' ? res.data.unmatched_realisasi : []) || [];
+  SO_REAL_PERIODE = periode;
+  return SO_REAL_CACHE;
+}
+
+function soRealRenderList(items, keyword) {
+  const listEl = document.getElementById('so-real-list');
+  const kw = (keyword||'').trim().toLowerCase();
+  let filtered = kw ? items.filter(x =>
+    String(x.kode_paket||'').toLowerCase().includes(kw) ||
+    String(x.nama_paket_realisasi||'').toLowerCase().includes(kw) ||
+    String(x.nama_satker||'').toLowerCase().includes(kw)
+  ) : items;
+  // Prioritaskan paket dari satker yang sama dengan baris RUP yang sedang diedit
+  filtered = [...filtered].sort((a,b) =>
+    (b.nama_satker===SO_REAL_KODE_SATKER || b.kode_satker===SO_REAL_KODE_SATKER ? 1 : 0) -
+    (a.nama_satker===SO_REAL_KODE_SATKER || a.kode_satker===SO_REAL_KODE_SATKER ? 1 : 0)
+  ).slice(0, 40);
+
+  if (!filtered.length) {
+    listEl.innerHTML = `<div class="combo-empty">Tidak ada paket Realisasi yang belum ter-match cocok dengan pencarian ini</div>`;
+    return;
+  }
+  listEl.innerHTML = filtered.map(x => `
+    <div class="combo-item" style="white-space:normal;line-height:1.4;padding:8px 10px"
+         onmousedown='event.preventDefault();soRealChoose(${JSON.stringify(x).replace(/'/g,"&#39;")})'>
+      <div style="font-weight:600">${comboEsc(x.nama_paket_realisasi||'(tanpa nama)')}</div>
+      <div style="font-size:10.5px;color:#94A3B8;font-family:monospace">${comboEsc(x.kode_paket||'')} · ${comboEsc(x.nama_satker||'')}</div>
+    </div>`).join('');
+}
+
+async function soRealOpen() {
+  const items = await soRealFetch();
+  soRealRenderList(items, document.getElementById('so-real-q').value);
+  document.getElementById('so-real-list').classList.remove('hidden');
+}
+
+async function soRealFilter() {
+  const items = SO_REAL_CACHE || await soRealFetch();
+  soRealRenderList(items, document.getElementById('so-real-q').value);
+  document.getElementById('so-real-list').classList.remove('hidden');
+}
+
+function soRealBlurClose() {
+  setTimeout(() => document.getElementById('so-real-list')?.classList.add('hidden'), 150);
+}
+
+// Item combo-item dikirim sebagai JSON via HTML attribute — decode balik di sini
+function soRealChoose(item) {
+  document.getElementById('so-kode-paket-manual').value = item.kode_paket || '';
+  document.getElementById('so-nama-paket-manual').value = item.nama_paket_realisasi || '';
+  document.getElementById('so-penyedia').value = item.nama_penyedia || '';
+  document.getElementById('so-nilai').value = String(Number(item.nilai_kontrak)||0);
+  document.getElementById('so-nilai-preview').textContent = item.nilai_kontrak ? IDRf(item.nilai_kontrak) : '';
+  document.getElementById('so-status').value = item.status_paket === 'Selesai' ? 'Selesai' : 'Sedang Berjalan';
+  document.getElementById('so-real-q').value = '';
+  document.getElementById('so-real-linked-label').textContent = `${item.kode_paket} — ${(item.nama_paket_realisasi||'').slice(0,45)}`;
+  document.getElementById('so-real-linked').style.display = 'block';
+  document.getElementById('so-real-list').classList.add('hidden');
+}
+
+function soRealUnlink() {
+  document.getElementById('so-kode-paket-manual').value = '';
+  document.getElementById('so-nama-paket-manual').value = '';
+  document.getElementById('so-real-linked').style.display = 'none';
+  // Nama penyedia & nilai TIDAK ikut dikosongkan — biar tetap bisa dipakai sbg input manual bebas
+}
+
 async function saveStatusOverride() {
   const kode_rup = document.getElementById('so-kode-rup').value;
   const type     = document.querySelector('input[name="so-type"]:checked')?.value;
@@ -2264,6 +2366,8 @@ async function saveStatusOverride() {
     payload.nilai_kontrak_manual = Number(rawNilai);
     payload.nama_penyedia_manual = document.getElementById('so-penyedia').value.trim();
     payload.status_manual        = document.getElementById('so-status').value;
+    payload.kode_paket_manual    = document.getElementById('so-kode-paket-manual').value;
+    payload.nama_paket_manual    = document.getElementById('so-nama-paket-manual').value;
     if (!payload.nilai_kontrak_manual || payload.nilai_kontrak_manual <= 0) {
       Swal.fire('Validasi','Nilai Kontrak harus lebih dari 0.','warning'); return;
     }
@@ -2722,7 +2826,7 @@ function sandStatusBadge(r) {
   else                                badge = `<span class="sand-status sand-belum">⏳ ${st||'Belum Berproses'}</span>`;
 
   // Tag "diubah manual" — hanya muncul kalau baris ini punya override admin
-  if (r.is_manual_status) badge += `<span class="sand-override-tag" title="${(r.keterangan_override||'').replace(/"/g,'&quot;')}">🖊️ Manual</span>`;
+  if (r.is_manual_status) badge += `<span class="sand-override-tag" title="${String(r.keterangan_override||'').replace(/"/g,'&quot;')}">🖊️ Manual</span>`;
 
   // Tombol edit hanya untuk admin, dan hanya untuk paket yang belum punya
   // match otomatis di data Realisasi (kalau sudah match otomatis, statusnya
