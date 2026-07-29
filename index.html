@@ -1035,7 +1035,7 @@ thead .col-sep-h{
     </div>
 
     <!-- KPI Nilai -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
       <div class="scard">
         <div class="scard-label">Total Nilai Pagu RUP</div>
         <div class="scard-value" id="sand-kpi-pagu-rp">—</div>
@@ -1047,9 +1047,14 @@ thead .col-sep-h{
         <div class="scard-sub">Paket yang sudah terealisasi</div>
       </div>
       <div class="scard yellow">
-        <div class="scard-label">Efisiensi (Matched)</div>
+        <div class="scard-label">Efisiensi (Selesai)</div>
         <div class="scard-value" id="sand-kpi-efi-rp">—</div>
         <div class="scard-sub" id="sand-kpi-efi-pct">—</div>
+      </div>
+      <div class="scard" style="background:#FFF7ED;border-color:#FDBA74">
+        <div class="scard-label" style="color:#C2410C">Efisiensi (Sedang Berjalan)</div>
+        <div class="scard-value" id="sand-kpi-efi-run-rp" style="color:#C2410C">—</div>
+        <div class="scard-sub" id="sand-kpi-efi-run-pct">—</div>
       </div>
     </div>
 
@@ -2933,7 +2938,7 @@ async function loadSandingan(page=1) {
 
   // Update KPI jadi loading
   ['sand-kpi-total','sand-kpi-selesai','sand-kpi-berjalan','sand-kpi-belum','sand-kpi-batal',
-   'sand-kpi-pagu-rp','sand-kpi-kontrak-rp','sand-kpi-efi-rp'].forEach(id => {
+   'sand-kpi-pagu-rp','sand-kpi-kontrak-rp','sand-kpi-efi-rp','sand-kpi-efi-run-rp'].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = '…';
   });
 
@@ -2979,12 +2984,23 @@ async function loadSandingan(page=1) {
 
     document.getElementById('sand-kpi-pagu-rp').textContent    = IDRf(st.total_pagu    || 0);
     document.getElementById('sand-kpi-kontrak-rp').textContent  = IDRf(st.total_kontrak || 0);
-    const efiVal = (st.total_pagu||0) - (st.total_kontrak||0);
-    document.getElementById('sand-kpi-efi-rp').textContent  = IDRf(efiVal);
+
+    // Efisiensi resmi — hanya paket berstatus "Selesai" (nilai kontraknya sudah final)
+    const efiSelesai = st.total_efisiensi_selesai || 0;
+    document.getElementById('sand-kpi-efi-rp').textContent  = IDRf(efiSelesai);
     document.getElementById('sand-kpi-efi-pct').textContent =
-      st.total_pagu > 0
-        ? `Efisiensi ${(efiVal/st.total_pagu*100).toFixed(2)}% dari pagu`
-        : 'Tidak ada data pagu';
+      st.pagu_selesai > 0
+        ? `Efisiensi ${st.persen_efisiensi_selesai.toFixed(2)}% dari pagu paket selesai`
+        : 'Belum ada paket selesai';
+
+    // Efisiensi indikatif — paket "Sedang Berjalan", dikelompokkan terpisah
+    // karena nilai kontraknya masih bisa berubah sebelum paket ditutup.
+    const efiBerjalan = st.total_efisiensi_berjalan || 0;
+    document.getElementById('sand-kpi-efi-run-rp').textContent  = IDRf(efiBerjalan);
+    document.getElementById('sand-kpi-efi-run-pct').textContent =
+      st.pagu_berjalan > 0
+        ? `Indikatif ${st.persen_efisiensi_berjalan.toFixed(2)}% • belum final`
+        : 'Tidak ada paket berjalan';
 
     // ── Dropdown Satuan Kerja & Sumber Dana (populate sekali) ──
     if (d.enums?.satker && !COMBO_DATA['sand-satker']) {
