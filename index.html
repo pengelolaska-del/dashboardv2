@@ -902,7 +902,12 @@ thead .col-sep-h{
           <!-- Baris 1: Satker (lebar) -->
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja / OPD</label>
-            <select id="sand-satker"><option value="">Semua Satuan Kerja</option></select>
+            <div class="combo">
+              <input type="text" class="combo-search" id="sand-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                     onfocus="comboOpen('sand-satker')" oninput="comboFilter('sand-satker')" onblur="comboBlurClose('sand-satker')">
+              <input type="hidden" id="sand-satker">
+              <div class="combo-list hidden" id="sand-satker-list"></div>
+            </div>
           </div>
           <!-- Metode & Jenis — filter UTAMA -->
           <div class="fld">
@@ -2843,7 +2848,8 @@ function sandStatusBadge(r) {
 function applySand()  { SAND.f = readSandFilter(); loadSandingan(1); }
 function resetSand()  {
   SAND.f = {};
-  ['sand-satker','sand-metode','sand-jenis','sand-status','sand-sumber'].forEach(id => {
+  comboClear('sand-satker');
+  ['sand-metode','sand-jenis','sand-status','sand-sumber'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('sand-search').value = '';
@@ -2981,7 +2987,10 @@ async function loadSandingan(page=1) {
         ? `Efisiensi ${(efiVal/st.total_pagu*100).toFixed(2)}% dari pagu`
         : 'Tidak ada data pagu';
 
-    // ── Dropdown sumber dana (populate sekali) ──
+    // ── Dropdown Satuan Kerja & Sumber Dana (populate sekali) ──
+    if (d.enums?.satker && !COMBO_DATA['sand-satker']) {
+      fillSatker('sand-satker', d.enums.satker, f.kode_satker);
+    }
     if (d.enums?.sumber && document.getElementById('sand-sumber').options.length <= 1) {
       fillSelect('sand-sumber', d.enums.sumber, f.sumber_dana, 'Semua');
     }
