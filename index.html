@@ -250,6 +250,26 @@ table.dt tr:hover td{background:#FAFBFF}
 .sand-dibatalkan{background:#FEE2E2;color:#B91C1C}
 .sand-match     {background:#DBEAFE;color:#1D4ED8}
 
+/* Highlight baris & badge yang statusnya diubah manual (override admin) —
+   garis kiri ungu + latar bergaris supaya langsung beda dari baris biasa,
+   apapun warna status row-nya (selesai/berjalan/dibatalkan). */
+tr.row-override{
+  background:repeating-linear-gradient(135deg,rgba(147,51,234,.05) 0 8px,rgba(147,51,234,.09) 8px 16px)!important;
+  box-shadow:inset 3px 0 0 #9333EA;
+}
+.sand-override-tag{
+  display:inline-flex;align-items:center;gap:3px;margin-left:5px;
+  padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;letter-spacing:.02em;
+  background:#F3E8FF;color:#7E22CE;border:1px solid #E9D5FF;text-transform:uppercase;
+}
+.btn-edit-status{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;margin-left:6px;border-radius:6px;border:1px solid #E2E8F0;
+  background:#fff;color:#64748B;cursor:pointer;font-size:11px;line-height:1;vertical-align:middle;
+}
+.btn-edit-status:hover{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE}
+.so-tab-active{border-color:#2563EB!important;background:#EFF6FF!important;color:#1D4ED8!important}
+
 /* Legend bar */
 .sand-legend{
   display:flex;gap:12px;flex-wrap:wrap;align-items:center;
@@ -1319,6 +1339,66 @@ thead .col-sep-h{
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL: Ubah Status Manual (Sandingan RUP — Dibatalkan / Manual)
+       ============================================================ -->
+  <div id="modal-status" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.18);max-height:92vh;overflow-y:auto">
+      <div style="padding:18px 22px 14px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <span style="font-size:15px;font-weight:700;color:#1A2332">Ubah Status Realisasi</span>
+          <div id="so-paket-label" style="font-size:11px;color:#94A3B8;margin-top:2px;max-width:400px"></div>
+        </div>
+        <button onclick="closeStatusOverrideModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1">×</button>
+      </div>
+      <div style="padding:18px 22px">
+        <input type="hidden" id="so-kode-rup"/>
+
+        <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:6px">Jenis Perubahan *</label>
+        <div style="display:flex;gap:8px;margin-bottom:15px">
+          <label style="flex:1;border:1.5px solid #CBD5E1;border-radius:8px;padding:9px 10px;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#475569" id="so-tab-dibatalkan">
+            <input type="radio" name="so-type" value="Dibatalkan" onchange="soSwitchType()"> ❌ Dibatalkan
+          </label>
+          <label style="flex:1;border:1.5px solid #CBD5E1;border-radius:8px;padding:9px 10px;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#475569" id="so-tab-manual">
+            <input type="radio" name="so-type" value="Manual" onchange="soSwitchType()"> 🖊️ Input Manual
+          </label>
+        </div>
+
+        <div id="so-fields-manual" style="display:none">
+          <div style="margin-bottom:13px">
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Penyedia</label>
+            <input id="so-penyedia" type="text" placeholder="Nama penyedia..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+          </div>
+          <div style="margin-bottom:13px">
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nilai Kontrak (Rp) *</label>
+            <input id="so-nilai" type="text" inputmode="numeric" placeholder="Contoh: 150000000" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+            <div id="so-nilai-preview" style="font-size:11px;color:#16A34A;margin-top:4px;font-weight:600"></div>
+          </div>
+          <div style="margin-bottom:13px">
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Status Paket</label>
+            <select id="so-status" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none;background:#fff">
+              <option value="Selesai">Selesai</option>
+              <option value="Sedang Berjalan">Sedang Berjalan</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:4px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Keterangan <span id="so-ket-optional" style="font-weight:400;color:#94A3B8">(opsional)</span></label>
+          <textarea id="so-keterangan" rows="2" placeholder="Alasan / catatan perubahan..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none;resize:vertical;font-family:inherit" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"></textarea>
+        </div>
+        <p style="font-size:11px;color:#94A3B8;margin-top:8px;line-height:1.5">
+          🖊️ Perubahan ini ditandai sebagai <b>data manual</b> (garis ungu) agar mudah dibedakan dari hasil matching otomatis. Berlaku sampai ada data Realisasi asli yang cocok, atau dihapus manual.
+        </p>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid #E2E8F0;display:flex;gap:10px">
+        <button id="btn-remove-override" onclick="removeStatusOverride()" style="display:none;padding:9px 12px;border:1.5px solid #FCA5A5;border-radius:7px;background:#fff;font-size:12.5px;cursor:pointer;font-weight:600;color:#DC2626">Hapus Override</button>
+        <button onclick="closeStatusOverrideModal()" style="flex:1;padding:9px;border:1.5px solid #CBD5E1;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;color:#475569">Batal</button>
+        <button onclick="saveStatusOverride()" id="btn-save-status" style="flex:2;padding:9px;border:none;border-radius:7px;background:#1E3A5F;color:#fff;font-size:13px;cursor:pointer;font-weight:700">Simpan</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- ============================================================
@@ -2130,6 +2210,105 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
+// STATUS OVERRIDE (Sandingan RUP — tandai Dibatalkan / Input Manual)
+// ============================================================
+function openStatusOverrideModal(row) {
+  document.getElementById('so-kode-rup').value = row.kode_rup;
+  document.getElementById('so-paket-label').textContent =
+    `${row.nama_satker||''} — ${(row.nama_paket_rup||'').slice(0,70)}`;
+  document.getElementById('so-keterangan').value = row.is_manual_status ? (row.keterangan_override||'') : '';
+  document.getElementById('so-penyedia').value   = row.is_manual_status && row.override_type==='Manual' ? (row.nama_penyedia||'') : '';
+  document.getElementById('so-nilai').value      = row.is_manual_status && row.override_type==='Manual' ? String(row.nilai_kontrak||'') : '';
+  document.getElementById('so-nilai-preview').textContent = row.is_manual_status && row.override_type==='Manual' && row.nilai_kontrak ? IDRf(row.nilai_kontrak) : '';
+  document.getElementById('so-status').value     = row.is_manual_status && row.override_type==='Manual' ? (row.status_realisasi||'Selesai') : 'Selesai';
+
+  const type = row.is_manual_status ? row.override_type : 'Dibatalkan';
+  document.querySelector(`input[name="so-type"][value="${type}"]`).checked = true;
+  soSwitchType();
+
+  document.getElementById('btn-remove-override').style.display = row.is_manual_status ? 'block' : 'none';
+  document.getElementById('modal-status').style.display = 'flex';
+}
+
+function closeStatusOverrideModal() {
+  document.getElementById('modal-status').style.display = 'none';
+}
+
+// Toggle tampilan field "Input Manual" + highlight tab yang aktif
+function soSwitchType() {
+  const type = document.querySelector('input[name="so-type"]:checked')?.value || 'Dibatalkan';
+  document.getElementById('so-fields-manual').style.display = type === 'Manual' ? 'block' : 'none';
+  document.getElementById('so-tab-dibatalkan').classList.toggle('so-tab-active', type === 'Dibatalkan');
+  document.getElementById('so-tab-manual').classList.toggle('so-tab-active', type === 'Manual');
+}
+
+// Live preview nominal nilai kontrak manual
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('so-nilai');
+  if (inp) inp.addEventListener('input', () => {
+    const val = Number(String(inp.value).replace(/[^0-9]/g,''));
+    document.getElementById('so-nilai-preview').textContent = val > 0 ? IDRf(val) : '';
+  });
+});
+
+async function saveStatusOverride() {
+  const kode_rup = document.getElementById('so-kode-rup').value;
+  const type     = document.querySelector('input[name="so-type"]:checked')?.value;
+  const keterangan = document.getElementById('so-keterangan').value.trim();
+
+  if (!type) { Swal.fire('Validasi','Pilih jenis perubahan terlebih dahulu.','warning'); return; }
+
+  const payload = { action:'saveStatusOverride', token:S.adminToken, kode_rup, override_type:type, keterangan };
+  if (type === 'Manual') {
+    const rawNilai = String(document.getElementById('so-nilai').value).replace(/[^0-9]/g,'');
+    payload.nilai_kontrak_manual = Number(rawNilai);
+    payload.nama_penyedia_manual = document.getElementById('so-penyedia').value.trim();
+    payload.status_manual        = document.getElementById('so-status').value;
+    if (!payload.nilai_kontrak_manual || payload.nilai_kontrak_manual <= 0) {
+      Swal.fire('Validasi','Nilai Kontrak harus lebih dari 0.','warning'); return;
+    }
+  }
+
+  const btn = document.getElementById('btn-save-status');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    const res = await api(payload);
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
+    closeStatusOverrideModal();
+    await loadSandingan(SAND.page);
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simpan';
+  }
+}
+
+async function removeStatusOverride() {
+  const kode_rup = document.getElementById('so-kode-rup').value;
+  const conf = await Swal.fire({
+    title:'Hapus override ini?',
+    html:`Status paket akan kembali otomatis (Belum Terealisasi, kecuali ada match baru dari data Realisasi).`,
+    icon:'warning', showCancelButton:true,
+    confirmButtonColor:'#DC2626', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({action:'deleteStatusOverride', token:S.adminToken, kode_rup});
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'Dihapus', timer:1200, showConfirmButton:false});
+    closeStatusOverrideModal();
+    await loadSandingan(SAND.page);
+  } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
+}
+
+// Tutup modal status kalau klik backdrop
+document.addEventListener('click', e => {
+  const modal = document.getElementById('modal-status');
+  if (modal && e.target === modal) closeStatusOverrideModal();
+});
+
+// ============================================================
 // UPLOAD
 // ============================================================
 let rupFile=null, realFile=null;
@@ -2533,12 +2712,27 @@ function sandStatusClass(st) {
   if (st === 'Dibatalkan')      return 'row-dibatalkan';
   return 'row-belum';
 }
-function sandStatusBadge(st) {
-  if (!st) return '<span class="sand-status sand-belum">⏳ Belum Terealisasi</span>';
-  if (st === 'Selesai')         return '<span class="sand-status sand-selesai">✅ Selesai</span>';
-  if (st === 'Sedang Berjalan') return '<span class="sand-status sand-berjalan">🔄 Sedang Berjalan</span>';
-  if (st === 'Dibatalkan')      return '<span class="sand-status sand-dibatalkan">❌ Dibatalkan</span>';
-  return `<span class="sand-status sand-belum">⏳ ${st||'Belum Berproses'}</span>`;
+function sandStatusBadge(r) {
+  const st = r.status_realisasi;
+  let badge;
+  if (!st)                            badge = '<span class="sand-status sand-belum">⏳ Belum Terealisasi</span>';
+  else if (st === 'Selesai')          badge = '<span class="sand-status sand-selesai">✅ Selesai</span>';
+  else if (st === 'Sedang Berjalan')  badge = '<span class="sand-status sand-berjalan">🔄 Sedang Berjalan</span>';
+  else if (st === 'Dibatalkan')       badge = '<span class="sand-status sand-dibatalkan">❌ Dibatalkan</span>';
+  else                                badge = `<span class="sand-status sand-belum">⏳ ${st||'Belum Berproses'}</span>`;
+
+  // Tag "diubah manual" — hanya muncul kalau baris ini punya override admin
+  if (r.is_manual_status) badge += `<span class="sand-override-tag" title="${(r.keterangan_override||'').replace(/"/g,'&quot;')}">🖊️ Manual</span>`;
+
+  // Tombol edit hanya untuk admin, dan hanya untuk paket yang belum punya
+  // match otomatis di data Realisasi (kalau sudah match otomatis, statusnya
+  // ikut data asli dan tidak bisa ditimpa) — kecuali baris ini sudah pernah
+  // di-override sebelumnya (supaya tetap bisa diedit/dihapus).
+  if (S.isAdmin && (!r.ada_realisasi || r.is_manual_status)) {
+    badge += `<button type="button" class="btn-edit-status" title="Ubah status manual"
+      onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")})'>✎</button>`;
+  }
+  return badge;
 }
 
 // ── Terapkan filter dan load ────────────────────────────────
@@ -2714,7 +2908,7 @@ async function loadSandingan(page=1) {
 
     tbody.innerHTML = items.map((r, i) => {
       const rowNo    = from + i;
-      const rowClass = sandStatusClass(r.status_realisasi);
+      const rowClass = sandStatusClass(r.status_realisasi) + (r.is_manual_status ? ' row-override' : '');
       const hasReal  = !!r.ada_realisasi;
       const efi      = hasReal ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
@@ -2744,7 +2938,7 @@ async function loadSandingan(page=1) {
         <!-- Pemisah -->
         <td class="col-sep" style="background:#E8EFFE!important;border:none"></td>
         <!-- Kolom Realisasi -->
-        <td class="col-reals">${sandStatusBadge(r.status_realisasi)}</td>
+        <td class="col-reals">${sandStatusBadge(r)}</td>
         <td style="font-size:11px;min-width:140px;max-width:180px">
           ${r.nama_penyedia
             ? `<span title="${r.nama_penyedia}">${r.nama_penyedia.slice(0,40)}${r.nama_penyedia.length>40?'…':''}</span>`
