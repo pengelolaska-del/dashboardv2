@@ -369,7 +369,8 @@ thead .col-sep-h{
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{text-align:center;padding:48px 20px;color:#94A3B8}
-.empty-state .empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+.empty-state .empty-icon{display:flex;justify-content:center;margin-bottom:10px;opacity:.5}
+.empty-state .empty-icon svg{display:block}
 .empty-state p{font-size:13px}
 .error-state{text-align:center;padding:32px 20px;color:#EF4444;font-size:12.5px}
 .chart-card{background:#fff;border-radius:12px;border:1px solid #E5E9F0;padding:18px}
@@ -1598,12 +1599,16 @@ async function init() {
     const tahunSet= [...new Set([...fromData,...manYrs])].sort().reverse();
     const gT = document.getElementById('g-tahun');
     gT.innerHTML = tahunSet.map(t=>`<option value="${t}">${t}</option>`).join('');
-    if (tahunSet.length) gT.value = tahunSet[0];
 
-    // Set bulan ke latest
+    // Set TAHUN & BULAN ke periode data TERAKHIR (bukan tahun terbesar
+    // di dropdown — dropdown sengaja diisi rentang lebih luas untuk
+    // filter manual, tapi tampilan awal harus mengikuti data yang ada).
     if (latest_periode) {
-      const bl = String(latest_periode).split('-')[1];
-      if (bl) document.getElementById('g-bulan').value = bl;
+      const [ly, lb] = String(latest_periode).split('-');
+      if (ly) gT.value = ly;
+      if (lb) document.getElementById('g-bulan').value = lb;
+    } else if (tahunSet.length) {
+      gT.value = tahunSet[0];
     }
 
     // Update badge
@@ -1863,7 +1868,7 @@ async function loadRUP(page=1) {
           <td>${pdnBadge(r.produk_dalam_negeri)}</td>
           <td class="mono text-right" style="font-size:12px;white-space:nowrap">${IDRf(r.pagu)}</td>
         </tr>`).join('')
-      : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
+      : `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
 
     // Pagination
     document.getElementById('rup-tbl-info').textContent =
@@ -1956,7 +1961,7 @@ async function loadReal(page=1) {
           <td>${sbadge(r.status_paket)}</td>
           <td class="mono text-right" style="font-size:12px;white-space:nowrap">${IDRf(r.nilai_kontrak)}</td>
         </tr>`).join('')
-      : `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
+      : `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div><p>Tidak ada data untuk filter yang dipilih.</p></div></td></tr>`;
 
     document.getElementById('real-tbl-info').textContent =
       d.total ? `Menampilkan ${(page-1)*PER_PAGE+1}–${Math.min(page*PER_PAGE,d.total)} dari ${fmt(d.total)} transaksi` : '';
@@ -3034,7 +3039,7 @@ async function loadAnalisisDetail(tipe, keys, title) {
         <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
         <td class="text-center">${badge(r.status_realisasi==='Selesai'?'b-green':'b-yellow', r.status_realisasi||'—')}</td>
       </tr>`).join('')
-      : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div><p>Tidak ada rincian untuk data ini.</p></div></td></tr>`;
+      : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div><p>Tidak ada rincian untuk data ini.</p></div></td></tr>`;
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="9"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
@@ -3212,7 +3217,7 @@ async function loadSandingan(page=1) {
     if (!items.length) {
       tbody.innerHTML = `<tr><td colspan="12">
         <div class="empty-state">
-          <div class="empty-icon">📭</div>
+          <div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div>
           <p>Tidak ada paket RUP untuk filter yang dipilih.</p>
         </div></td></tr>`;
       return;
