@@ -833,12 +833,12 @@ thead .col-sep-h{
       <div class="scard">
         <div class="scard-label">Total Pagu RUP</div>
         <div class="scard-value" id="efi-pagu">—</div>
-        <div class="scard-sub">Keseluruhan periode</div>
+        <div class="scard-sub" id="efi-pagu-sub">Keseluruhan periode</div>
       </div>
       <div class="scard green">
         <div class="scard-label">Total Kontrak</div>
         <div class="scard-value" id="efi-kontrak">—</div>
-        <div class="scard-sub">Keseluruhan periode</div>
+        <div class="scard-sub" id="efi-kontrak-sub">Keseluruhan periode</div>
       </div>
       <div class="scard yellow">
         <div class="scard-label">% Efisiensi</div>
@@ -1651,9 +1651,10 @@ document.getElementById('g-bulan').addEventListener('change', onPeriodChange);
 
 function onPeriodChange() {
   const active = document.querySelector('.nav-link.active')?.dataset.s;
-  if      (active==='rup')       loadRUP(1);
-  else if (active==='realisasi') loadReal(1);
-  else if (active==='efisiensi') loadEfisiensi();
+  if      (active==='rup')        loadRUP(1);
+  else if (active==='realisasi')  loadReal(1);
+  else if (active==='efisiensi')  loadEfisiensi();
+  else if (active==='sandingan')  loadSandingan(1);
 }
 
 // Filter toggle
@@ -1996,9 +1997,17 @@ async function loadEfisiensi() {
     `<tr><td colspan="7"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat analisis efisiensi...</p></div></td></tr>`;
   try {
     const tahun = document.getElementById('g-tahun').value;
+    const bulan = document.getElementById('g-bulan').value;
+    // Ikut BULAN kalau dipilih (konsisten dgn Sandingan RUP/RUP/Realisasi) —
+    // kosongkan BULAN ("Semua") untuk melihat akumulasi satu tahun penuh.
+    const periode = bulan ? tahun + '-' + bulan : undefined;
+
+    document.getElementById('efi-pagu-sub').textContent    = periode ? `Periode: ${periode}` : 'Keseluruhan periode (semua bulan tahun ini)';
+    document.getElementById('efi-kontrak-sub').textContent = periode ? `Periode: ${periode}` : 'Keseluruhan periode (semua bulan tahun ini)';
+
     const [efiRes, trenRes, chartsRes] = await Promise.all([
       api({
-        action: 'listEfisiensi', tahun,
+        action: 'listEfisiensi', tahun, periode,
         kode_satker:      S.efiF.satker    || undefined,
         sumber_transaksi: S.efiF.transaksi || undefined,
         metode_pengadaan: S.efiF.metode    || undefined,
@@ -2009,7 +2018,7 @@ async function loadEfisiensi() {
       // dengan tabel Efisiensi/Analisis (Satker, Sumber Transaksi, Metode,
       // Status Paket), supaya grafik selalu menyesuaikan filter yang aktif.
       api({
-        action:'dashboardAnalisisCharts', tahun,
+        action:'dashboardAnalisisCharts', tahun, periode,
         kode_satker:      S.efiF.satker    || undefined,
         sumber_transaksi: S.efiF.transaksi || undefined,
         metode_pengadaan: S.efiF.metode    || undefined,
