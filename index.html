@@ -1339,11 +1339,36 @@ thead .col-sep-h{
                 <th>Kode Paket</th>
                 <th class="text-right">Kontrak</th>
                 <th class="text-center">Pagu Manual</th>
+                <th class="text-center">Aksi RUP</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Daftar RUP Manual -->
+    <div style="margin-top:4px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
+          📌 Daftar RUP Manual
+          <span style="font-weight:400;color:#94A3B8;margin-left:4px">— baris RUP yang ditambahkan langsung (kode RUP-nya tidak pernah ter-upload dari SIRUP)</span>
+        </p>
+      </div>
+      <div class="tbl-wrap">
+        <table class="dt" id="t-manual-rup">
+          <thead>
+            <tr>
+              <th>Kode RUP</th>
+              <th>Nama Paket</th>
+              <th>Nama Satker</th>
+              <th class="text-right">Pagu</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Belum ada RUP manual.</p></div></td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -1410,6 +1435,70 @@ thead .col-sep-h{
       <div style="padding:14px 22px;border-top:1px solid #E2E8F0;display:flex;gap:10px">
         <button onclick="closePaguModal()" style="flex:1;padding:9px;border:1.5px solid #CBD5E1;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;color:#475569">Batal</button>
         <button onclick="savePagu()" id="btn-save-pagu" style="flex:2;padding:9px;border:none;border-radius:7px;background:#1E3A5F;color:#fff;font-size:13px;cursor:pointer;font-weight:700">Simpan Pagu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: TAMBAH RUP MANUAL
+       (untuk realisasi yang kode_rup-nya tidak ada di data RUP sama sekali)
+       ============================================================ -->
+  <div id="modal-rup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto">
+      <div style="padding:18px 22px 14px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px;font-weight:700;color:#1A2332">Tambah Baris RUP Manual</span>
+        <button onclick="closeRupModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1">×</button>
+      </div>
+      <div style="padding:18px 22px">
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Kode RUP *</label>
+          <input id="mr-kode-rup" type="text" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none;background:#F8FAFC" readonly/>
+        </div>
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Paket *</label>
+          <input id="mr-nama-paket" type="text" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+        </div>
+        <div style="margin-bottom:13px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Nama Satker *</label>
+          <input id="mr-nama-satker" type="text" list="mr-satker-list" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'" oninput="onMrSatkerInput()"/>
+          <datalist id="mr-satker-list"></datalist>
+        </div>
+        <input id="mr-kode-satker" type="hidden"/>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Cara Pengadaan</label>
+            <select id="mr-cara" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none">
+              <option value="Penyedia">Penyedia</option>
+              <option value="Swakelola">Swakelola</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Metode Pengadaan</label>
+            <input id="mr-metode" type="text" placeholder="Contoh: Tender" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"/>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Jenis Pengadaan</label>
+            <input id="mr-jenis" type="text" placeholder="Contoh: Pekerjaan Konstruksi" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Sumber Dana</label>
+            <input id="mr-sumber-dana" type="text" placeholder="Contoh: APBD" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"/>
+          </div>
+        </div>
+        <div style="margin-bottom:6px">
+          <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Pagu (Rp) *</label>
+          <input id="mr-pagu" type="text" inputmode="numeric" placeholder="Contoh: 633127553" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;font-family:monospace;outline:none"/>
+          <div id="mr-pagu-preview" style="font-size:11px;color:#16A34A;margin-top:4px;font-weight:600"></div>
+        </div>
+        <p style="font-size:11px;color:#94A3B8;margin-top:8px;line-height:1.5">
+          💡 Dipakai kalau kode RUP dari realisasi ini memang tidak pernah ter-upload sebagai data RUP. Setelah disimpan, matching akan dijalankan ulang otomatis untuk periode ini.
+        </p>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid #E2E8F0;display:flex;gap:10px">
+        <button onclick="closeRupModal()" style="flex:1;padding:9px;border:1.5px solid #CBD5E1;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;color:#475569">Batal</button>
+        <button onclick="saveManualRUP()" id="btn-save-rup" style="flex:2;padding:9px;border:none;border-radius:7px;background:#1E3A5F;color:#fff;font-size:13px;cursor:pointer;font-weight:700">Simpan & Jalankan Matching</button>
       </div>
     </div>
   </div>
@@ -2250,9 +2339,10 @@ async function loadKualitas() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
   try {
     // Paralel: unmatched (dengan filter aktif) + pagu manual
-    const [resUM, resPagu] = await Promise.all([
+    const [resUM, resPagu, resRup] = await Promise.all([
       api({ action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode, per_page:500, ...KUAL_F }),
       api({action:'listManualPagu'}),
+      api({action:'listManualRUP', periode:S.latestPeriode}),
     ]);
 
     const d = resUM.data||{};
@@ -2304,6 +2394,12 @@ async function loadKualitas() {
                 ${hasPagu?'✏ Edit':'+ Set Pagu'}
               </button>`
             : '<span style="color:#CBD5E1;font-size:11px">—</span>';
+          const rupBtn = r.kode_rup
+            ? `<button onclick='openRupModal(${JSON.stringify({kode_rup:r.kode_rup, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", kode_satker:r.kode_satker||"", metode_pengadaan:r.metode_pengadaan||"", jenis_pengadaan:r.jenis_pengadaan||"", pagu:r.nilai_kontrak||""})})'
+                style="font-size:10px;padding:3px 8px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#FFF7ED;color:#C2410C">
+                + Tambah RUP
+              </button>`
+            : '<span style="color:#CBD5E1;font-size:11px">—</span>';
           return `<tr>
             <td style="font-size:12px">${r.nama_satker||'—'}</td>
             <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_realisasi||''}">${r.nama_paket_realisasi||'—'}</td>
@@ -2312,12 +2408,14 @@ async function loadKualitas() {
             <td style="font-size:11px;font-family:monospace;color:#2563EB">${kp||'—'}${hasPagu ? manualPaguMark() : ''}</td>
             <td style="font-size:12px;text-align:right">${IDRf(r.nilai_kontrak)}</td>
             <td style="text-align:center">${paguBtn}</td>
+            <td style="text-align:center">${rupBtn}</td>
           </tr>`;
         }).join('')
-      : `<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+      : `<tr><td colspan="8"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
 
-    // Tabel daftar pagu manual
+    // Tabel daftar pagu manual & RUP manual
     renderManualPaguTable(resPagu.data||[]);
+    renderManualRupTable(resRup.data||[]);
 
   } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
@@ -2415,10 +2513,118 @@ async function deletePagu(kode_paket) {
   } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
 }
 
+function renderManualRupTable(list) {
+  document.querySelector('#t-manual-rup tbody').innerHTML = list.length
+    ? list.map(r => `<tr>
+        <td style="font-size:11px;font-family:monospace;color:#C2410C">${r.kode_rup||'—'}</td>
+        <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket||''}">${r.nama_paket||'—'}</td>
+        <td style="font-size:12px">${r.nama_satker||'—'}</td>
+        <td style="font-size:12px;text-align:right;font-weight:700;color:#1E3A5F">${IDRf(r.pagu)}</td>
+        <td style="text-align:center">
+          <button onclick="deleteManualRUP('${r.kode_rup}')"
+            style="font-size:10px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;border-radius:5px;cursor:pointer;font-weight:600">
+            🗑
+          </button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Belum ada RUP manual.</p></div></td></tr>`;
+}
+
+// ── Modal Tambah RUP Manual ─────────────────────────────────
+
+function openRupModal(prefill) {
+  document.getElementById('mr-kode-rup').value    = prefill?.kode_rup    || '';
+  document.getElementById('mr-nama-paket').value  = prefill?.nama_paket  || '';
+  document.getElementById('mr-nama-satker').value = prefill?.nama_satker || '';
+  document.getElementById('mr-kode-satker').value = prefill?.kode_satker || '';
+  document.getElementById('mr-cara').value        = 'Penyedia';
+  document.getElementById('mr-metode').value      = prefill?.metode_pengadaan || '';
+  document.getElementById('mr-jenis').value       = prefill?.jenis_pengadaan  || '';
+  document.getElementById('mr-sumber-dana').value = '';
+  document.getElementById('mr-pagu').value        = prefill?.pagu ? String(prefill.pagu) : '';
+  document.getElementById('mr-pagu-preview').textContent = prefill?.pagu ? IDRf(prefill.pagu) : '';
+  // Datalist satker — dari daftar satker periode terbaru (S.satkerList)
+  document.getElementById('mr-satker-list').innerHTML =
+    (S.satkerList||[]).map(s => `<option value="${s.nama_satker}" data-kode="${s.kode_satker}"></option>`).join('');
+  document.getElementById('modal-rup').style.display = 'flex';
+}
+
+function closeRupModal() {
+  document.getElementById('modal-rup').style.display = 'none';
+}
+
+// Kalau nama satker yang diketik cocok persis dengan salah satu di datalist, isi otomatis kode_satker-nya
+function onMrSatkerInput() {
+  const val   = document.getElementById('mr-nama-satker').value;
+  const match = (S.satkerList||[]).find(s => s.nama_satker === val);
+  document.getElementById('mr-kode-satker').value = match ? match.kode_satker : '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('mr-pagu');
+  if (inp) inp.addEventListener('input', () => {
+    const val = Number(String(inp.value).replace(/[^0-9]/g,''));
+    document.getElementById('mr-pagu-preview').textContent = val > 0 ? IDRf(val) : '';
+  });
+});
+
+async function saveManualRUP() {
+  const kode_rup    = document.getElementById('mr-kode-rup').value.trim();
+  const nama_paket  = document.getElementById('mr-nama-paket').value.trim();
+  const nama_satker = document.getElementById('mr-nama-satker').value.trim();
+  const kode_satker = document.getElementById('mr-kode-satker').value.trim();
+  const cara_pengadaan    = document.getElementById('mr-cara').value;
+  const metode_pengadaan  = document.getElementById('mr-metode').value.trim() || '-';
+  const jenis_pengadaan   = document.getElementById('mr-jenis').value.trim() || '-';
+  const sumber_dana       = document.getElementById('mr-sumber-dana').value.trim() || 'Tidak Diketahui';
+  const pagu = Number(String(document.getElementById('mr-pagu').value).replace(/[^0-9]/g,''));
+
+  if (!kode_rup)    { Swal.fire('Validasi','Kode RUP wajib diisi.','warning'); return; }
+  if (!nama_paket)  { Swal.fire('Validasi','Nama Paket wajib diisi.','warning'); return; }
+  if (!nama_satker) { Swal.fire('Validasi','Nama Satker wajib diisi.','warning'); return; }
+  if (!pagu || pagu <= 0) { Swal.fire('Validasi','Pagu harus lebih dari 0.','warning'); return; }
+
+  const btn = document.getElementById('btn-save-rup');
+  btn.disabled = true; btn.textContent = 'Menyimpan & menjalankan matching...';
+  try {
+    const res = await api({
+      action:'addManualRUP', token:S.adminToken, periode:S.latestPeriode,
+      kode_rup, kode_satker, nama_satker, nama_paket,
+      cara_pengadaan, metode_pengadaan, jenis_pengadaan, sumber_dana, pagu,
+    });
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'✅ RUP manual ditambahkan', text:res.message, timer:1800, showConfirmButton:false});
+    closeRupModal();
+    await loadKualitas(); // refresh tabel — paket ini akan hilang dari Unmatched Realisasi kalau berhasil match
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simpan & Jalankan Matching';
+  }
+}
+
+async function deleteManualRUP(kode_rup) {
+  const conf = await Swal.fire({
+    title:'Hapus baris RUP manual?',
+    html:`Kode RUP: <b>${kode_rup}</b><br>Matching akan dijalankan ulang setelah baris ini dihapus.`,
+    icon:'warning', showCancelButton:true,
+    confirmButtonColor:'#DC2626', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({action:'deleteManualRUP', token:S.adminToken, periode:S.latestPeriode, kode_rup});
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'Dihapus', timer:1200, showConfirmButton:false});
+    await loadKualitas();
+  } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
+}
+
 // Tutup modal kalau klik backdrop
 document.addEventListener('click', e => {
   const modal = document.getElementById('modal-pagu');
   if (modal && e.target === modal) closePaguModal();
+  const modalRup = document.getElementById('modal-rup');
+  if (modalRup && e.target === modalRup) closeRupModal();
 });
 
 // ============================================================
