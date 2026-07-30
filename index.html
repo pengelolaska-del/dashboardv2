@@ -876,31 +876,7 @@ thead .col-sep-h{
     </div>
 
     <div class="group-title">Rincian &amp; Data Per Satker</div>
-    <!-- Tabel Rincian — fleksibel, isi ditentukan oleh batang chart yang diklik -->
-    <div class="tbl-wrap" id="analisis-detail-wrap">
-      <div class="tbl-topbar">
-        <span class="tbl-topbar-info" id="analisis-detail-title">📋 Rincian Paket — klik salah satu batang chart di atas</span>
-        <button class="btn btn-ghost btn-sm hidden" id="analisis-detail-clear" onclick="clearAnalisisDetail()">✕ Tutup</button>
-      </div>
-      <div class="tbl-scroll">
-        <table class="dt">
-          <thead><tr>
-            <th style="width:40px">No</th>
-            <th>Kode RUP</th>
-            <th style="min-width:220px">Nama Paket</th>
-            <th>Nama Satker</th>
-            <th>Penyedia</th>
-            <th class="text-right">Pagu (Rp)</th>
-            <th class="text-right">Nilai Kontrak (Rp)</th>
-            <th class="text-right">Efisiensi (Rp)</th>
-            <th style="text-align:center">Status</th>
-          </tr></thead>
-          <tbody id="analisis-detail-tbody">
-            <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👆</div><p>Klik salah satu batang pada chart Top 10 di atas untuk melihat rincian paketnya di sini.</p></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <p style="font-size:12px;color:#94A3B8;margin:-8px 0 4px">Klik salah satu batang pada chart Top 10 di atas untuk melihat rincian paketnya.</p>
 
     <!-- Rekap Status Proses per Jenis Pengadaan -->
     <div class="tbl-wrap" style="margin-top:14px">
@@ -3011,26 +2987,30 @@ function readSandFilter() {
   };
 }
 
-// ── Tabel rincian fleksibel — diisi saat batang chart Analisis diklik ──
+// ── Popup rincian fleksibel — dipanggil saat batang chart Analisis diklik ──
 async function loadAnalisisDetail(tipe, keys, title) {
-  const tbody = document.getElementById('analisis-detail-tbody');
-  document.getElementById('analisis-detail-title').textContent = '⏳ ' + title;
-  document.getElementById('analisis-detail-clear').classList.remove('hidden');
-  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="spin"></div><p style="margin-top:10px">Memuat rincian...</p></div></td></tr>`;
-  document.getElementById('analisis-detail-wrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  Swal.fire({ title:'Memuat rincian...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
 
   try {
     const tahun = v('g-tahun');
     const res = await api({ action:'dashboardAnalisisDetail', tipe, tahun, ...keys, per_page:100 });
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rincian.');
     const items = res.data?.items || [];
+    Swal.close();
 
-    document.getElementById('analisis-detail-title').textContent =
-      `📋 ${title} (${fmt(res.data?.total || 0)} paket)`;
+    if (!items.length) {
+      Swal.fire('Tidak ada data', 'Tidak ada rincian paket untuk data ini.', 'info');
+      return;
+    }
 
-    tbody.innerHTML = items.length ? items.map((r,i) => `<tr>
+    const theadHtml = `<tr>
+      <th style="width:36px">No</th><th>Kode RUP</th><th style="min-width:200px">Nama Paket</th>
+      <th>Nama Satker</th><th>Penyedia</th><th class="text-right">Pagu (Rp)</th>
+      <th class="text-right">Nilai Kontrak (Rp)</th><th class="text-right">Efisiensi (Rp)</th>
+      <th style="text-align:center">Status</th></tr>`;
+    const tbodyHtml = items.map((r,i) => `<tr>
         <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
-        <td><a style="color:#2563EB;font-size:11px;font-family:monospace;text-decoration:none">${r.kode_rup||'—'}</a></td>
+        <td style="color:#2563EB;font-size:11px;font-family:monospace">${r.kode_rup||'—'}</td>
         <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,60)}</td>
         <td style="font-size:11.5px;color:#475569">${r.nama_satker||'—'}</td>
         <td style="font-size:11.5px">${r.nama_penyedia||'—'}</td>
@@ -3038,18 +3018,30 @@ async function loadAnalisisDetail(tipe, keys, title) {
         <td class="mono text-right">${IDRf(r.nilai_kontrak)}</td>
         <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
         <td class="text-center">${badge(r.status_realisasi==='Selesai'?'b-green':'b-yellow', r.status_realisasi||'—')}</td>
-      </tr>`).join('')
-      : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div><p>Tidak ada rincian untuk data ini.</p></div></td></tr>`;
-  } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
-  }
-}
+      </tr>`).join('');
 
-function clearAnalisisDetail() {
-  document.getElementById('analisis-detail-title').textContent = '📋 Rincian Paket — klik salah satu batang chart di atas';
-  document.getElementById('analisis-detail-clear').classList.add('hidden');
-  document.getElementById('analisis-detail-tbody').innerHTML =
-    `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👆</div><p>Klik salah satu batang pada chart Top 10 di atas untuk melihat rincian paketnya di sini.</p></div></td></tr>`;
+    const html = `
+      <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
+        Menampilkan <b>${items.length.toLocaleString('id-ID')}</b> dari <b>${(res.data?.total||items.length).toLocaleString('id-ID')}</b> paket.
+      </div>
+      <div style="max-height:60vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
+        <table class="dt" style="width:100%;font-size:12px">
+          <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">${theadHtml}</thead>
+          <tbody>${tbodyHtml}</tbody>
+        </table>
+      </div>`;
+
+    Swal.fire({
+      title: `📋 ${title}`,
+      html,
+      width: 1000,
+      showCloseButton: true,
+      confirmButtonText: 'Tutup',
+      confirmButtonColor: '#64748B',
+    });
+  } catch (e) {
+    Swal.fire('❌ Error', e.message, 'error');
+  }
 }
 
 // ── Rekap status proses per jenis pengadaan ─────────────────
