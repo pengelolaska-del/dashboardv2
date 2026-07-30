@@ -1288,9 +1288,20 @@ thead .col-sep-h{
           Unmatched RUP
           <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
         </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px">
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Jenis Pengadaan</label>
+            <select id="kual-rup-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+          </div>
+          <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()">↺</button>
+        </div>
         <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
           <table class="dt" id="t-um-rup">
-            <thead><tr><th>Satker</th><th>Nama Paket</th><th class="text-right">Pagu</th></tr></thead>
+            <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -1302,12 +1313,29 @@ thead .col-sep-h{
           Unmatched Realisasi
           <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
         </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px">
+          <div class="fld">
+            <label>Sumber Transaksi</label>
+            <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Metode Pengadaan</label>
+            <select id="kual-real-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+          </div>
+          <div class="fld">
+            <label>Jenis Pengadaan</label>
+            <select id="kual-real-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+          </div>
+          <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()">↺</button>
+        </div>
         <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
           <table class="dt" id="t-um-real">
             <thead>
               <tr>
                 <th>Satker</th>
                 <th>Nama Paket</th>
+                <th>Metode</th>
+                <th>Jenis</th>
                 <th>Kode Paket</th>
                 <th class="text-right">Kontrak</th>
                 <th class="text-center">Pagu Manual</th>
@@ -2196,12 +2224,34 @@ function switchEfiOpdTab(tab) {
 // Cache pagu manual: kode_paket → pagu_manual
 let _manualPaguMap = {};
 
+// Filter state untuk Kualitas Data (di-cache supaya tidak hilang saat reload)
+let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'' };
+
+function applyKualitas() {
+  KUAL_F = {
+    sumber_transaksi:     v('kual-real-transaksi'),
+    metode_pengadaan:     v('kual-real-metode'),
+    jenis_pengadaan:      v('kual-real-jenis'),
+    metode_pengadaan_rup: v('kual-rup-metode'),
+    jenis_pengadaan_rup:  v('kual-rup-jenis'),
+  };
+  loadKualitas();
+}
+function resetKualitasRup() {
+  ['kual-rup-metode','kual-rup-jenis'].forEach(id => document.getElementById(id).value='');
+  applyKualitas();
+}
+function resetKualitasReal() {
+  ['kual-real-transaksi','kual-real-metode','kual-real-jenis'].forEach(id => document.getElementById(id).value='');
+  applyKualitas();
+}
+
 async function loadKualitas() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
   try {
-    // Paralel: unmatched + pagu manual
+    // Paralel: unmatched (dengan filter aktif) + pagu manual
     const [resUM, resPagu] = await Promise.all([
-      api({action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode}),
+      api({ action:'unmatchedData', token:S.adminToken, periode:S.latestPeriode, per_page:500, ...KUAL_F }),
       api({action:'listManualPagu'}),
     ]);
 
@@ -2218,7 +2268,16 @@ async function loadKualitas() {
       {lbl:'Total Matched',    val:fmt(d.total_matched)},
     ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
 
-    // Tabel Unmatched RUP (tidak berubah)
+    // Isi dropdown filter dari enum yang dikirim backend (hanya sekali per periode)
+    if (d.enums) {
+      fillSelect('kual-rup-metode',    d.enums.metode_pengadaan_rup, KUAL_F.metode_pengadaan_rup);
+      fillSelect('kual-rup-jenis',     d.enums.jenis_pengadaan_rup,  KUAL_F.jenis_pengadaan_rup);
+      fillSelect('kual-real-transaksi',d.enums.sumber_transaksi,     KUAL_F.sumber_transaksi);
+      fillSelect('kual-real-metode',   d.enums.metode_pengadaan,     KUAL_F.metode_pengadaan);
+      fillSelect('kual-real-jenis',    d.enums.jenis_pengadaan,      KUAL_F.jenis_pengadaan);
+    }
+
+    // Tabel Unmatched RUP — sekarang dengan kolom Metode & Jenis
     const fillTbl = (id, rows, cols) => {
       document.querySelector(id+' tbody').innerHTML = rows?.length
         ? rows.map(r=>`<tr>${cols.map(c=>`<td style="font-size:12px">${c(r)}</td>`).join('')}</tr>`).join('')
@@ -2227,10 +2286,12 @@ async function loadKualitas() {
     fillTbl('#t-um-rup', d.unmatched_rup, [
       r=>r.nama_satker,
       r=>r.nama_paket_rup||'—',
+      r=>r.metode_pengadaan_rup||'—',
+      r=>r.jenis_pengadaan_rup||'—',
       r=>`<span style="text-align:right;display:block">${IDRf(r.pagu_rup)}</span>`,
     ]);
 
-    // Tabel Unmatched Realisasi — dengan kolom Kode Paket + tombol Set Pagu
+    // Tabel Unmatched Realisasi — dengan kolom Metode, Jenis, Kode Paket + tombol Set Pagu
     const umReal = d.unmatched_realisasi||[];
     document.querySelector('#t-um-real tbody').innerHTML = umReal.length
       ? umReal.map(r => {
@@ -2245,13 +2306,15 @@ async function loadKualitas() {
             : '<span style="color:#CBD5E1;font-size:11px">—</span>';
           return `<tr>
             <td style="font-size:12px">${r.nama_satker||'—'}</td>
-            <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_realisasi||''}">${r.nama_paket_realisasi||'—'}</td>
+            <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_realisasi||''}">${r.nama_paket_realisasi||'—'}</td>
+            <td style="font-size:12px">${r.metode_pengadaan||'—'}</td>
+            <td style="font-size:12px">${r.jenis_pengadaan||'—'}</td>
             <td style="font-size:11px;font-family:monospace;color:#2563EB">${kp||'—'}${hasPagu ? manualPaguMark() : ''}</td>
             <td style="font-size:12px;text-align:right">${IDRf(r.nilai_kontrak)}</td>
             <td style="text-align:center">${paguBtn}</td>
           </tr>`;
         }).join('')
-      : `<tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
+      : `<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Tidak ada data</p></div></td></tr>`;
 
     // Tabel daftar pagu manual
     renderManualPaguTable(resPagu.data||[]);
