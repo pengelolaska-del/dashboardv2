@@ -1030,6 +1030,11 @@ thead .col-sep-h{
             <label>Sumber Dana</label>
             <select id="sand-sumber"><option value="">Semua</option></select>
           </div>
+          <!-- Sumber Transaksi -->
+          <div class="fld">
+            <label>Sumber Transaksi</label>
+            <select id="sand-transaksi"><option value="">Semua</option></select>
+          </div>
           <!-- Search -->
           <div class="fld" style="grid-column:span 2">
             <label>Cari Nama Paket / Kode RUP</label>
@@ -2820,17 +2825,19 @@ async function fetchDetailData(type) {
       action:'listSandingan', tahun, periode: bulan ? tahun+'-'+bulan : undefined,
       kode_satker:f.kode_satker||undefined, metode_pengadaan:f.metode_pengadaan||undefined,
       jenis_pengadaan:f.jenis_pengadaan||undefined, status_paket:f.status_paket||undefined,
-      sumber_dana:f.sumber_dana||undefined, search:f.search||undefined,
+      sumber_dana:f.sumber_dana||undefined, sumber_transaksi:f.sumber_transaksi||undefined,
+      search:f.search||undefined,
       page:1, per_page:99999,
     });
     if (res.status !== 'success') throw new Error(res.message);
     const items = res.data?.items || [];
-    headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
-    paguColIdx = 7;
+    headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Sumber Transaksi','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
+    paguColIdx = 8;
     rows = items.map(r => [
       r.kode_satker, r.nama_satker, r.nama_paket_rup, r.kode_rup,
       r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
-      r.sumber_dana, r.pagu||0,
+      r.sumber_dana, r.sumber_transaksi||'',
+      r.pagu||0,
       r.status_realisasi||'Belum Terealisasi', r.nama_penyedia||'',
       r.nilai_kontrak||0,
       r.ada_realisasi ? (r.pagu||0)-(r.nilai_kontrak||0) : '',
@@ -2979,7 +2986,7 @@ function applySand()  { SAND.f = readSandFilter(); loadSandingan(1); }
 function resetSand()  {
   SAND.f = {};
   comboClear('sand-satker');
-  ['sand-metode','sand-jenis','sand-status','sand-sumber'].forEach(id => {
+  ['sand-metode','sand-jenis','sand-status','sand-sumber','sand-transaksi'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('sand-search').value = '';
@@ -2994,6 +3001,7 @@ function readSandFilter() {
     jenis_pengadaan:  v('sand-jenis'),
     status_paket:     v('sand-status'),
     sumber_dana:      v('sand-sumber'),
+    sumber_transaksi: v('sand-transaksi'),
     search:           v('sand-search'),
   };
 }
@@ -3128,6 +3136,7 @@ async function loadSandingan(page=1) {
       jenis_pengadaan:  f.jenis_pengadaan  || undefined,
       status_paket:     f.status_paket     || undefined,
       sumber_dana:      f.sumber_dana      || undefined,
+      sumber_transaksi: f.sumber_transaksi || undefined,
       search:           f.search           || undefined,
       page,
       per_page:         SAND.perPage,
@@ -3180,6 +3189,9 @@ async function loadSandingan(page=1) {
     }
     if (d.enums?.sumber && document.getElementById('sand-sumber').options.length <= 1) {
       fillSelect('sand-sumber', d.enums.sumber, f.sumber_dana, 'Semua');
+    }
+    if (d.enums?.sumber_transaksi && document.getElementById('sand-transaksi').options.length <= 1) {
+      fillSelect('sand-transaksi', d.enums.sumber_transaksi, f.sumber_transaksi, 'Semua');
     }
 
     // ── Info pagination ──
