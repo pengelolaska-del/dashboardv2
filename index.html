@@ -2152,13 +2152,20 @@ async function loadEfisiensi() {
     // KPI Global (dari aggregate — tidak dipengaruhi filter transaksi/metode/status)
     const total_pagu    = aggregate.reduce((s,r)=>s+(Number(r.total_pagu)||0),0);
     const total_kontrak = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak)||0),0);
-    const total_efi     = total_pagu - total_kontrak;
-    const p_efi         = total_pagu>0 ? (total_efi/total_pagu*100) : 0;
+
+    // % Efisiensi RESMI — hanya paket yang sudah "Selesai" di data Realisasi
+    // DAN sudah tersandingkan (matched) ke RUP. Paket yang masih "Sedang
+    // Berjalan" nilai kontraknya belum final, jadi tidak ikut dihitung di sini
+    // (konsisten dengan kartu "Efisiensi (Selesai)" di halaman Sandingan RUP).
+    const total_pagu_selesai    = aggregate.reduce((s,r)=>s+(Number(r.total_pagu_selesai)||0),0);
+    const total_kontrak_selesai = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak_selesai)||0),0);
+    const total_efi = total_pagu_selesai - total_kontrak_selesai;
+    const p_efi     = total_pagu_selesai>0 ? (total_efi/total_pagu_selesai*100) : 0;
 
     document.getElementById('efi-pagu').textContent    = IDRf(total_pagu);
     document.getElementById('efi-kontrak').textContent = IDRf(total_kontrak);
     document.getElementById('efi-pct').textContent     = p_efi.toFixed(2)+'%';
-    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi: ' + IDRf(total_efi);
+    document.getElementById('efi-nilai-sub').textContent = 'Efisiensi (paket Selesai): ' + IDRf(total_efi);
 
     // KPI Filtered
     const efi_f   = total_pagu_filtered - total_kontrak_filtered;
