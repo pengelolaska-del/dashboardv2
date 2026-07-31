@@ -842,9 +842,20 @@ thead .col-sep-h{
           <button class="btn btn-ghost btn-icon" onclick="resetEfi()" title="Reset filter">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-          <button class="btn btn-ghost" id="btn-efi-exclude" onclick="openEfiExcludeModal()" title="Pilih metode pengadaan yang tidak ikut dihitung ke angka efisiensi" style="margin-left:auto">
-            ⚙️ Metode Dikecualikan dari Efisiensi
-          </button>
+        </div>
+
+        <!-- Checklist metode dikecualikan dari efisiensi — inline, langsung terlihat, tanpa login admin -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0">
+          <div style="font-weight:600;font-size:13px;color:#1E293B">Metode Dikecualikan dari Efisiensi</div>
+          <div style="font-size:12px;color:#64748B;margin:4px 0 10px">
+            Centang metode yang tidak representatif untuk diukur efisiensinya (mis. E-Purchasing yang harganya sudah fixed di katalog).
+            Paket dengan metode ini tetap tampil &amp; terhitung sebagai paket — hanya tidak ikut dijumlah ke angka efisiensi.
+            Perubahan tersimpan otomatis.
+          </div>
+          <div id="efi-exclude-list" style="display:flex;flex-wrap:wrap;gap:6px 18px">
+            <span style="font-size:12px;color:#94A3B8">Memuat daftar metode…</span>
+          </div>
+          <div id="efi-exclude-status" style="font-size:11.5px;color:#16A34A;margin-top:6px;height:14px"></div>
         </div>
       </div>
     </div>
@@ -1781,7 +1792,7 @@ async function loadSection(name, skipNav=false) {
   if      (name==='rup')       await loadRUP(1);
   else if (name==='realisasi') await loadReal(1);
   else if (name==='sandingan') await loadSandingan(1);
-  else if (name==='efisiensi') { await loadEfisiensi(); await loadRecapJenis(); }
+  else if (name==='efisiensi') { await loadEfisiensi(); await loadRecapJenis(); await loadEfiExcludeChecklist(); }
   else if (name==='kualitas')  await loadKualitas();
   else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
 }
@@ -2168,57 +2179,48 @@ function resetEfi() {
 
 // ============================================================
 // CHECKLIST: METODE PENGADAAN DIKECUALIKAN DARI EFISIENSI
-// Setting GLOBAL (berlaku semua periode) — menggantikan hardcode
-// "E-Purchasing" lama. Metode yg dicentang di sini TETAP dihitung sbg
-// paket/status di semua tabel, hanya TIDAK ikut dijumlah ke pagu/kontrak
-// yg membentuk angka efisiensi (kartu KPI, tabel per OPD, chart Top 10 OPD).
+// Setting GLOBAL (berlaku semua periode), tampil langsung di panel filter
+// (bukan popup) dan bisa diubah siapa saja tanpa login admin. Metode yg
+// dicentang TETAP dihitung sbg paket/status di semua tabel, hanya TIDAK
+// ikut dijumlah ke pagu/kontrak yg membentuk angka efisiensi (kartu KPI,
+// tabel per OPD, chart Top 10 OPD). Setiap centang langsung tersimpan.
 // ============================================================
-async function openEfiExcludeModal() {
-  let data;
+async function loadEfiExcludeChecklist() {
+  const box = document.getElementById('efi-exclude-list');
+  if (!box) return;
   try {
     const res = await api({ action:'listEfisiensiExcludeMetode' });
-    data = res.data || { metode_options:[], excluded:[] };
+    const { metode_options=[], excluded=[] } = res.data || {};
+    const excludedSet = new Set(excluded);
+
+    box.innerHTML = metode_options.length
+      ? metode_options.map(m => `
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#334155;cursor:pointer">
+            <input type="checkbox" class="efi-exclude-chk" value="${m.replace(/"/g,'&quot;')}" ${excludedSet.has(m)?'checked':''} onchange="toggleEfiExclude(this)">
+            <span>${m}</span>
+          </label>`).join('')
+      : `<span style="font-size:12px;color:#94A3B8">Belum ada data metode pengadaan untuk periode ini.</span>`;
   } catch (e) {
-    Swal.fire('Gagal memuat', e.message||'Terjadi kesalahan.', 'error');
-    return;
+    box.innerHTML = `<span style="font-size:12px;color:#DC2626">Gagal memuat daftar metode.</span>`;
   }
+}
 
-  const { metode_options=[], excluded=[] } = data;
-  const excludedSet = new Set(excluded);
-  const readOnly = !S.isAdmin;
-
-  const rowsHtml = metode_options.length
-    ? metode_options.map(m => `
-        <label style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #F1F5F9;font-size:13px;text-align:left;${readOnly?'opacity:.6':''}">
-          <input type="checkbox" class="efi-exclude-chk" value="${m.replace(/"/g,'&quot;')}" ${excludedSet.has(m)?'checked':''} ${readOnly?'disabled':''}>
-          <span>${m}</span>
-        </label>`).join('')
-    : `<div style="padding:12px 4px;color:#94A3B8;font-size:13px">Belum ada data metode pengadaan.</div>`;
-
-  const { isConfirmed, value: excludedList } = await Swal.fire({
-    title: 'Metode Dikecualikan dari Efisiensi',
-    html: `
-      <div style="text-align:left;font-size:12.5px;color:#64748B;margin-bottom:10px">
-        Centang metode yang <b>tidak representatif</b> untuk diukur efisiensinya (mis. E-Purchasing yang harganya sudah fixed di katalog).
-        Paket dengan metode ini tetap tampil &amp; terhitung sebagai paket — hanya tidak ikut dijumlah ke angka efisiensi.
-      </div>
-      <div style="max-height:320px;overflow:auto;border:1px solid #E2E8F0;border-radius:8px;padding:0 8px">${rowsHtml}</div>
-      ${readOnly ? `<div style="margin-top:10px;font-size:12px;color:#B45309">Login sebagai admin untuk mengubah pengaturan ini.</div>` : ''}
-    `,
-    showCancelButton: !readOnly,
-    confirmButtonText: readOnly ? 'Tutup' : 'Simpan',
-    cancelButtonText: 'Batal',
-    preConfirm: () => readOnly ? null : [...document.querySelectorAll('.efi-exclude-chk:checked')].map(el => el.value),
-  });
-
-  if (readOnly || !isConfirmed) return;
-
+async function toggleEfiExclude(chkEl) {
+  chkEl.disabled = true;
+  const statusEl = document.getElementById('efi-exclude-status');
+  const excludedList = [...document.querySelectorAll('.efi-exclude-chk:checked')].map(el => el.value);
   try {
-    await api({ action:'saveEfisiensiExcludeMetode', token:S.adminToken, excluded: excludedList||[] });
-    Swal.fire('✅ Tersimpan', 'Setting metode dikecualikan dari efisiensi berhasil disimpan.', 'success');
-    loadEfisiensi();
-  } catch(e) {
-    Swal.fire('Gagal menyimpan', e.message||'Terjadi kesalahan.', 'error');
+    await api({ action:'saveEfisiensiExcludeMetode', excluded: excludedList });
+    if (statusEl) {
+      statusEl.textContent = '✓ Tersimpan';
+      setTimeout(() => { if (statusEl.textContent === '✓ Tersimpan') statusEl.textContent = ''; }, 2000);
+    }
+    loadEfisiensi(); // refresh KPI/tabel/chart supaya ikut angka exclude terbaru
+  } catch (e) {
+    chkEl.checked = !chkEl.checked; // batalkan perubahan kalau gagal simpan
+    if (statusEl) statusEl.textContent = '✗ Gagal menyimpan, coba lagi.';
+  } finally {
+    chkEl.disabled = false;
   }
 }
 
