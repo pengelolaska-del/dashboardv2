@@ -315,17 +315,20 @@ tr.row-override{
 .sand-scard-lbl{font-size:10.5px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.04em}
 
 /* Sticky kolom RUP di tabel sandingan */
-.dt .col-rupno  {width:38px}
-.dt .col-satker {min-width:160px}
-.dt .col-paket  {min-width:240px}
-.dt .col-koderup{min-width:90px;font-family:monospace;font-size:11.5px}
-.dt .col-metode {min-width:120px}
-.dt .col-jenis  {min-width:130px}
-.dt .col-pagu   {min-width:130px;text-align:right}
+.dt .col-rupno  {width:34px}
+.dt .col-satker {min-width:135px}
+.dt .col-paket  {min-width:220px}
+.dt .col-metode {min-width:95px}
+.dt .col-jenis  {min-width:105px}
+.dt .col-pagu   {min-width:105px;text-align:right}
 .dt .col-sep    {background:#E8EFFE!important;width:6px;padding:0!important}
-.dt .col-reals  {min-width:100px;text-align:center}
-.dt .col-kontrak{min-width:130px;text-align:right}
-.dt .col-efi    {min-width:110px;text-align:right}
+.dt .col-reals  {min-width:88px;text-align:center}
+.dt .col-kontrak{min-width:105px;text-align:right}
+.dt .col-efi    {min-width:100px;text-align:right}
+/* Versi padat — dipakai tabel Sandingan RUP supaya kolomnya muat lebih rapat
+   dan mengurangi kebutuhan scroll horizontal di layar standar. */
+table.dt.tbl-compact th,
+table.dt.tbl-compact td{padding:7px 8px;font-size:11.5px}
 
 /* Divider kolom pemisah RUP vs Realisasi */
 thead .col-sep-h{
@@ -1113,21 +1116,31 @@ thead .col-sep-h{
     <div class="tbl-wrap">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="sand-tbl-info">—</span>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#64748B;font-weight:600">
+            Tampilkan
+            <select id="sand-per-page" onchange="changeSandPerPage(this.value)"
+              style="border:1px solid #E2E8F0;border-radius:6px;padding:4px 8px;font-size:11.5px;font-family:inherit;outline:none;cursor:pointer">
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="500">500</option>
+            </select>
+            / halaman
+          </label>
           <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="pageSand(-1)" id="sand-prev">‹ Prev</button>
           <span id="sand-pg-num" style="font-size:11.5px;color:#64748B;min-width:70px;text-align:center">—</span>
           <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="pageSand(1)" id="sand-next">Next ›</button>
         </div>
       </div>
       <div class="tbl-scroll">
-        <table class="dt" id="t-sand">
+        <table class="dt tbl-compact" id="t-sand">
           <thead>
             <tr>
               <!-- Kolom RUP -->
               <th class="col-rupno">#</th>
               <th class="col-satker">Satker / OPD</th>
-              <th class="col-paket">Nama Paket (RUP)</th>
-              <th class="col-koderup">Kode RUP</th>
+              <th class="col-paket">Nama Paket (RUP) &amp; Kode RUP</th>
               <th class="col-metode">Metode</th>
               <th class="col-jenis">Jenis</th>
               <th class="col-pagu">Pagu RUP (Rp)</th>
@@ -1135,13 +1148,13 @@ thead .col-sep-h{
               <th class="col-sep col-sep-h" title="Kolom Realisasi">↓ REALISASI</th>
               <!-- Kolom Realisasi -->
               <th class="col-reals">Status</th>
-              <th style="min-width:140px">Penyedia</th>
+              <th style="min-width:110px">Penyedia</th>
               <th class="col-kontrak">Nilai Kontrak (Rp)</th>
               <th class="col-efi">Efisiensi (Rp)</th>
             </tr>
           </thead>
           <tbody id="sand-tbody">
-            <tr><td colspan="12">
+            <tr><td colspan="11">
               <div class="empty-state">
                 <div class="empty-icon">📊</div>
                 <p>Pilih filter dan klik <strong>Terapkan Filter</strong> untuk melihat sandingan RUP vs Realisasi.</p>
@@ -3306,6 +3319,14 @@ function resetSand()  {
 }
 function pageSand(d) { loadSandingan(Math.max(1, Math.min(SAND.totalPages, SAND.page + d))); }
 
+// Ganti jumlah baris per halaman (50/100/200/500), lalu reload dari halaman 1
+function changeSandPerPage(val) {
+  SAND.perPage = parseInt(val, 10) || 50;
+  const sel2 = document.getElementById('sand-per-page');
+  if (sel2) sel2.value = String(SAND.perPage);
+  loadSandingan(1);
+}
+
 function readSandFilter() {
   return {
     kode_satker:      v('sand-satker'),
@@ -3440,7 +3461,7 @@ function escJs(s) { return String(s||'').replace(/'/g, "\\'"); }
 async function loadSandingan(page=1) {
   SAND.page = page;
   const tbody = document.getElementById('sand-tbody');
-  tbody.innerHTML = `<tr><td colspan="12">
+  tbody.innerHTML = `<tr><td colspan="11">
     <div class="empty-state"><div class="spin"></div>
     <p style="margin-top:10px">Memuat sandingan data...</p></div></td></tr>`;
 
@@ -3538,7 +3559,7 @@ async function loadSandingan(page=1) {
     // ── Render tabel ──
     const items = d.items || [];
     if (!items.length) {
-      tbody.innerHTML = `<tr><td colspan="12">
+      tbody.innerHTML = `<tr><td colspan="11">
         <div class="empty-state">
           <div class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></div>
           <p>Tidak ada paket RUP untuk filter yang dipilih.</p>
@@ -3561,17 +3582,17 @@ async function loadSandingan(page=1) {
         </td>
         <td class="col-paket" style="font-size:11.5px">
           <div style="font-weight:500;color:#0F1C2E" title="${r.nama_paket_rup||''}">
-            ${(r.nama_paket_rup||'—').length > 65
-              ? (r.nama_paket_rup||'').slice(0,65) + '…'
+            ${(r.nama_paket_rup||'—').length > 60
+              ? (r.nama_paket_rup||'').slice(0,60) + '…'
               : (r.nama_paket_rup||'—')}
           </div>
+          <div style="font-size:10px;color:#94A3B8;font-family:monospace;margin-top:1px">${r.kode_rup||'—'}</div>
           ${r.nama_paket_realisasi && r.nama_paket_realisasi !== r.nama_paket_rup
             ? `<div style="font-size:10px;color:#6366F1;margin-top:2px" title="${r.nama_paket_realisasi}">
-                 ↳ Real: ${r.nama_paket_realisasi.slice(0,55)}${r.nama_paket_realisasi.length>55?'…':''}
+                 ↳ Real: ${r.nama_paket_realisasi.slice(0,50)}${r.nama_paket_realisasi.length>50?'…':''}
                </div>`
             : ''}
         </td>
-        <td class="col-koderup">${r.kode_rup||'—'}</td>
         <td class="col-metode">${mbadge(r.metode_pengadaan_rup||r.metode_pengadaan||'')}</td>
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
         <td class="col-pagu mono" style="color:#1D4ED8;font-weight:600;font-size:12px">${IDRf(r.pagu||0)}${r.is_manual_pagu ? manualPaguMark() : ''}</td>
@@ -3579,9 +3600,9 @@ async function loadSandingan(page=1) {
         <td class="col-sep" style="background:#E8EFFE!important;border:none"></td>
         <!-- Kolom Realisasi -->
         <td class="col-reals">${sandStatusBadge(r)}</td>
-        <td style="font-size:11px;min-width:140px;max-width:180px">
+        <td style="font-size:11px;min-width:110px;max-width:150px">
           ${r.nama_penyedia
-            ? `<span title="${r.nama_penyedia}">${r.nama_penyedia.slice(0,40)}${r.nama_penyedia.length>40?'…':''}</span>`
+            ? `<span title="${r.nama_penyedia}">${r.nama_penyedia.slice(0,35)}${r.nama_penyedia.length>35?'…':''}</span>`
             : '<span style="color:#CBD5E1">—</span>'}
         </td>
         <td class="col-kontrak mono" style="font-weight:600;font-size:12px;color:${hasReal?'#15803D':'#CBD5E1'}">
@@ -3594,7 +3615,7 @@ async function loadSandingan(page=1) {
     }).join('');
 
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="12">
+    tbody.innerHTML = `<tr><td colspan="11">
       <div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
 }
