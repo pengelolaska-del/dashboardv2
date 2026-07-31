@@ -43,7 +43,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
   display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;
   border-radius:8px;cursor:pointer;color:#64748B;font-size:13px;font-weight:500;
   transition:background .15s,color .15s;user-select:none;border:none;background:none;width:calc(100% - 16px);
-  text-align:left;
+  text-align:left;text-decoration:none;
 }
 .nav-link svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .nav-link:hover{background:rgba(255,255,255,.06);color:#CBD5E1}
@@ -161,6 +161,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 .chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+/* Utility grid responsif — dipakai sebagai pengganti inline
+   style="display:grid;grid-template-columns:...". Inline grid-template-columns
+   SELALU menang atas aturan @media di stylesheet (spesifisitas inline lebih
+   tinggi), jadi kolom manapun yang di-hardcode inline tidak akan pernah
+   collapse di layar sempit — makanya semua grid 2/3/4-kolom yang perlu
+   responsive HARUS pakai class ini, bukan inline style. */
+.grid-2-resp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-2-resp-tight{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}
+.grid-3-resp-sm{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+.grid-4-resp-sm{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
 .group-title{font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
 .group-title::after{content:'';flex:1;height:1px;background:#E5E9F0}
 .seg-tabs{display:flex;background:#F1F5F9;border-radius:8px;padding:3px;gap:2px}
@@ -180,9 +190,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard-value{
   font-size:clamp(15px,1.6vw,24px);font-weight:800;color:#0F1C2E;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
-  word-break:break-word;overflow-wrap:anywhere;line-height:1.25;
+  word-break:normal;overflow-wrap:break-word;line-height:1.25;
 }
-.scard-sub{font-size:11px;color:#94A3B8;margin-top:4px;word-break:break-word}
+.scard-sub{font-size:11px;color:#94A3B8;margin-top:4px;word-break:normal;overflow-wrap:break-word}
 
 /* ============================================================
    TABLE
@@ -394,9 +404,12 @@ thead .col-sep-h{
   #main{margin-left:0}
   .sidebar-open #sidebar{transform:none}
   .sidebar-open #main{margin-left:0}
+  body.sidebar-open::after{content:'';position:fixed;inset:0;background:rgba(15,28,46,.45);z-index:90}
   .summary-grid,.summary-grid-4,.summary-grid-3,.kpi-grid-4{grid-template-columns:1fr}
   .filter-grid{grid-template-columns:1fr}
   .filter-row2,.filter-row3{grid-template-columns:1fr}
+  .grid-2-resp,.grid-2-resp-tight{grid-template-columns:1fr}
+  .grid-3-resp-sm,.grid-4-resp-sm{grid-template-columns:1fr 1fr}
 }
 @media(max-width:640px){
   #topbar{padding:0 12px;gap:8px}
@@ -408,7 +421,7 @@ thead .col-sep-h{
   .sel-period{padding:5px 6px;font-size:11.5px}
   .chart-card{padding:12px}
   .tbl-topbar{flex-wrap:wrap;gap:8px}
-  .scard,.scard-value{word-break:break-word}
+  .grid-3-resp-sm,.grid-4-resp-sm{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -432,37 +445,37 @@ thead .col-sep-h{
 
   <div class="sb-section">Data</div>
 
-  <button class="nav-link active" data-s="rup">
+  <a class="nav-link active" href="#rup" data-s="rup">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
     Rencana (RUP)
-  </button>
+  </a>
 
-  <button class="nav-link" data-s="realisasi">
+  <a class="nav-link" href="#realisasi" data-s="realisasi">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
     Realisasi
-  </button>
+  </a>
 
-  <button class="nav-link" data-s="sandingan">
+  <a class="nav-link" href="#sandingan" data-s="sandingan">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
     Sandingan RUP
-  </button>
+  </a>
 
-  <button class="nav-link" data-s="efisiensi">
+  <a class="nav-link" href="#efisiensi" data-s="efisiensi">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
     Analisis
-  </button>
+  </a>
 
   <div class="sb-section" style="margin-top:10px">Kelola</div>
 
-  <button class="nav-link" data-s="upload">
+  <a class="nav-link" href="#upload" data-s="upload">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
     Upload Data
-  </button>
+  </a>
 
-  <button class="nav-link hidden" id="nav-kualitas" data-s="kualitas">
+  <a class="nav-link hidden" id="nav-kualitas" href="#kualitas" data-s="kualitas">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
     Kualitas Data
-  </button>
+  </a>
 
   <div class="sb-footer" id="sb-period">Periode: —</div>
 </nav>
@@ -571,7 +584,7 @@ thead .col-sep-h{
     </div>
 
     <!-- Summary cards status realisasi global -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" id="rup-summary-global">
+    <div class="summary-grid-4" style="gap:10px;margin-bottom:14px" id="rup-summary-global">
       <div class="scard">
         <div class="scard-label">Jumlah Paket RUP</div>
         <div class="scard-value" id="rup-s-total">—</div>
@@ -1179,7 +1192,7 @@ thead .col-sep-h{
       </div>
 
       <!-- Upload boxes -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="grid-2-resp">
 
         <div class="upload-card">
           <div class="upload-card-title">
@@ -1279,16 +1292,16 @@ thead .col-sep-h{
   <!-- ===================== KUALITAS ===================== -->
   <section id="sec-kualitas" class="section">
     <h1 class="page-title">Kualitas Data</h1>
-    <div class="summary-grid-4" style="grid-template-columns:repeat(3,1fr)" id="kual-kpi"></div>
+    <div class="summary-grid-3" id="kual-kpi"></div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="grid-2-resp" style="margin-bottom:20px">
       <!-- Unmatched RUP -->
       <div>
         <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
           Unmatched RUP
           <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
         </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px">
+        <div class="grid-3-resp-sm">
           <div class="fld">
             <label>Metode Pengadaan</label>
             <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
@@ -1299,7 +1312,7 @@ thead .col-sep-h{
           </div>
           <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()">↺</button>
         </div>
-        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
+        <div class="tbl-wrap" style="max-height:280px;overflow:auto">
           <table class="dt" id="t-um-rup">
             <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th></tr></thead>
             <tbody></tbody>
@@ -1313,7 +1326,7 @@ thead .col-sep-h{
           Unmatched Realisasi
           <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
         </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px">
+        <div class="grid-4-resp-sm">
           <div class="fld">
             <label>Sumber Transaksi</label>
             <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
@@ -1328,7 +1341,7 @@ thead .col-sep-h{
           </div>
           <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()">↺</button>
         </div>
-        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
+        <div class="tbl-wrap" style="max-height:280px;overflow:auto">
           <table class="dt" id="t-um-real">
             <thead>
               <tr>
@@ -1357,6 +1370,7 @@ thead .col-sep-h{
         </p>
       </div>
       <div class="tbl-wrap">
+        <div class="tbl-scroll">
         <table class="dt" id="t-manual-rup">
           <thead>
             <tr>
@@ -1369,6 +1383,7 @@ thead .col-sep-h{
           </thead>
           <tbody><tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Belum ada RUP manual.</p></div></td></tr></tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -1384,6 +1399,7 @@ thead .col-sep-h{
         </button>
       </div>
       <div class="tbl-wrap">
+        <div class="tbl-scroll">
         <table class="dt" id="t-manual-pagu">
           <thead>
             <tr>
@@ -1397,6 +1413,7 @@ thead .col-sep-h{
           </thead>
           <tbody><tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
         </table>
+        </div>
       </div>
     </div>
   </section>
@@ -1464,7 +1481,7 @@ thead .col-sep-h{
           <datalist id="mr-satker-list"></datalist>
         </div>
         <input id="mr-kode-satker" type="hidden"/>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
+        <div class="grid-2-resp-tight">
           <div>
             <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Cara Pengadaan</label>
             <select id="mr-cara" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none">
@@ -1477,7 +1494,7 @@ thead .col-sep-h{
             <input id="mr-metode" type="text" placeholder="Contoh: Tender" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"/>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
+        <div class="grid-2-resp-tight">
           <div>
             <label style="font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Jenis Pengadaan</label>
             <input id="mr-jenis" type="text" placeholder="Contoh: Pekerjaan Konstruksi" style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:8px 11px;font-size:13px;outline:none"/>
@@ -1605,7 +1622,7 @@ const S = {
 // FORMATTERS
 // ============================================================
 const fmt  = n => (Number(n)||0).toLocaleString('id-ID');
-const IDRf = n => 'Rp ' + fmt(n);
+const IDRf = n => 'Rp\u00A0' + fmt(n).replace(/\./g, '.\u200B');
 const IDR  = n => {
   const v = Math.abs(Number(n)||0), neg = Number(n)<0;
   if (v >= 1e12) return (neg?'-':'')+'Rp '+(v/1e12).toFixed(2)+' T';
@@ -1708,9 +1725,11 @@ async function init() {
     document.getElementById('sb-period').textContent = `Periode aktif: ${latest_periode||'—'}`;
     syncUploadPeriode();
 
-    // Load halaman aktif
-    const active = document.querySelector('.nav-link.active')?.dataset.s || 'rup';
-    await loadSection(active, true);
+    // Load halaman aktif — hormati hash URL (mis. dibuka via klik kanan
+    // "Buka di tab baru" pada menu sidebar) kalau ada, kalau tidak pakai
+    // default (rup) seperti biasa.
+    const active = pageFromHash() || document.querySelector('.nav-link.active')?.dataset.s || 'rup';
+    await loadSection(active);
 
   } catch(e) { showConnErr(e.message); }
 }
@@ -1747,19 +1766,40 @@ async function loadSection(name, skipNav=false) {
   else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
 }
 
-// Nav click
-document.querySelectorAll('.nav-link').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
-    item.classList.add('active');
-    loadSection(item.dataset.s);
-  });
+// ============================================================
+// NAVIGATION VIA HASH — supaya menu sidebar (yang sekarang <a href="#...">)
+// bisa diklik-kanan "Buka link di tab baru" / ctrl-klik / klik tengah
+// seperti tautan pada umumnya, bukan cuma bisa diklik biasa seperti
+// tombol. Klik kiri normal tetap SPA (tidak reload halaman) karena
+// hashchange tidak memicu reload, cuma event ini.
+// ============================================================
+const VALID_PAGES = ['rup','realisasi','sandingan','efisiensi','upload','kualitas'];
+function pageFromHash() {
+  const h = location.hash.replace('#','');
+  return VALID_PAGES.includes(h) ? h : null;
+}
+window.addEventListener('hashchange', () => {
+  const name = pageFromHash();
+  if (!name) return;
+  loadSection(name);
+  document.body.classList.remove('sidebar-open'); // auto-tutup drawer di mobile
 });
 
-// Sidebar toggle
+// Sidebar toggle (mobile: geser sidebar masuk/keluar sebagai overlay;
+// sebelumnya JS men-toggle class 'sb-hidden'/'ml-zero' yang TIDAK ADA
+// aturannya di CSS — makanya tombol ☰ di HP tidak berfungsi sama sekali)
 document.getElementById('btn-sidebar').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('sb-hidden');
-  document.getElementById('main').classList.toggle('ml-zero');
+  document.body.classList.toggle('sidebar-open');
+});
+// Tutup sidebar otomatis kalau klik di luar area sidebar (mobile)
+document.addEventListener('click', e => {
+  if (!document.body.classList.contains('sidebar-open')) return;
+  if (window.innerWidth > 768) return;
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('btn-sidebar');
+  if (!sb.contains(e.target) && !btn.contains(e.target)) {
+    document.body.classList.remove('sidebar-open');
+  }
 });
 
 // Period change → auto refresh
