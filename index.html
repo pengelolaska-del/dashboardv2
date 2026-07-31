@@ -2264,7 +2264,8 @@ async function loadEfisiensi() {
     const d    = efiRes.data||{};
     const {aggregate=[], by_opd=[], total_pagu_filtered=0,
            total_kontrak_filtered=0, total_paket_filtered=0, enums={},
-           metode_excluded=[]} = d;
+           metode_excluded=[],
+           total_pagu_selesai_efisiensi=0, total_kontrak_selesai_efisiensi=0} = d;
     const tren = trenRes.data||[];
     const charts = chartsRes.data||{};
 
@@ -2273,11 +2274,12 @@ async function loadEfisiensi() {
     const total_kontrak = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak)||0),0);
 
     // % Efisiensi RESMI — hanya paket yang sudah "Selesai" di data Realisasi
-    // DAN sudah tersandingkan (matched) ke RUP. Paket yang masih "Sedang
-    // Berjalan" nilai kontraknya belum final, jadi tidak ikut dihitung di sini
-    // (konsisten dengan kartu "Efisiensi (Selesai)" di halaman Sandingan RUP).
-    const total_pagu_selesai    = aggregate.reduce((s,r)=>s+(Number(r.total_pagu_selesai)||0),0);
-    const total_kontrak_selesai = aggregate.reduce((s,r)=>s+(Number(r.total_kontrak_selesai)||0),0);
+    // DAN sudah tersandingkan (matched) ke RUP, DAN metodenya tidak dicentang
+    // di checklist "Metode Dikecualikan dari Efisiensi". Dihitung live oleh
+    // backend (total_pagu_selesai_efisiensi/total_kontrak_selesai_efisiensi),
+    // bukan dari snapshot statis, supaya langsung berubah saat checklist diubah.
+    const total_pagu_selesai    = total_pagu_selesai_efisiensi;
+    const total_kontrak_selesai = total_kontrak_selesai_efisiensi;
     const total_efi = total_pagu_selesai - total_kontrak_selesai;
     const p_efi     = total_pagu_selesai>0 ? (total_efi/total_pagu_selesai*100) : 0;
 
@@ -3427,10 +3429,10 @@ async function loadAnalisisDetail(tipe, keys, title) {
       <th>Nama Satker</th><th>Penyedia</th><th class="text-right">Pagu (Rp)</th>
       <th class="text-right">Nilai Kontrak (Rp)</th><th class="text-right">Efisiensi (Rp)</th>
       <th style="text-align:center">Status</th></tr>`;
-    const tbodyHtml = items.map((r,i) => `<tr>
+    const tbodyHtml = items.map((r,i) => `<tr${r.excluded_dari_efisiensi ? ' style="opacity:.6"' : ''}>
         <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
         <td style="color:#2563EB;font-size:11px;font-family:monospace">${r.kode_rup||'—'}</td>
-        <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,60)}</td>
+        <td style="font-size:12px" title="${r.nama_paket||''}">${(r.nama_paket||'—').slice(0,60)}${r.excluded_dari_efisiensi ? ' <span style="font-size:10px;color:#B45309;font-weight:600">(dikecualikan dari efisiensi)</span>' : ''}</td>
         <td style="font-size:11.5px;color:#475569">${r.nama_satker||'—'}</td>
         <td style="font-size:11.5px">${r.nama_penyedia||'—'}</td>
         <td class="mono text-right">${IDRf(r.pagu)}</td>
