@@ -471,6 +471,11 @@ thead .col-sep-h{
     Analisis
   </a>
 
+  <a class="nav-link" href="#rekap" data-s="rekap">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17V7m6 10v-4m-9 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+    Rekap Laporan
+  </a>
+
   <div class="sb-section" style="margin-top:10px">Kelola</div>
 
   <a class="nav-link" href="#upload" data-s="upload">
@@ -964,6 +969,98 @@ thead .col-sep-h{
             <th class="text-center">Jml Paket</th>
           </tr></thead>
           <tbody id="efi-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REKAP LAPORAN ===================== -->
+  <section id="sec-rekap" class="section">
+    <h1 class="page-title">Rekap Laporan Pengadaan</h1>
+    <p style="font-size:12.5px;color:#64748B;margin:-12px 0 16px">
+      Ringkasan gaya laporan bulanan — Cara Pengadaan, Jenis Pengadaan, Metode Pemilihan, paket berjalan, dan tender selesai.
+    </p>
+
+    <!-- KPI Total -->
+    <div class="summary-grid-3">
+      <div class="scard">
+        <div class="scard-label">Total Paket RUP</div>
+        <div class="scard-value" id="rk-total-paket">—</div>
+        <div class="scard-sub">Sesuai Rencana Umum Pengadaan</div>
+      </div>
+      <div class="scard green">
+        <div class="scard-label">Total Nilai Pagu</div>
+        <div class="scard-value" id="rk-total-nilai">—</div>
+        <div class="scard-sub">Keseluruhan periode terpilih</div>
+      </div>
+      <div class="scard yellow">
+        <div class="scard-label">Tender Selesai</div>
+        <div class="scard-value" id="rk-tender-selesai">—</div>
+        <div class="scard-sub">Jumlah paket tender rampung</div>
+      </div>
+    </div>
+
+    <!-- a) Rekap Cara Pengadaan -->
+    <div class="group-title">Jumlah Total Pengadaan Barang/Jasa sesuai RUP</div>
+    <div class="tbl-wrap">
+      <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian per Cara Pengadaan</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>No</th><th>Cara Pengadaan</th><th class="text-right">Jumlah Paket</th><th class="text-right">Nilai (Rp)</th></tr></thead>
+          <tbody id="rk-cara-tbody"><tr><td colspan="4"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- b) Rincian per Jenis Pengadaan -->
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian Anggaran sesuai Jenis Pengadaan</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>No</th><th>Jenis Pengadaan</th><th class="text-right">Jumlah Paket</th><th class="text-right">Nilai (Rp)</th></tr></thead>
+          <tbody id="rk-jenis-tbody"><tr><td colspan="4"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- c) Rincian per Metode Pemilihan -->
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian sesuai Metode Pemilihan</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>No</th><th>Metode Pemilihan</th><th class="text-right">Total</th><th class="text-right">Belum</th><th class="text-right">On Process</th><th class="text-right">Selesai</th></tr></thead>
+          <tbody id="rk-metode-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Grafik -->
+    <div class="group-title">Grafik</div>
+    <div class="chart-grid-2">
+      <div class="chart-card"><div class="chart-title">Nilai Pagu per Cara Pengadaan</div><div style="height:220px"><canvas id="c-rk-cara"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Status Paket per Metode Pemilihan</div><div style="height:220px"><canvas id="c-rk-metode"></canvas></div></div>
+    </div>
+
+    <!-- d) Paket sedang berjalan (non-tender) -->
+    <div class="group-title">Paket Sedang Berjalan (Non-Tender / Transaksional)</div>
+    <div class="tbl-wrap">
+      <div class="tbl-topbar"><span class="tbl-topbar-info" id="rk-berjalan-info">Progres Realisasi Pengadaan Langsung/Non-Tender</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>No</th><th>OPD</th><th>Paket Pekerjaan</th><th>Metode</th><th>Proses/Tahap</th></tr></thead>
+          <tbody id="rk-berjalan-tbody"><tr><td colspan="5"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- e) Daftar paket tender selesai -->
+    <div class="group-title">Daftar Paket Tender Selesai</div>
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info" id="rk-tender-info">Daftar paket tender selesai</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>No</th><th>OPD</th><th>Nama Paket</th><th class="text-right">Pagu RUP</th><th class="text-right">Realisasi</th><th class="text-right">Efisiensi</th><th>Pemenang</th></tr></thead>
+          <tbody id="rk-tender-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1793,6 +1890,7 @@ async function loadSection(name, skipNav=false) {
   else if (name==='realisasi') await loadReal(1);
   else if (name==='sandingan') await loadSandingan(1);
   else if (name==='efisiensi') { await loadEfisiensi(); await loadRecapJenis(); await loadEfiExcludeChecklist(); }
+  else if (name==='rekap')     await loadRekap();
   else if (name==='kualitas')  await loadKualitas();
   else if (name==='upload')    { syncUploadPeriode(); if(S.isAdmin) loadLog(); }
 }
@@ -1804,7 +1902,7 @@ async function loadSection(name, skipNav=false) {
 // tombol. Klik kiri normal tetap SPA (tidak reload halaman) karena
 // hashchange tidak memicu reload, cuma event ini.
 // ============================================================
-const VALID_PAGES = ['rup','realisasi','sandingan','efisiensi','upload','kualitas'];
+const VALID_PAGES = ['rup','realisasi','sandingan','efisiensi','rekap','upload','kualitas'];
 function pageFromHash() {
   const h = location.hash.replace('#','');
   return VALID_PAGES.includes(h) ? h : null;
@@ -1843,6 +1941,7 @@ function onPeriodChange() {
   else if (active==='realisasi')  loadReal(1);
   else if (active==='efisiensi')  loadEfisiensi();
   else if (active==='sandingan')  loadSandingan(1);
+  else if (active==='rekap')      loadRekap();
 }
 
 // Filter toggle
@@ -3686,6 +3785,152 @@ async function loadSandingan(page=1) {
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="12">
       <div class="error-state">⚠ ${e.message}</div></td></tr>`;
+  }
+}
+
+// ============================================================
+// REKAP LAPORAN — ringkasan gaya laporan bulanan (Cara Pengadaan,
+// Jenis Pengadaan, Metode Pemilihan, paket berjalan non-tender,
+// dan daftar tender selesai). Sumber: action 'laporanRekap'.
+// ============================================================
+S.rekapCharts = {};
+
+async function loadRekap() {
+  const tahun = v('g-tahun');
+  const bulan = v('g-bulan');
+  const cariCaraTbody   = document.getElementById('rk-cara-tbody');
+  const cariJenisTbody  = document.getElementById('rk-jenis-tbody');
+  const cariMetodeTbody = document.getElementById('rk-metode-tbody');
+  const berjalanTbody   = document.getElementById('rk-berjalan-tbody');
+  const tenderTbody     = document.getElementById('rk-tender-tbody');
+
+  try {
+    const res = await api({
+      action: 'laporanRekap',
+      tahun,
+      periode: bulan ? tahun + '-' + bulan : undefined,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rekap laporan.');
+    const d = res.data || {};
+
+    // ── KPI ──
+    document.getElementById('rk-total-paket').textContent = fmt(d.total_paket || 0);
+    document.getElementById('rk-total-nilai').textContent = IDR(d.total_nilai || 0);
+    document.getElementById('rk-tender-selesai').textContent = fmt((d.tender_selesai||[]).length);
+
+    // ── a) Tabel Cara Pengadaan ──
+    const cara = d.rekap_cara || [];
+    cariCaraTbody.innerHTML = cara.length ? cara.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${caraBadge(r.cara_pengadaan)}</td>
+        <td class="text-right mono">${fmt(r.jumlah_paket)}</td>
+        <td class="text-right mono" style="font-weight:600">${IDRf(r.nilai)}</td>
+      </tr>`).join('') + `
+      <tr style="font-weight:700;background:#F8FAFC">
+        <td colspan="2">Total</td>
+        <td class="text-right mono">${fmt(cara.reduce((s,r)=>s+r.jumlah_paket,0))}</td>
+        <td class="text-right mono">${IDRf(cara.reduce((s,r)=>s+r.nilai,0))}</td>
+      </tr>` : `<tr><td colspan="4"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+
+    // ── b) Tabel Jenis Pengadaan ──
+    const jenis = d.rekap_jenis || [];
+    cariJenisTbody.innerHTML = jenis.length ? jenis.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.jenis_pengadaan}</td>
+        <td class="text-right mono">${fmt(r.jumlah_paket)}</td>
+        <td class="text-right mono" style="font-weight:600">${IDRf(r.nilai)}</td>
+      </tr>`).join('') + `
+      <tr style="font-weight:700;background:#F8FAFC">
+        <td colspan="2">Total</td>
+        <td class="text-right mono">${fmt(jenis.reduce((s,r)=>s+r.jumlah_paket,0))}</td>
+        <td class="text-right mono">${IDRf(jenis.reduce((s,r)=>s+r.nilai,0))}</td>
+      </tr>` : `<tr><td colspan="4"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+
+    // ── c) Tabel Metode Pemilihan ──
+    const metode = d.rekap_metode || [];
+    cariMetodeTbody.innerHTML = metode.length ? metode.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${mbadge(r.metode_pengadaan)}</td>
+        <td class="text-right mono">${fmt(r.total)}</td>
+        <td class="text-right mono" style="color:#94A3B8">${fmt(r.belum)}</td>
+        <td class="text-right mono" style="color:#B45309">${fmt(r.on_process)}</td>
+        <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
+      </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+
+    // ── d) Tabel paket sedang berjalan (non-tender) ──
+    const berjalan = d.paket_berjalan || [];
+    document.getElementById('rk-berjalan-info').textContent =
+      `Progres Realisasi Pengadaan Langsung/Non-Tender — ${fmt(berjalan.length)} paket`;
+    berjalanTbody.innerHTML = berjalan.length ? berjalan.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td style="font-weight:600;color:#1E3A5F">${r.opd||'—'}</td>
+        <td>${r.nama_paket||'—'}</td>
+        <td>${mbadge(r.metode_pengadaan)}</td>
+        <td>${r.proses_tahap||'—'}</td>
+      </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><p>Tidak ada paket sedang berjalan untuk periode ini.</p></div></td></tr>`;
+
+    // ── e) Tabel daftar tender selesai ──
+    const tender = d.tender_selesai || [];
+    document.getElementById('rk-tender-info').textContent = `Daftar paket tender selesai — ${fmt(tender.length)} paket`;
+    tenderTbody.innerHTML = tender.length ? tender.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td style="font-weight:600;color:#1E3A5F">${r.opd||'—'}</td>
+        <td>${r.nama_paket||'—'}</td>
+        <td class="text-right mono">${IDRf(r.pagu_rup)}</td>
+        <td class="text-right mono" style="color:#15803D">${IDRf(r.realisasi)}</td>
+        <td class="text-right mono" style="font-weight:700;color:${r.efisiensi<0?'#DC2626':'#16A34A'}">${IDRf(r.efisiensi)}</td>
+        <td>${r.pemenang||'—'}</td>
+      </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><p>Belum ada paket tender yang selesai untuk periode ini.</p></div></td></tr>`;
+
+    // ── Grafik ──
+    if (S.rekapCharts.cara) S.rekapCharts.cara.destroy();
+    S.rekapCharts.cara = new Chart(document.getElementById('c-rk-cara'), {
+      type: 'doughnut',
+      data: {
+        labels: cara.map(r => r.cara_pengadaan),
+        datasets: [{
+          data: cara.map(r => r.nilai),
+          backgroundColor: ['#2563EB','#0EA5E9','#94A3B8'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${IDR(ctx.raw)}` } } },
+      },
+    });
+
+    if (S.rekapCharts.metode) S.rekapCharts.metode.destroy();
+    S.rekapCharts.metode = new Chart(document.getElementById('c-rk-metode'), {
+      type: 'bar',
+      data: {
+        labels: metode.map(r => r.metode_pengadaan),
+        datasets: [
+          { label:'Selesai',    data: metode.map(r=>r.selesai),    backgroundColor:'#16A34A' },
+          { label:'On Process', data: metode.map(r=>r.on_process), backgroundColor:'#F59E0B' },
+          { label:'Belum',      data: metode.map(r=>r.belum),      backgroundColor:'#CBD5E1' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked:true, grid:{display:false}, ticks:{font:{size:9.5}} },
+                  y: { stacked:true, grid:{color:'#F1F5F9'}, ticks:{font:{size:10}} } },
+        plugins: { legend: { position:'bottom', labels:{font:{size:11}, boxWidth:10} } },
+      },
+    });
+
+  } catch(e) {
+    [cariCaraTbody, cariJenisTbody, cariMetodeTbody].forEach(t => {
+      if (t) t.innerHTML = `<tr><td colspan="6"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+    });
+    berjalanTbody.innerHTML = `<tr><td colspan="5"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+    tenderTbody.innerHTML   = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
   }
 }
 
