@@ -1032,13 +1032,16 @@ thead .col-sep-h{
           <tbody id="rk-metode-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
+      <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
+        Berdasarkan metode pengadaan yang <b>direncanakan di RUP</b>. Bisa berbeda dari kanal realisasi aktual (lihat tabel "Daftar Paket Tender Selesai" di bawah, yang memakai sumber transaksi realisasi).
+      </div>
     </div>
 
     <!-- Grafik -->
     <div class="group-title">Grafik</div>
     <div class="chart-grid-2">
       <div class="chart-card"><div class="chart-title">Nilai Pagu per Cara Pengadaan</div><div style="height:220px"><canvas id="c-rk-cara"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Status Paket per Metode Pemilihan</div><div style="height:220px"><canvas id="c-rk-metode"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Status Paket per Metode Pemilihan (Rencana RUP)</div><div style="height:220px"><canvas id="c-rk-metode"></canvas></div></div>
     </div>
 
     <!-- d) Paket sedang berjalan (non-tender) -->
@@ -1055,6 +1058,9 @@ thead .col-sep-h{
 
     <!-- e) Daftar paket tender selesai -->
     <div class="group-title">Daftar Paket Tender Selesai</div>
+    <p style="font-size:11.5px;color:#94A3B8;margin:-10px 0 8px">
+      Basis: <b>Sumber Transaksi = Tender</b> pada data realisasi — konsisten dengan menu Sandingan RUP saat difilter Sumber Transaksi "Tender".
+    </p>
     <div class="tbl-wrap" style="margin-bottom:24px">
       <div class="tbl-topbar"><span class="tbl-topbar-info" id="rk-tender-info">Daftar paket tender selesai</span></div>
       <div class="tbl-scroll">
