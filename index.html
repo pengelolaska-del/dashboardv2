@@ -3850,11 +3850,19 @@ async function loadRekap() {
     cariJenisTbody.innerHTML = jenis.length ? jenis.map((r,i) => `
       <tr>
         <td>${i+1}</td>
-        <td>${r.jenis_pengadaan}</td>
+        <td>
+          <a href="#" style="font-weight:600;color:#1E3A5F" onclick="filterSandByJenis('${escJs(r.jenis_pengadaan)}');return false" title="Klik untuk lihat daftar paket ${escJs(r.jenis_pengadaan)}">
+            ${r.jenis_pengadaan}
+          </a>
+        </td>
         <td class="text-right mono">${fmt(r.jumlah_paket)}</td>
         <td class="text-right mono" style="font-weight:600">${IDRf(r.nilai)}</td>
-        <td class="text-right mono" style="color:#16A34A">${fmt(r.sudah_berproses)}</td>
-        <td class="text-right mono" style="color:#B45309">${fmt(r.belum_berproses)}</td>
+        <td class="text-right mono" style="color:#16A34A">
+          <a href="#" style="color:inherit" onclick="filterSandByJenis('${escJs(r.jenis_pengadaan)}');return false" title="Klik untuk lihat paket yang sudah berproses">${fmt(r.sudah_berproses)}</a>
+        </td>
+        <td class="text-right mono" style="color:#B45309">
+          <a href="#" style="color:inherit" onclick="filterSandByJenis('${escJs(r.jenis_pengadaan)}','Belum Berproses');return false" title="Klik untuk lihat paket yang belum berproses">${fmt(r.belum_berproses)}</a>
+        </td>
         <td class="text-right" style="min-width:90px">
           <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
             <div style="width:46px;height:6px;background:#E2E8F0;border-radius:3px;overflow:hidden">
