@@ -1188,6 +1188,10 @@ thead .col-sep-h{
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#CA8A04"></span>Sedang Berjalan</span>
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#CBD5E1"></span>Belum Dilaksanakan</span>
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#DC2626"></span>Dibatalkan</span>
+      <span class="sand-legend-item" style="border-left:1px solid #E2E8F0;padding-left:10px;margin-left:2px">
+        <span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#B45309">⏳ HPS OPD</span>
+        Pagu paket Sedang Berjalan masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket Selesai
+      </span>
     </div>
 
     <!-- KPI Summary -->
@@ -1798,6 +1802,13 @@ const pdnBadge  = p => badge(p==='Ya'?'b-teal':'b-gray', p==='Ya'?'PDN':'Non-PDN
 const manualPaguMark = () =>
   `<span title="Pagu diinput manual, bukan dari RUP" style="display:inline-block;margin-left:5px;padding:1px 5px;
     border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">✏ Manual</span>`;
+
+// Penanda kecil untuk pagu paket "Sedang Berjalan" — nilainya masih pakai
+// HPS (Harga Perkiraan Sendiri) dari OPD, belum pagu RUP/tender final,
+// jadi ditandai beda warna supaya tidak dianggap setara dgn pagu paket Selesai.
+const hpsPaguMark = () =>
+  `<span title="Pagu masih berupa HPS (Harga Perkiraan Sendiri) dari OPD — belum final, bisa berubah saat paket ini selesai" style="display:inline-block;margin-left:5px;padding:1px 5px;
+    border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#B45309;vertical-align:middle;white-space:nowrap">⏳ HPS OPD</span>`;
 
 // ============================================================
 // API
@@ -4092,10 +4103,17 @@ async function loadSandingan(page=1) {
     }
 
     tbody.innerHTML = items.map((r, i) => {
-      const rowNo    = from + i;
-      const rowClass = sandStatusClass(r.status_realisasi) + (r.is_manual_status ? ' row-override' : '');
-      const hasReal  = !!r.ada_realisasi;
-      const efi      = hasReal ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
+      const rowNo      = from + i;
+      const rowClass   = sandStatusClass(r.status_realisasi) + (r.is_manual_status ? ' row-override' : '');
+      const hasReal    = !!r.ada_realisasi;
+      const isSelesai  = r.status_realisasi === 'Selesai';
+      const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
+      // Efisiensi murni HANYA dihitung utk paket berstatus "Selesai" (pagu &
+      // nilai kontraknya sudah final). Paket "Sedang Berjalan" pagunya masih
+      // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
+      // sengaja TIDAK ditampilkan di sini agar tidak ikut mencemari total
+      // efisiensi murni paket yang sudah selesai.
+      const efi      = (hasReal && isSelesai) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}">
@@ -4119,7 +4137,7 @@ async function loadSandingan(page=1) {
         <td class="col-koderup">${r.kode_rup||'—'}</td>
         <td class="col-metode">${mbadge(r.metode_pengadaan_rup||r.metode_pengadaan||'')}</td>
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
-        <td class="col-pagu mono" style="color:#1D4ED8;font-weight:600;font-size:12px">${IDRf(r.pagu||0)}${r.is_manual_pagu ? manualPaguMark() : ''}</td>
+        <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">${IDRf(r.pagu||0)}${r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : '')}</td>
         <!-- Pemisah: garis tebal tipis saja -->
         <td class="col-sep" style="background:#1E3A5F!important;border:none"></td>
         <!-- Kolom Realisasi -->
@@ -4133,7 +4151,11 @@ async function loadSandingan(page=1) {
           ${hasReal ? IDRf(r.nilai_kontrak||0) : '—'}
         </td>
         <td class="col-efi mono" style="font-weight:700;font-size:12px;color:${efiClr}">
-          ${efi !== null ? IDRf(efi) : '—'}
+          ${efi !== null
+            ? IDRf(efi)
+            : isBerjalan
+              ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
+              : '—'}
         </td>
       </tr>`;
     }).join('');
