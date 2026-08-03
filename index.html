@@ -1026,6 +1026,7 @@ thead .col-sep-h{
           <tbody id="rk-jenis-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
+      <div id="rk-jenis-manual-note" style="display:none;padding:8px 14px;font-size:12px;color:#64748B;border-top:1px solid #E2E8F0;background:#FAFBFC"></div>
     </div>
 
     <!-- c) Rincian per Metode Pemilihan -->
@@ -3853,7 +3854,7 @@ async function loadRekap() {
         <td>
           <a href="#" style="font-weight:600;color:#1E3A5F" onclick="filterSandByJenis('${escJs(r.jenis_pengadaan)}');return false" title="Klik untuk lihat daftar paket ${escJs(r.jenis_pengadaan)}">
             ${r.jenis_pengadaan}
-          </a>
+          </a>${r.jumlah_manual > 0 ? `<span class="badge-manual" title="Termasuk ${fmt(r.jumlah_manual)} paket RUP manual (di luar CSV resmi SIRUP), senilai ${IDRf(r.nilai_manual)}" style="margin-left:6px;font-size:10px;font-weight:700;color:#9A3412;background:#FFEDD5;border-radius:4px;padding:1px 5px;cursor:help">M·${fmt(r.jumlah_manual)}</span>` : ''}
         </td>
         <td class="text-right mono">${fmt(r.jumlah_paket)}</td>
         <td class="text-right mono" style="font-weight:600">${IDRf(r.nilai)}</td>
@@ -3880,6 +3881,17 @@ async function loadRekap() {
         <td class="text-right mono">${fmt(jenis.reduce((s,r)=>s+r.belum_berproses,0))}</td>
         <td></td>
       </tr>` : `<tr><td colspan="7"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+
+    // ── b.1) Footnote transparansi RUP manual (biar jelas kalau
+    //         dibandingkan manual ke pivot Google Sheets, yang cuma baca
+    //         sheet RUP resmi tanpa _RUP_MANUAL) ──
+    const noteEl = document.getElementById('rk-jenis-manual-note');
+    if (d.total_manual > 0) {
+      noteEl.style.display = 'block';
+      noteEl.innerHTML = `<b>ℹ️ M</b> = termasuk <b>${fmt(d.total_manual)} paket RUP manual</b> senilai <b>${IDRf(d.total_nilai_manual)}</b> (kode_rup ditambahkan lewat sheet <code>_RUP_MANUAL</code> untuk paket yang realisasinya sudah ada tapi belum tercatat resmi di SIRUP). Angka ini tidak akan muncul kalau dibandingkan ke pivot table Google Sheets yang membaca sheet RUP resmi saja.`;
+    } else {
+      noteEl.style.display = 'none';
+    }
 
     // ── c) Tabel Metode Pemilihan ──
     const metode = d.rekap_metode || [];
