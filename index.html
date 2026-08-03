@@ -3369,13 +3369,73 @@ function exportRowsToCSV(headers, rows, filename) {
   a.download=filename; a.click();
 }
 
+
 // ============================================================
 // REKAP PER SATKER/OPD (Sandingan RUP)
 // Mengelompokkan baris sandingan aktif per Satker/OPD (mis. "Dinas
 // Pendidikan — 5 paket"), dengan tombol Detail per satker (dari cache,
 // tanpa fetch ulang) dan Export CSV untuk rekap maupun detail satker.
+// Modal dibuat besar & responsif terhadap ukuran layar (lihat
+// ensureRekapModalStyles()).
 // ============================================================
 let REKAP_SATKER_CACHE = { items: [], periode: '', tahun: '' };
+
+// Suntik CSS modal sekali saja — modal mengikuti ukuran layar (vw/vh),
+// dengan breakpoint untuk tablet & mobile.
+function ensureRekapModalStyles() {
+  if (document.getElementById('rekap-modal-style')) return;
+  const css = `
+    .rekap-modal-popup{width:96vw!important;max-width:1560px!important;padding:0!important;
+      border-radius:18px!important;overflow:hidden;box-shadow:0 24px 60px -12px rgba(15,23,42,.35)!important}
+    .rekap-modal-popup .swal2-header{padding:0}
+    .rekap-modal-popup .swal2-title{padding:22px 28px 2px;margin:0;font-size:19px;text-align:left;
+      color:#0F172A;display:flex;align-items:center;gap:10px}
+    .rekap-modal-popup .swal2-html-container{margin:0;padding:14px 28px 22px;max-height:none;text-align:left}
+    .rekap-modal-popup .swal2-actions{padding:14px 28px;margin:0;border-top:1px solid #E2E8F0;
+      background:#F8FAFC;width:100%;max-width:100%}
+    .rekap-modal-popup .swal2-close{color:#94A3B8;top:14px;right:14px}
+    .rekap-subtitle{font-size:12.5px;color:#64748B;font-weight:500;margin:2px 0 14px}
+    .rekap-stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+    .rekap-stat{position:relative;border:1px solid #E2E8F0;border-radius:12px;padding:12px 14px;
+      background:#fff;overflow:hidden}
+    .rekap-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac,#3B82F6)}
+    .rekap-stat-label{font-size:9.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.07em}
+    .rekap-stat-value{font-size:15.5px;font-weight:800;color:#0F172A;margin-top:5px;line-height:1.2;
+      word-break:break-word}
+    .rekap-table-wrap{max-height:min(56vh,620px);overflow:auto;border:1px solid #E2E8F0;border-radius:14px;
+      box-shadow:inset 0 0 0 1px #fff}
+    .rekap-table-wrap table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:920px}
+    .rekap-table-wrap thead th{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#1E3A5F,#132a45);
+      color:#fff;padding:11px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      text-align:left;white-space:nowrap}
+    .rekap-table-wrap tbody tr{border-bottom:1px solid #F1F5F9;transition:background .12s}
+    .rekap-table-wrap tbody tr:nth-child(even){background:#FAFBFC}
+    .rekap-table-wrap tbody tr:hover{background:#EFF6FF}
+    .rekap-table-wrap tfoot td{position:sticky;bottom:0;background:#F8FAFC;border-top:2px solid #E2E8F0}
+    .rekap-table-wrap td,.rekap-table-wrap th{padding:10px 13px;vertical-align:middle}
+    .rekap-rank{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
+      border-radius:7px;background:#EFF6FF;color:#2563EB;font-weight:800;font-size:11px;padding:0 4px}
+    .rekap-sbud-bar{display:flex;height:7px;width:110px;border-radius:5px;overflow:hidden;background:#E2E8F0}
+    .rekap-sbud-nums{font-size:10px;color:#94A3B8;margin-top:4px;font-weight:700;white-space:nowrap}
+    .rekap-detail-btn{white-space:nowrap}
+    @media(max-width:900px){
+      .rekap-modal-popup{width:99vw!important;max-width:99vw!important}
+      .rekap-modal-popup .swal2-title{padding:16px 16px 2px;font-size:16.5px}
+      .rekap-modal-popup .swal2-html-container{padding:10px 16px 16px}
+      .rekap-modal-popup .swal2-actions{padding:12px 16px;flex-wrap:wrap}
+      .rekap-stat-row{grid-template-columns:repeat(2,1fr)}
+      .rekap-table-wrap{max-height:52vh}
+    }
+    @media(max-width:520px){
+      .rekap-stat-row{grid-template-columns:1fr 1fr}
+      .rekap-stat-value{font-size:13.5px}
+    }
+  `;
+  const tag = document.createElement('style');
+  tag.id = 'rekap-modal-style';
+  tag.textContent = css;
+  document.head.appendChild(tag);
+}
 
 function buildRekapSatker(items) {
   const map = new Map();
@@ -3397,6 +3457,22 @@ function buildRekapSatker(items) {
     else g.belum++;
   });
   return Array.from(map.values()).sort((a, b) => b.jumlah - a.jumlah || a.nama_satker.localeCompare(b.nama_satker));
+}
+
+// Stacked mini-bar visual untuk proporsi status Selesai·Berjalan·Belum·Batal
+function sbudBarHtml(g) {
+  const n = g.jumlah || 1;
+  const pct = x => (x / n * 100).toFixed(1);
+  return `
+    <div class="rekap-sbud-bar" title="Selesai ${g.selesai} · Berjalan ${g.berjalan} · Belum ${g.belum} · Batal ${g.batal}">
+      ${g.selesai ? `<div style="width:${pct(g.selesai)}%;background:#16A34A"></div>` : ''}
+      ${g.berjalan ? `<div style="width:${pct(g.berjalan)}%;background:#CA8A04"></div>` : ''}
+      ${g.belum ? `<div style="width:${pct(g.belum)}%;background:#CBD5E1"></div>` : ''}
+      ${g.batal ? `<div style="width:${pct(g.batal)}%;background:#DC2626"></div>` : ''}
+    </div>
+    <div class="rekap-sbud-nums">
+      <span style="color:#16A34A">${g.selesai}</span>·<span style="color:#CA8A04">${g.berjalan}</span>·<span style="color:#94A3B8">${g.belum}</span>·<span style="color:#DC2626">${g.batal}</span>
+    </div>`;
 }
 
 async function showRekapSatker() {
@@ -3423,59 +3499,88 @@ async function showRekapSatker() {
 }
 
 function renderRekapSatkerModal() {
+  ensureRekapModalStyles();
   const groups = buildRekapSatker(REKAP_SATKER_CACHE.items);
   const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
   const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
+  const totalEfi = totalPagu - totalKontrak;
 
   const rowsHtml = groups.map((g, i) => {
     const efi = g.pagu - g.kontrak;
     return `<tr>
-        <td class="mono" style="color:#94A3B8;font-size:11px">${i + 1}</td>
-        <td style="font-weight:600;color:#1E3A5F">${g.nama_satker}<div style="font-size:10px;color:#94A3B8;font-family:monospace;font-weight:400">${g.kode_satker || ''}</div></td>
-        <td class="text-right mono" style="font-weight:700">${fmt(g.jumlah)} paket</td>
+        <td><span class="rekap-rank">${i + 1}</span></td>
+        <td style="font-weight:700;color:#1E3A5F;min-width:220px">${g.nama_satker}
+          <div style="font-size:10px;color:#94A3B8;font-family:monospace;font-weight:500">${g.kode_satker || '—'}</div>
+        </td>
+        <td class="text-right mono" style="font-weight:800;color:#2563EB">${fmt(g.jumlah)}<span style="font-weight:500;color:#94A3B8"> paket</span></td>
         <td class="text-right mono">${IDRf(g.pagu)}</td>
         <td class="text-right mono" style="color:#15803D">${IDRf(g.kontrak)}</td>
-        <td class="text-right mono" style="font-weight:700;color:${efi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(efi)}</td>
-        <td class="text-center" style="font-size:11px;white-space:nowrap" title="Selesai · Berjalan · Belum · Batal">
-          <span style="color:#16A34A;font-weight:700">${g.selesai}</span>·<span style="color:#CA8A04;font-weight:700">${g.berjalan}</span>·<span style="color:#94A3B8;font-weight:700">${g.belum}</span>·<span style="color:#DC2626;font-weight:700">${g.batal}</span>
-        </td>
+        <td class="text-right mono" style="font-weight:800;color:${efi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(efi)}</td>
+        <td>${sbudBarHtml(g)}</td>
         <td class="text-center">
-          <button class="btn btn-ghost" style="font-size:10.5px;padding:4px 9px" onclick='showRekapSatkerDetail(${JSON.stringify(g.kode_satker)})'>🔍 Detail</button>
+          <button class="btn btn-ghost rekap-detail-btn" style="font-size:10.5px;padding:5px 10px" onclick='showRekapSatkerDetail(${JSON.stringify(g.kode_satker)})'>🔍 Detail</button>
         </td>
       </tr>`;
   }).join('');
 
   const html = `
-    <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
-      <b>${fmt(groups.length)}</b> Satker/OPD — total <b>${fmt(REKAP_SATKER_CACHE.items.length)}</b> paket sesuai filter aktif.
-      Kolom status: <span style="color:#16A34A;font-weight:700">Selesai</span>·<span style="color:#CA8A04;font-weight:700">Berjalan</span>·<span style="color:#94A3B8;font-weight:700">Belum</span>·<span style="color:#DC2626;font-weight:700">Batal</span>
-    </div>
-    <div style="max-height:58vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
-      <table class="dt" style="width:100%;font-size:12px">
-        <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">
-          <tr>
-            <th style="width:36px">No</th><th>Satker / OPD</th><th class="text-right">Jml Paket</th>
-            <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
-            <th class="text-right">Efisiensi (Rp)</th><th style="text-align:center">S·B·U·D</th><th style="text-align:center">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-        <tfoot>
-          <tr style="font-weight:700;background:#F8FAFC">
-            <td colspan="2">Total</td>
-            <td class="text-right mono">${fmt(REKAP_SATKER_CACHE.items.length)} paket</td>
-            <td class="text-right mono">${IDRf(totalPagu)}</td>
-            <td class="text-right mono">${IDRf(totalKontrak)}</td>
-            <td class="text-right mono">${IDRf(totalPagu - totalKontrak)}</td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
-      </table>
+    <div class="rekap-body">
+      <div class="rekap-subtitle">
+        Kolom status &nbsp;<span style="color:#16A34A;font-weight:700">■ Selesai</span>
+        &nbsp;<span style="color:#CA8A04;font-weight:700">■ Berjalan</span>
+        &nbsp;<span style="color:#94A3B8;font-weight:700">■ Belum</span>
+        &nbsp;<span style="color:#DC2626;font-weight:700">■ Batal</span>
+      </div>
+      <div class="rekap-stat-row">
+        <div class="rekap-stat" style="--ac:#3B82F6">
+          <div class="rekap-stat-label">Satker / OPD</div>
+          <div class="rekap-stat-value">${fmt(groups.length)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#7C3AED">
+          <div class="rekap-stat-label">Total Paket</div>
+          <div class="rekap-stat-value">${fmt(REKAP_SATKER_CACHE.items.length)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#0EA5E9">
+          <div class="rekap-stat-label">Total Pagu RUP</div>
+          <div class="rekap-stat-value">${IDRf(totalPagu)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#16A34A">
+          <div class="rekap-stat-label">Total Nilai Kontrak</div>
+          <div class="rekap-stat-value" style="color:#15803D">${IDRf(totalKontrak)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#D97706">
+          <div class="rekap-stat-label">Total Efisiensi</div>
+          <div class="rekap-stat-value" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</div>
+        </div>
+      </div>
+      <div class="rekap-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px">No</th><th>Satker / OPD</th><th class="text-right">Jml Paket</th>
+              <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
+              <th class="text-right">Efisiensi (Rp)</th><th>Status Paket</th><th style="text-align:center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot>
+            <tr style="font-weight:800">
+              <td colspan="2">Total</td>
+              <td class="text-right mono">${fmt(REKAP_SATKER_CACHE.items.length)}</td>
+              <td class="text-right mono">${IDRf(totalPagu)}</td>
+              <td class="text-right mono" style="color:#15803D">${IDRf(totalKontrak)}</td>
+              <td class="text-right mono" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>`;
 
   Swal.fire({
     title: '🏢 Rekap Sandingan per Satker/OPD',
-    html, width: 1100, showCloseButton: true,
+    html, showCloseButton: true,
+    customClass: { popup: 'rekap-modal-popup' },
     showDenyButton: true, denyButtonText: '⬇ Export CSV Rekap',
     confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB',
   }).then(res => {
@@ -3493,9 +3598,13 @@ function exportRekapSatkerCSV(groups) {
 // Detail paket untuk 1 satker — diambil dari cache hasil showRekapSatker(),
 // tanpa perlu fetch ulang ke server.
 function showRekapSatkerDetail(kodeSatker) {
+  ensureRekapModalStyles();
   const items = REKAP_SATKER_CACHE.items.filter(r => (r.kode_satker || '') === kodeSatker);
   if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ditemukan paket untuk satker ini.', 'info'); return; }
   const namaSatker = items[0].nama_satker || '—';
+  const totalPagu = items.reduce((s, r) => s + (Number(r.pagu) || 0), 0);
+  const totalKontrak = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.nilai_kontrak) || 0 : 0), 0);
+  const totalEfi = totalPagu - totalKontrak;
 
   const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
   const rows = items.map(r => [
@@ -3510,32 +3619,51 @@ function showRekapSatkerDetail(kodeSatker) {
     const hasReal = !!r.ada_realisasi;
     const efi = hasReal ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
     return `<tr class="${sandStatusClass(r.status_realisasi)}">
-        <td style="font-size:11.5px" title="${r.nama_paket_rup || ''}">${(r.nama_paket_rup || '—').slice(0, 55)}${(r.nama_paket_rup || '').length > 55 ? '…' : ''}</td>
-        <td class="mono" style="font-size:11px;color:#2563EB">${r.kode_rup || '—'}</td>
-        <td style="font-size:11px">${r.metode_pengadaan_rup || r.metode_pengadaan || '—'}</td>
-        <td style="font-size:11px">${r.jenis_pengadaan_rup || r.jenis_pengadaan || '—'}</td>
+        <td style="min-width:220px" title="${r.nama_paket_rup || ''}">${(r.nama_paket_rup || '—').slice(0, 70)}${(r.nama_paket_rup || '').length > 70 ? '…' : ''}</td>
+        <td class="mono" style="color:#2563EB">${r.kode_rup || '—'}</td>
+        <td>${r.metode_pengadaan_rup || r.metode_pengadaan || '—'}</td>
+        <td>${r.jenis_pengadaan_rup || r.jenis_pengadaan || '—'}</td>
         <td class="text-right mono">${IDRf(r.pagu || 0)}</td>
         <td>${sandStatusBadge(r)}</td>
-        <td style="font-size:11px">${r.nama_penyedia || '—'}</td>
+        <td>${r.nama_penyedia || '—'}</td>
         <td class="text-right mono" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(r.nilai_kontrak || 0) : '—'}</td>
-        <td class="text-right mono" style="font-weight:700;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : '—'}</td>
+        <td class="text-right mono" style="font-weight:800;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : '—'}</td>
       </tr>`;
   }).join('');
 
   const html = `
-    <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
-      <b>${namaSatker}</b> — <b>${fmt(items.length)}</b> paket
-    </div>
-    <div style="max-height:58vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
-      <table class="dt" style="width:100%;font-size:12px">
-        <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">${theadHtml}</thead>
-        <tbody>${tbodyHtml}</tbody>
-      </table>
+    <div class="rekap-body">
+      <div class="rekap-subtitle">${fmt(items.length)} paket tercatat untuk satker/OPD ini</div>
+      <div class="rekap-stat-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="rekap-stat" style="--ac:#7C3AED">
+          <div class="rekap-stat-label">Jumlah Paket</div>
+          <div class="rekap-stat-value">${fmt(items.length)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#0EA5E9">
+          <div class="rekap-stat-label">Total Pagu RUP</div>
+          <div class="rekap-stat-value">${IDRf(totalPagu)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#16A34A">
+          <div class="rekap-stat-label">Total Nilai Kontrak</div>
+          <div class="rekap-stat-value" style="color:#15803D">${IDRf(totalKontrak)}</div>
+        </div>
+        <div class="rekap-stat" style="--ac:#D97706">
+          <div class="rekap-stat-label">Total Efisiensi</div>
+          <div class="rekap-stat-value" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</div>
+        </div>
+      </div>
+      <div class="rekap-table-wrap">
+        <table>
+          <thead>${theadHtml}</thead>
+          <tbody>${tbodyHtml}</tbody>
+        </table>
+      </div>
     </div>`;
 
   Swal.fire({
     title: `📋 Detail Paket — ${namaSatker}`,
-    html, width: 1050, showCloseButton: true,
+    html, showCloseButton: true,
+    customClass: { popup: 'rekap-modal-popup' },
     showDenyButton: true, denyButtonText: '⬇ Export CSV',
     showCancelButton: true, cancelButtonText: '‹ Kembali ke Rekap',
     confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB', cancelButtonColor: '#94A3B8',
