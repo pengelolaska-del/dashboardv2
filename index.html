@@ -1173,6 +1173,10 @@ thead .col-sep-h{
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             Detail Paket
           </button>
+          <button class="btn btn-ghost" onclick="showRekapSatker()" title="Rekap jumlah paket per Satker/OPD, dengan detail dan export CSV">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m-1 4h1m4-4h1m-1 4h1m-6 8v-4h4v4"/></svg>
+            Rekap per Satker
+          </button>
         </div>
       </div>
     </div>
@@ -3363,6 +3367,186 @@ function exportRowsToCSV(headers, rows, filename) {
   const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
   a.download=filename; a.click();
+}
+
+// ============================================================
+// REKAP PER SATKER/OPD (Sandingan RUP)
+// Mengelompokkan baris sandingan aktif per Satker/OPD (mis. "Dinas
+// Pendidikan — 5 paket"), dengan tombol Detail per satker (dari cache,
+// tanpa fetch ulang) dan Export CSV untuk rekap maupun detail satker.
+// ============================================================
+let REKAP_SATKER_CACHE = { items: [], periode: '', tahun: '' };
+
+function buildRekapSatker(items) {
+  const map = new Map();
+  items.forEach(r => {
+    const key = r.kode_satker || r.nama_satker || '—';
+    if (!map.has(key)) {
+      map.set(key, {
+        kode_satker: r.kode_satker || '', nama_satker: r.nama_satker || '—',
+        jumlah: 0, pagu: 0, kontrak: 0, selesai: 0, berjalan: 0, belum: 0, batal: 0,
+      });
+    }
+    const g = map.get(key);
+    g.jumlah++;
+    g.pagu += Number(r.pagu) || 0;
+    if (r.ada_realisasi) g.kontrak += Number(r.nilai_kontrak) || 0;
+    if (r.status_realisasi === 'Selesai') g.selesai++;
+    else if (r.status_realisasi === 'Sedang Berjalan') g.berjalan++;
+    else if (r.status_realisasi === 'Dibatalkan') g.batal++;
+    else g.belum++;
+  });
+  return Array.from(map.values()).sort((a, b) => b.jumlah - a.jumlah || a.nama_satker.localeCompare(b.nama_satker));
+}
+
+async function showRekapSatker() {
+  Swal.fire({ title: 'Memuat rekap per satker...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const tahun = v('g-tahun'), bulan = v('g-bulan'), f = SAND.f;
+    const periode = bulan ? tahun + '-' + bulan : undefined;
+    const res = await api({
+      action: 'listSandingan', tahun, periode,
+      kode_satker: f.kode_satker || undefined, metode_pengadaan: f.metode_pengadaan || undefined,
+      jenis_pengadaan: f.jenis_pengadaan || undefined, status_paket: f.status_paket || undefined,
+      sumber_dana: f.sumber_dana || undefined, sumber_transaksi: f.sumber_transaksi || undefined,
+      search: f.search || undefined,
+      page: 1, per_page: 99999,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat data sandingan.');
+    const items = res.data?.items || [];
+    Swal.close();
+    if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ada paket yang cocok dengan filter saat ini.', 'info'); return; }
+
+    REKAP_SATKER_CACHE = { items, periode: periode || '', tahun };
+    renderRekapSatkerModal();
+  } catch (e) { Swal.fire('❌ Error', e.message, 'error'); }
+}
+
+function renderRekapSatkerModal() {
+  const groups = buildRekapSatker(REKAP_SATKER_CACHE.items);
+  const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
+  const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
+
+  const rowsHtml = groups.map((g, i) => {
+    const efi = g.pagu - g.kontrak;
+    return `<tr>
+        <td class="mono" style="color:#94A3B8;font-size:11px">${i + 1}</td>
+        <td style="font-weight:600;color:#1E3A5F">${g.nama_satker}<div style="font-size:10px;color:#94A3B8;font-family:monospace;font-weight:400">${g.kode_satker || ''}</div></td>
+        <td class="text-right mono" style="font-weight:700">${fmt(g.jumlah)} paket</td>
+        <td class="text-right mono">${IDRf(g.pagu)}</td>
+        <td class="text-right mono" style="color:#15803D">${IDRf(g.kontrak)}</td>
+        <td class="text-right mono" style="font-weight:700;color:${efi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(efi)}</td>
+        <td class="text-center" style="font-size:11px;white-space:nowrap" title="Selesai · Berjalan · Belum · Batal">
+          <span style="color:#16A34A;font-weight:700">${g.selesai}</span>·<span style="color:#CA8A04;font-weight:700">${g.berjalan}</span>·<span style="color:#94A3B8;font-weight:700">${g.belum}</span>·<span style="color:#DC2626;font-weight:700">${g.batal}</span>
+        </td>
+        <td class="text-center">
+          <button class="btn btn-ghost" style="font-size:10.5px;padding:4px 9px" onclick='showRekapSatkerDetail(${JSON.stringify(g.kode_satker)})'>🔍 Detail</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const html = `
+    <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
+      <b>${fmt(groups.length)}</b> Satker/OPD — total <b>${fmt(REKAP_SATKER_CACHE.items.length)}</b> paket sesuai filter aktif.
+      Kolom status: <span style="color:#16A34A;font-weight:700">Selesai</span>·<span style="color:#CA8A04;font-weight:700">Berjalan</span>·<span style="color:#94A3B8;font-weight:700">Belum</span>·<span style="color:#DC2626;font-weight:700">Batal</span>
+    </div>
+    <div style="max-height:58vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
+      <table class="dt" style="width:100%;font-size:12px">
+        <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">
+          <tr>
+            <th style="width:36px">No</th><th>Satker / OPD</th><th class="text-right">Jml Paket</th>
+            <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
+            <th class="text-right">Efisiensi (Rp)</th><th style="text-align:center">S·B·U·D</th><th style="text-align:center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot>
+          <tr style="font-weight:700;background:#F8FAFC">
+            <td colspan="2">Total</td>
+            <td class="text-right mono">${fmt(REKAP_SATKER_CACHE.items.length)} paket</td>
+            <td class="text-right mono">${IDRf(totalPagu)}</td>
+            <td class="text-right mono">${IDRf(totalKontrak)}</td>
+            <td class="text-right mono">${IDRf(totalPagu - totalKontrak)}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+
+  Swal.fire({
+    title: '🏢 Rekap Sandingan per Satker/OPD',
+    html, width: 1100, showCloseButton: true,
+    showDenyButton: true, denyButtonText: '⬇ Export CSV Rekap',
+    confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB',
+  }).then(res => {
+    if (res.isDenied) exportRekapSatkerCSV(groups);
+  });
+}
+
+function exportRekapSatkerCSV(groups) {
+  const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
+  const rows = groups.map(g => [g.kode_satker, g.nama_satker, g.jumlah, g.pagu, g.kontrak, g.pagu - g.kontrak, g.selesai, g.berjalan, g.belum, g.batal]);
+  const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
+  exportRowsToCSV(headers, rows, `Rekap_Satker_Sandingan_${label}.csv`);
+}
+
+// Detail paket untuk 1 satker — diambil dari cache hasil showRekapSatker(),
+// tanpa perlu fetch ulang ke server.
+function showRekapSatkerDetail(kodeSatker) {
+  const items = REKAP_SATKER_CACHE.items.filter(r => (r.kode_satker || '') === kodeSatker);
+  if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ditemukan paket untuk satker ini.', 'info'); return; }
+  const namaSatker = items[0].nama_satker || '—';
+
+  const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
+  const rows = items.map(r => [
+    r.nama_paket_rup || '—', r.kode_rup || '—', r.metode_pengadaan_rup || r.metode_pengadaan || '—',
+    r.jenis_pengadaan_rup || r.jenis_pengadaan || '—', r.pagu || 0,
+    r.status_realisasi || 'Belum Terealisasi', r.nama_penyedia || '—', r.nilai_kontrak || 0,
+    r.ada_realisasi ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+  ]);
+
+  const theadHtml = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  const tbodyHtml = items.map(r => {
+    const hasReal = !!r.ada_realisasi;
+    const efi = hasReal ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
+    return `<tr class="${sandStatusClass(r.status_realisasi)}">
+        <td style="font-size:11.5px" title="${r.nama_paket_rup || ''}">${(r.nama_paket_rup || '—').slice(0, 55)}${(r.nama_paket_rup || '').length > 55 ? '…' : ''}</td>
+        <td class="mono" style="font-size:11px;color:#2563EB">${r.kode_rup || '—'}</td>
+        <td style="font-size:11px">${r.metode_pengadaan_rup || r.metode_pengadaan || '—'}</td>
+        <td style="font-size:11px">${r.jenis_pengadaan_rup || r.jenis_pengadaan || '—'}</td>
+        <td class="text-right mono">${IDRf(r.pagu || 0)}</td>
+        <td>${sandStatusBadge(r)}</td>
+        <td style="font-size:11px">${r.nama_penyedia || '—'}</td>
+        <td class="text-right mono" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(r.nilai_kontrak || 0) : '—'}</td>
+        <td class="text-right mono" style="font-weight:700;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  const html = `
+    <div style="text-align:left;margin-bottom:8px;font-size:12px;color:#64748B">
+      <b>${namaSatker}</b> — <b>${fmt(items.length)}</b> paket
+    </div>
+    <div style="max-height:58vh;overflow:auto;border:1px solid #E2E8F0;border-radius:8px">
+      <table class="dt" style="width:100%;font-size:12px">
+        <thead style="position:sticky;top:0;background:#F8FAFC;z-index:1">${theadHtml}</thead>
+        <tbody>${tbodyHtml}</tbody>
+      </table>
+    </div>`;
+
+  Swal.fire({
+    title: `📋 Detail Paket — ${namaSatker}`,
+    html, width: 1050, showCloseButton: true,
+    showDenyButton: true, denyButtonText: '⬇ Export CSV',
+    showCancelButton: true, cancelButtonText: '‹ Kembali ke Rekap',
+    confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB', cancelButtonColor: '#94A3B8',
+  }).then(res => {
+    if (res.isDenied) {
+      const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
+      exportRowsToCSV(headers, rows, `Detail_${namaSatker.replace(/[^a-zA-Z0-9]+/g, '_')}_${label}.csv`);
+    } else if (res.dismiss === Swal.DismissReason.cancel) {
+      renderRekapSatkerModal();
+    }
+  });
 }
 
 async function showDetailPaket(type) {
