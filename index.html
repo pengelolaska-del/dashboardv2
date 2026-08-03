@@ -3444,13 +3444,21 @@ function buildRekapSatker(items) {
     if (!map.has(key)) {
       map.set(key, {
         kode_satker: r.kode_satker || '', nama_satker: r.nama_satker || '—',
-        jumlah: 0, pagu: 0, kontrak: 0, selesai: 0, berjalan: 0, belum: 0, batal: 0,
+        jumlah: 0, pagu: 0, paguRealisasi: 0, kontrak: 0, realisasiCount: 0,
+        selesai: 0, berjalan: 0, belum: 0, batal: 0,
       });
     }
     const g = map.get(key);
     g.jumlah++;
     g.pagu += Number(r.pagu) || 0;
-    if (r.ada_realisasi) g.kontrak += Number(r.nilai_kontrak) || 0;
+    // Pagu & kontrak untuk efisiensi HANYA dari paket yang sudah ada realisasi/kontrak —
+    // paket yang belum terealisasi tidak ikut dihitung, supaya tidak mengurangi/menaikkan
+    // efisiensi secara keliru (belum ada nilai kontrak untuk dibandingkan).
+    if (r.ada_realisasi) {
+      g.paguRealisasi += Number(r.pagu) || 0;
+      g.kontrak += Number(r.nilai_kontrak) || 0;
+      g.realisasiCount++;
+    }
     if (r.status_realisasi === 'Selesai') g.selesai++;
     else if (r.status_realisasi === 'Sedang Berjalan') g.berjalan++;
     else if (r.status_realisasi === 'Dibatalkan') g.batal++;
@@ -3502,11 +3510,16 @@ function renderRekapSatkerModal() {
   ensureRekapModalStyles();
   const groups = buildRekapSatker(REKAP_SATKER_CACHE.items);
   const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
+  const totalPaguRealisasi = groups.reduce((s, g) => s + g.paguRealisasi, 0);
   const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
-  const totalEfi = totalPagu - totalKontrak;
+  // Efisiensi total HANYA dibandingkan dari paket yang sudah punya kontrak,
+  // bukan dari seluruh pagu — supaya paket yang belum terealisasi tidak
+  // ikut "menyumbang" efisiensi semu.
+  const totalEfi = totalPaguRealisasi - totalKontrak;
 
   const rowsHtml = groups.map((g, i) => {
-    const efi = g.pagu - g.kontrak;
+    const hasReal = g.realisasiCount > 0;
+    const efi = hasReal ? g.paguRealisasi - g.kontrak : null;
     return `<tr>
         <td><span class="rekap-rank">${i + 1}</span></td>
         <td style="font-weight:700;color:#1E3A5F;min-width:220px">${g.nama_satker}
@@ -3514,8 +3527,8 @@ function renderRekapSatkerModal() {
         </td>
         <td class="text-right mono" style="font-weight:800;color:#2563EB">${fmt(g.jumlah)}<span style="font-weight:500;color:#94A3B8"> paket</span></td>
         <td class="text-right mono">${IDRf(g.pagu)}</td>
-        <td class="text-right mono" style="color:#15803D">${IDRf(g.kontrak)}</td>
-        <td class="text-right mono" style="font-weight:800;color:${efi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(efi)}</td>
+        <td class="text-right mono" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(g.kontrak) : '—'}</td>
+        <td class="text-right mono" style="font-weight:800;color:${efi === null ? '#94A3B8' : (efi < 0 ? '#DC2626' : '#16A34A')}">${efi === null ? '—' : IDRf(efi)}</td>
         <td>${sbudBarHtml(g)}</td>
         <td class="text-center">
           <button class="btn btn-ghost rekap-detail-btn" style="font-size:10.5px;padding:5px 10px" onclick='showRekapSatkerDetail(${JSON.stringify(g.kode_satker)})'>🔍 Detail</button>
@@ -3590,7 +3603,12 @@ function renderRekapSatkerModal() {
 
 function exportRekapSatkerCSV(groups) {
   const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
-  const rows = groups.map(g => [g.kode_satker, g.nama_satker, g.jumlah, g.pagu, g.kontrak, g.pagu - g.kontrak, g.selesai, g.berjalan, g.belum, g.batal]);
+  const rows = groups.map(g => [
+    g.kode_satker, g.nama_satker, g.jumlah, g.pagu,
+    g.realisasiCount > 0 ? g.kontrak : '',
+    g.realisasiCount > 0 ? (g.paguRealisasi - g.kontrak) : '',
+    g.selesai, g.berjalan, g.belum, g.batal,
+  ]);
   const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
   exportRowsToCSV(headers, rows, `Rekap_Satker_Sandingan_${label}.csv`);
 }
@@ -3603,8 +3621,12 @@ function showRekapSatkerDetail(kodeSatker) {
   if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ditemukan paket untuk satker ini.', 'info'); return; }
   const namaSatker = items[0].nama_satker || '—';
   const totalPagu = items.reduce((s, r) => s + (Number(r.pagu) || 0), 0);
+  const paguRealisasi = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.pagu) || 0 : 0), 0);
   const totalKontrak = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.nilai_kontrak) || 0 : 0), 0);
-  const totalEfi = totalPagu - totalKontrak;
+  const adaYangRealisasi = items.some(r => r.ada_realisasi);
+  // Efisiensi dibandingkan hanya dari paket yang sudah punya kontrak —
+  // paket yang belum terealisasi tidak ikut dihitung.
+  const totalEfi = paguRealisasi - totalKontrak;
 
   const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
   const rows = items.map(r => [
@@ -3645,11 +3667,11 @@ function showRekapSatkerDetail(kodeSatker) {
         </div>
         <div class="rekap-stat" style="--ac:#16A34A">
           <div class="rekap-stat-label">Total Nilai Kontrak</div>
-          <div class="rekap-stat-value" style="color:#15803D">${IDRf(totalKontrak)}</div>
+          <div class="rekap-stat-value" style="color:${adaYangRealisasi ? '#15803D' : '#94A3B8'}">${adaYangRealisasi ? IDRf(totalKontrak) : '—'}</div>
         </div>
         <div class="rekap-stat" style="--ac:#D97706">
           <div class="rekap-stat-label">Total Efisiensi</div>
-          <div class="rekap-stat-value" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</div>
+          <div class="rekap-stat-value" style="color:${!adaYangRealisasi ? '#94A3B8' : (totalEfi < 0 ? '#DC2626' : '#16A34A')}">${adaYangRealisasi ? IDRf(totalEfi) : '—'}</div>
         </div>
       </div>
       <div class="rekap-table-wrap">
