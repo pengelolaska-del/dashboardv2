@@ -3465,19 +3465,27 @@ function buildRekapSatker(items) {
       map.set(key, {
         kode_satker: r.kode_satker || '', nama_satker: r.nama_satker || '—',
         jumlah: 0, pagu: 0, paguRealisasi: 0, kontrak: 0, realisasiCount: 0,
+        paguSelesai: 0, kontrakSelesai: 0, selesaiCount: 0,
         selesai: 0, berjalan: 0, belum: 0, batal: 0,
       });
     }
     const g = map.get(key);
     g.jumlah++;
     g.pagu += Number(r.pagu) || 0;
-    // Pagu & kontrak untuk efisiensi HANYA dari paket yang sudah ada realisasi/kontrak —
-    // paket yang belum terealisasi tidak ikut dihitung, supaya tidak mengurangi/menaikkan
-    // efisiensi secara keliru (belum ada nilai kontrak untuk dibandingkan).
+    // Pagu & kontrak untuk Nilai Kontrak (kolom terpisah) HANYA dari paket yang
+    // sudah ada realisasi/kontrak — paket yang belum terealisasi tidak ikut dihitung.
     if (r.ada_realisasi) {
       g.paguRealisasi += Number(r.pagu) || 0;
       g.kontrak += Number(r.nilai_kontrak) || 0;
       g.realisasiCount++;
+    }
+    // Efisiensi murni HANYA dari paket berstatus "Selesai" — pagu paket
+    // "Sedang Berjalan" masih HPS dari OPD (indikatif, belum final), jadi
+    // tidak diikutkan supaya angka efisiensi tidak tercampur nilai yg belum pasti.
+    if (r.status_realisasi === 'Selesai') {
+      g.paguSelesai    += Number(r.pagu) || 0;
+      g.kontrakSelesai += Number(r.nilai_kontrak) || 0;
+      g.selesaiCount++;
     }
     if (r.status_realisasi === 'Selesai') g.selesai++;
     else if (r.status_realisasi === 'Sedang Berjalan') g.berjalan++;
@@ -3530,16 +3538,19 @@ function renderRekapSatkerModal() {
   ensureRekapModalStyles();
   const groups = buildRekapSatker(REKAP_SATKER_CACHE.items);
   const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
-  const totalPaguRealisasi = groups.reduce((s, g) => s + g.paguRealisasi, 0);
   const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
-  // Efisiensi total HANYA dibandingkan dari paket yang sudah punya kontrak,
-  // bukan dari seluruh pagu — supaya paket yang belum terealisasi tidak
-  // ikut "menyumbang" efisiensi semu.
-  const totalEfi = totalPaguRealisasi - totalKontrak;
+  // Efisiensi total HANYA dari paket berstatus "Selesai" (pagu & kontraknya
+  // sudah final). Paket "Sedang Berjalan" tidak diikutkan karena pagunya
+  // masih HPS OPD (indikatif) — supaya angka efisiensi ini murni.
+  const totalPaguSelesai    = groups.reduce((s, g) => s + g.paguSelesai, 0);
+  const totalKontrakSelesai = groups.reduce((s, g) => s + g.kontrakSelesai, 0);
+  const adaYangSelesaiTotal = groups.some(g => g.selesaiCount > 0);
+  const totalEfi = totalPaguSelesai - totalKontrakSelesai;
 
   const rowsHtml = groups.map((g, i) => {
     const hasReal = g.realisasiCount > 0;
-    const efi = hasReal ? g.paguRealisasi - g.kontrak : null;
+    const hasSelesai = g.selesaiCount > 0;
+    const efi = hasSelesai ? g.paguSelesai - g.kontrakSelesai : null;
     return `<tr>
         <td class="rekap-col-no"><span class="rekap-rank">${i + 1}</span></td>
         <td style="font-weight:700;color:#1E3A5F;min-width:220px;white-space:normal">${g.nama_satker}
@@ -3582,7 +3593,7 @@ function renderRekapSatkerModal() {
           <div class="rekap-stat-value" style="color:#15803D">${IDRf(totalKontrak)}</div>
         </div>
         <div class="rekap-stat" style="--ac:#D97706">
-          <div class="rekap-stat-label">Total Efisiensi</div>
+          <div class="rekap-stat-label">Total Efisiensi <span style="font-weight:400;font-size:10px;color:#94A3B8">(paket Selesai)</span></div>
           <div class="rekap-stat-value" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</div>
         </div>
       </div>
@@ -3592,7 +3603,7 @@ function renderRekapSatkerModal() {
             <tr>
               <th class="rekap-col-no">No</th><th>Satker / OPD</th><th class="text-right rekap-col-jml">Jml Paket</th>
               <th class="text-right rekap-col-money">Pagu RUP (Rp)</th><th class="text-right rekap-col-money">Nilai Kontrak (Rp)</th>
-              <th class="text-right rekap-col-money">Efisiensi (Rp)</th><th class="rekap-col-status">Status Paket</th><th class="rekap-col-aksi">Aksi</th>
+              <th class="text-right rekap-col-money">Efisiensi (Rp)<br><span style="font-weight:400;font-size:9px;color:#94A3B8">paket Selesai saja</span></th><th class="rekap-col-status">Status Paket</th><th class="rekap-col-aksi">Aksi</th>
             </tr>
           </thead>
           <tbody>${rowsHtml}</tbody>
@@ -3622,11 +3633,11 @@ function renderRekapSatkerModal() {
 }
 
 function exportRekapSatkerCSV(groups) {
-  const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
+  const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi (paket Selesai)', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
   const rows = groups.map(g => [
     g.kode_satker, g.nama_satker, g.jumlah, g.pagu,
     g.realisasiCount > 0 ? g.kontrak : '',
-    g.realisasiCount > 0 ? (g.paguRealisasi - g.kontrak) : '',
+    g.selesaiCount > 0 ? (g.paguSelesai - g.kontrakSelesai) : '',
     g.selesai, g.berjalan, g.belum, g.batal,
   ]);
   const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
@@ -3644,32 +3655,42 @@ function showRekapSatkerDetail(kodeSatker) {
   const paguRealisasi = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.pagu) || 0 : 0), 0);
   const totalKontrak = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.nilai_kontrak) || 0 : 0), 0);
   const adaYangRealisasi = items.some(r => r.ada_realisasi);
-  // Efisiensi dibandingkan hanya dari paket yang sudah punya kontrak —
-  // paket yang belum terealisasi tidak ikut dihitung.
-  const totalEfi = paguRealisasi - totalKontrak;
+  // Efisiensi murni HANYA dari paket berstatus "Selesai" — pagu & nilai
+  // kontraknya sudah final. Paket "Sedang Berjalan" masih pakai HPS dari OPD
+  // (indikatif, bisa berubah), jadi tidak diikutkan supaya angka efisiensi
+  // di kartu ini murni dan tidak "tercampur" indikasi yang belum final.
+  const selesaiItems = items.filter(r => r.status_realisasi === 'Selesai');
+  const paguSelesai    = selesaiItems.reduce((s, r) => s + (Number(r.pagu) || 0), 0);
+  const kontrakSelesai = selesaiItems.reduce((s, r) => s + (Number(r.nilai_kontrak) || 0) , 0);
+  const adaYangSelesai = selesaiItems.length > 0;
+  const totalEfi = paguSelesai - kontrakSelesai;
 
   const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
   const rows = items.map(r => [
     r.nama_paket_rup || '—', r.kode_rup || '—', r.metode_pengadaan_rup || r.metode_pengadaan || '—',
     r.jenis_pengadaan_rup || r.jenis_pengadaan || '—', r.pagu || 0,
     r.status_realisasi || 'Belum Terealisasi', r.nama_penyedia || '—', r.nilai_kontrak || 0,
-    r.ada_realisasi ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+    r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
   ]);
 
   const theadHtml = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
   const tbodyHtml = items.map(r => {
-    const hasReal = !!r.ada_realisasi;
-    const efi = hasReal ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
+    const hasReal   = !!r.ada_realisasi;
+    const isSelesai = r.status_realisasi === 'Selesai';
+    const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
+    // Efisiensi hanya ditampilkan utk paket Selesai — paket Sedang Berjalan
+    // pagunya masih HPS OPD jadi efisiensinya sengaja tidak dimunculkan.
+    const efi = isSelesai ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
     return `<tr class="${sandStatusClass(r.status_realisasi)}">
         <td style="min-width:220px" title="${r.nama_paket_rup || ''}">${(r.nama_paket_rup || '—').slice(0, 70)}${(r.nama_paket_rup || '').length > 70 ? '…' : ''}</td>
         <td class="mono" style="color:#2563EB">${r.kode_rup || '—'}</td>
         <td>${r.metode_pengadaan_rup || r.metode_pengadaan || '—'}</td>
         <td>${r.jenis_pengadaan_rup || r.jenis_pengadaan || '—'}</td>
-        <td class="text-right mono">${IDRf(r.pagu || 0)}</td>
+        <td class="text-right mono" style="color:${isBerjalan ? '#B45309' : '#1A2332'}">${IDRf(r.pagu || 0)}${isBerjalan ? hpsPaguMark() : ''}</td>
         <td>${sandStatusBadge(r)}</td>
         <td>${r.nama_penyedia || '—'}</td>
         <td class="text-right mono" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(r.nilai_kontrak || 0) : '—'}</td>
-        <td class="text-right mono" style="font-weight:800;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : '—'}</td>
+        <td class="text-right mono" style="font-weight:800;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : (isBerjalan ? '<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;font-size:11px">Menunggu Selesai</span>' : '—')}</td>
       </tr>`;
   }).join('');
 
@@ -3690,8 +3711,8 @@ function showRekapSatkerDetail(kodeSatker) {
           <div class="rekap-stat-value" style="color:${adaYangRealisasi ? '#15803D' : '#94A3B8'}">${adaYangRealisasi ? IDRf(totalKontrak) : '—'}</div>
         </div>
         <div class="rekap-stat" style="--ac:#D97706">
-          <div class="rekap-stat-label">Total Efisiensi</div>
-          <div class="rekap-stat-value" style="color:${!adaYangRealisasi ? '#94A3B8' : (totalEfi < 0 ? '#DC2626' : '#16A34A')}">${adaYangRealisasi ? IDRf(totalEfi) : '—'}</div>
+          <div class="rekap-stat-label">Total Efisiensi <span style="font-weight:400;font-size:10px;color:#94A3B8">(paket Selesai)</span></div>
+          <div class="rekap-stat-value" style="color:${!adaYangSelesai ? '#94A3B8' : (totalEfi < 0 ? '#DC2626' : '#16A34A')}">${adaYangSelesai ? IDRf(totalEfi) : '—'}</div>
         </div>
       </div>
       <div class="rekap-table-wrap">
