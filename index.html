@@ -3415,7 +3415,7 @@ function ensureRekapModalStyles() {
       word-break:break-word}
     .rekap-table-wrap{max-height:min(56vh,620px);overflow:auto;border:1px solid #E2E8F0;border-radius:14px;
       box-shadow:inset 0 0 0 1px #fff}
-    .rekap-table-wrap table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1080px;table-layout:auto}
+    .rekap-table-wrap table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1240px;table-layout:auto}
     .rekap-table-wrap thead th{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#1E3A5F,#132a45);
       color:#fff;padding:11px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
       text-align:left;white-space:nowrap}
@@ -3430,6 +3430,7 @@ function ensureRekapModalStyles() {
     .rekap-col-no,.rekap-col-status,.rekap-col-aksi{white-space:nowrap}
     .rekap-col-no{width:52px;text-align:center}
     .rekap-col-jml{width:110px}
+    .rekap-col-metode{width:190px}
     .rekap-col-money{width:170px}
     .rekap-col-status{width:150px}
     .rekap-col-aksi{width:100px;text-align:center}
@@ -3466,12 +3467,15 @@ function buildRekapSatker(items) {
         kode_satker: r.kode_satker || '', nama_satker: r.nama_satker || '—',
         jumlah: 0, pagu: 0, paguRealisasi: 0, kontrak: 0, realisasiCount: 0,
         paguSelesai: 0, kontrakSelesai: 0, selesaiCount: 0,
-        selesai: 0, berjalan: 0, belum: 0, batal: 0,
+        selesai: 0, berjalan: 0, belum: 0, batal: 0, metode: {},
       });
     }
     const g = map.get(key);
     g.jumlah++;
     g.pagu += Number(r.pagu) || 0;
+    // Rekap jumlah paket per metode pengadaan (Tender, Pengadaan Langsung, dst)
+    const metode = r.metode_pengadaan_rup || r.metode_pengadaan || 'Lainnya';
+    g.metode[metode] = (g.metode[metode] || 0) + 1;
     // Pagu & kontrak untuk Nilai Kontrak (kolom terpisah) HANYA dari paket yang
     // sudah ada realisasi/kontrak — paket yang belum terealisasi tidak ikut dihitung.
     if (r.ada_realisasi) {
@@ -3492,7 +3496,59 @@ function buildRekapSatker(items) {
     else if (r.status_realisasi === 'Dibatalkan') g.batal++;
     else g.belum++;
   });
-  return Array.from(map.values()).sort((a, b) => b.jumlah - a.jumlah || a.nama_satker.localeCompare(b.nama_satker));
+  return Array.from(map.values());
+}
+
+// Badge ringkas jumlah paket per metode pengadaan, misal "Tender 2 · Pengadaan Langsung 1"
+function metodeBreakdownHtml(g) {
+  const entries = Object.entries(g.metode || {}).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return '<span style="color:#CBD5E1">—</span>';
+  return entries.map(([m, c]) =>
+    `<span style="display:inline-block;margin:1px 4px 1px 0;padding:2px 7px;border-radius:20px;font-size:10px;
+      font-weight:600;background:#EFF6FF;color:#1D4ED8;white-space:nowrap;border:1px solid #DBEAFE">${m} <b>${c}</b></span>`
+  ).join('');
+}
+
+// ---- Sorting untuk tabel Rekap Sandingan per Satker/OPD ----
+let REKAP_SATKER_SORT = { field: 'jumlah', dir: 'desc' };
+const REKAP_SATKER_SORT_LABELS = {
+  nama: 'Satker / OPD', jumlah: 'Jml Paket', pagu: 'Pagu RUP',
+  kontrak: 'Nilai Kontrak', efisiensi: 'Efisiensi',
+};
+function rekapSatkerSortValue(g, field) {
+  switch (field) {
+    case 'nama':      return (g.nama_satker || '').toLowerCase();
+    case 'jumlah':    return g.jumlah;
+    case 'pagu':      return g.pagu;
+    case 'kontrak':   return g.kontrak;
+    case 'efisiensi': return g.selesaiCount > 0 ? (g.paguSelesai - g.kontrakSelesai) : -Infinity;
+    default:          return g.jumlah;
+  }
+}
+function sortRekapSatkerGroups(groups) {
+  const { field, dir } = REKAP_SATKER_SORT;
+  const mul = dir === 'asc' ? 1 : -1;
+  return [...groups].sort((a, b) => {
+    const va = rekapSatkerSortValue(a, field), vb = rekapSatkerSortValue(b, field);
+    if (typeof va === 'string') return va.localeCompare(vb) * mul;
+    return (va - vb) * mul || a.nama_satker.localeCompare(b.nama_satker);
+  });
+}
+function rekapSatkerSortIcon(field) {
+  if (REKAP_SATKER_SORT.field !== field) return '<span style="opacity:.3;font-size:9px">▲▼</span>';
+  return REKAP_SATKER_SORT.dir === 'asc'
+    ? '<span style="color:#7DD3FC;font-size:10px">▲</span>'
+    : '<span style="color:#7DD3FC;font-size:10px">▼</span>';
+}
+function sortRekapSatkerBy(field) {
+  if (REKAP_SATKER_SORT.field === field) {
+    REKAP_SATKER_SORT.dir = REKAP_SATKER_SORT.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    REKAP_SATKER_SORT = { field, dir: field === 'nama' ? 'asc' : 'desc' };
+  }
+  const wrap = document.getElementById('rekap-satker-tablewrap');
+  if (!wrap) return;
+  wrap.innerHTML = renderRekapSatkerTableHtml(sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items)));
 }
 
 // Stacked mini-bar visual untuk proporsi status Selesai·Berjalan·Belum·Batal
@@ -3534,18 +3590,18 @@ async function showRekapSatker() {
   } catch (e) { Swal.fire('❌ Error', e.message, 'error'); }
 }
 
-function renderRekapSatkerModal() {
-  ensureRekapModalStyles();
-  const groups = buildRekapSatker(REKAP_SATKER_CACHE.items);
+function renderRekapSatkerTableHtml(groups) {
   const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
   const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
-  // Efisiensi total HANYA dari paket berstatus "Selesai" (pagu & kontraknya
-  // sudah final). Paket "Sedang Berjalan" tidak diikutkan karena pagunya
-  // masih HPS OPD (indikatif) — supaya angka efisiensi ini murni.
   const totalPaguSelesai    = groups.reduce((s, g) => s + g.paguSelesai, 0);
   const totalKontrakSelesai = groups.reduce((s, g) => s + g.kontrakSelesai, 0);
-  const adaYangSelesaiTotal = groups.some(g => g.selesaiCount > 0);
   const totalEfi = totalPaguSelesai - totalKontrakSelesai;
+  const totalJumlah = groups.reduce((s, g) => s + g.jumlah, 0);
+
+  const th = (label, field, extraClass = '') =>
+    `<th class="${extraClass}" style="cursor:pointer;user-select:none" onclick="sortRekapSatkerBy('${field}')" title="Urutkan berdasarkan ${REKAP_SATKER_SORT_LABELS[field]}">
+       ${label} ${rekapSatkerSortIcon(field)}
+     </th>`;
 
   const rowsHtml = groups.map((g, i) => {
     const hasReal = g.realisasiCount > 0;
@@ -3557,6 +3613,7 @@ function renderRekapSatkerModal() {
           <div style="font-size:10px;color:#94A3B8;font-family:monospace;font-weight:500">${g.kode_satker || '—'}</div>
         </td>
         <td class="text-right mono rekap-col-jml" style="font-weight:800;color:#2563EB">${fmt(g.jumlah)}<span style="font-weight:500;color:#94A3B8"> paket</span></td>
+        <td class="rekap-col-metode" style="white-space:normal;min-width:180px">${metodeBreakdownHtml(g)}</td>
         <td class="text-right mono rekap-col-money">${IDRf(g.pagu)}</td>
         <td class="text-right mono rekap-col-money" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(g.kontrak) : '—'}</td>
         <td class="text-right mono rekap-col-money" style="font-weight:800;color:${efi === null ? '#94A3B8' : (efi < 0 ? '#DC2626' : '#16A34A')}">${efi === null ? '—' : IDRf(efi)}</td>
@@ -3567,6 +3624,49 @@ function renderRekapSatkerModal() {
       </tr>`;
   }).join('');
 
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th class="rekap-col-no">No</th>
+          ${th('Satker / OPD', 'nama')}
+          ${th('Jml Paket', 'jumlah', 'text-right rekap-col-jml')}
+          <th class="rekap-col-metode">Metode</th>
+          ${th('Pagu RUP (Rp)', 'pagu', 'text-right rekap-col-money')}
+          ${th('Nilai Kontrak (Rp)', 'kontrak', 'text-right rekap-col-money')}
+          <th class="text-right rekap-col-money" style="cursor:pointer;user-select:none" onclick="sortRekapSatkerBy('efisiensi')" title="Urutkan berdasarkan Efisiensi">
+            Efisiensi (Rp) ${rekapSatkerSortIcon('efisiensi')}<br><span style="font-weight:400;font-size:9px;color:#94A3B8;text-transform:none">paket Selesai saja</span>
+          </th>
+          <th class="rekap-col-status">Status Paket</th><th class="rekap-col-aksi">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>
+        <tr style="font-weight:800">
+          <td colspan="2">Total</td>
+          <td class="text-right mono rekap-col-jml">${fmt(totalJumlah)}</td>
+          <td></td>
+          <td class="text-right mono rekap-col-money">${IDRf(totalPagu)}</td>
+          <td class="text-right mono rekap-col-money" style="color:#15803D">${IDRf(totalKontrak)}</td>
+          <td class="text-right mono rekap-col-money" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
+function renderRekapSatkerModal() {
+  ensureRekapModalStyles();
+  const groups = sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items));
+  const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
+  const totalKontrak = groups.reduce((s, g) => s + g.kontrak, 0);
+  // Efisiensi total HANYA dari paket berstatus "Selesai" (pagu & kontraknya
+  // sudah final). Paket "Sedang Berjalan" tidak diikutkan karena pagunya
+  // masih HPS OPD (indikatif) — supaya angka efisiensi ini murni.
+  const totalPaguSelesai    = groups.reduce((s, g) => s + g.paguSelesai, 0);
+  const totalKontrakSelesai = groups.reduce((s, g) => s + g.kontrakSelesai, 0);
+  const totalEfi = totalPaguSelesai - totalKontrakSelesai;
+
   const html = `
     <div class="rekap-body">
       <div class="rekap-subtitle">
@@ -3574,6 +3674,7 @@ function renderRekapSatkerModal() {
         &nbsp;<span style="color:#CA8A04;font-weight:700">■ Berjalan</span>
         &nbsp;<span style="color:#94A3B8;font-weight:700">■ Belum</span>
         &nbsp;<span style="color:#DC2626;font-weight:700">■ Batal</span>
+        &nbsp;·&nbsp;<span style="color:#94A3B8">Klik header tabel untuk mengurutkan</span>
       </div>
       <div class="rekap-stat-row">
         <div class="rekap-stat" style="--ac:#3B82F6">
@@ -3597,28 +3698,7 @@ function renderRekapSatkerModal() {
           <div class="rekap-stat-value" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</div>
         </div>
       </div>
-      <div class="rekap-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="rekap-col-no">No</th><th>Satker / OPD</th><th class="text-right rekap-col-jml">Jml Paket</th>
-              <th class="text-right rekap-col-money">Pagu RUP (Rp)</th><th class="text-right rekap-col-money">Nilai Kontrak (Rp)</th>
-              <th class="text-right rekap-col-money">Efisiensi (Rp)<br><span style="font-weight:400;font-size:9px;color:#94A3B8">paket Selesai saja</span></th><th class="rekap-col-status">Status Paket</th><th class="rekap-col-aksi">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-          <tfoot>
-            <tr style="font-weight:800">
-              <td colspan="2">Total</td>
-              <td class="text-right mono rekap-col-jml">${fmt(REKAP_SATKER_CACHE.items.length)}</td>
-              <td class="text-right mono rekap-col-money">${IDRf(totalPagu)}</td>
-              <td class="text-right mono rekap-col-money" style="color:#15803D">${IDRf(totalKontrak)}</td>
-              <td class="text-right mono rekap-col-money" style="color:${totalEfi < 0 ? '#DC2626' : '#16A34A'}">${IDRf(totalEfi)}</td>
-              <td colspan="2"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <div class="rekap-table-wrap" id="rekap-satker-tablewrap">${renderRekapSatkerTableHtml(groups)}</div>
     </div>`;
 
   Swal.fire({
@@ -3628,14 +3708,16 @@ function renderRekapSatkerModal() {
     showDenyButton: true, denyButtonText: '⬇ Export CSV Rekap',
     confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB',
   }).then(res => {
-    if (res.isDenied) exportRekapSatkerCSV(groups);
+    if (res.isDenied) exportRekapSatkerCSV(sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items)));
   });
 }
 
 function exportRekapSatkerCSV(groups) {
-  const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi (paket Selesai)', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
+  const headers = ['Kode Satker', 'Nama Satker', 'Jumlah Paket', 'Metode Pengadaan', 'Pagu RUP', 'Nilai Kontrak', 'Efisiensi (paket Selesai)', 'Selesai', 'Sedang Berjalan', 'Belum Berproses', 'Dibatalkan'];
   const rows = groups.map(g => [
-    g.kode_satker, g.nama_satker, g.jumlah, g.pagu,
+    g.kode_satker, g.nama_satker, g.jumlah,
+    Object.entries(g.metode || {}).sort((a, b) => b[1] - a[1]).map(([m, c]) => `${m} ${c}`).join('; '),
+    g.pagu,
     g.realisasiCount > 0 ? g.kontrak : '',
     g.selesaiCount > 0 ? (g.paguSelesai - g.kontrakSelesai) : '',
     g.selesai, g.berjalan, g.belum, g.batal,
