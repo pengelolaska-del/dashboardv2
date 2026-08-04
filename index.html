@@ -1046,18 +1046,21 @@ thead .col-sep-h{
     <!-- c.1) Rincian per Sumber Transaksi -->
     <div class="tbl-wrap" style="margin-top:14px">
       <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian Berdasarkan Sumber Transaksi</span></div>
+      <div id="rk-transaksi-belum-note" style="display:none;padding:10px 14px;font-size:12px;color:#9A3412;background:#FFF7ED;border-bottom:1px solid #FED7AA">
+        ⏳ <b id="rk-transaksi-belum-jml">0</b> paket <b>belum ada transaksi/realisasi</b> sama sekali (pagu <span id="rk-transaksi-belum-pagu">Rp 0</span>) — belum tercatat di kanal manapun, jadi tidak masuk ke tabel sumber transaksi di bawah ini.
+      </div>
       <div class="tbl-scroll">
         <table class="tbl">
           <thead><tr>
-            <th>No</th><th>Sumber Transaksi</th><th class="text-right">Total</th><th class="text-right">Belum</th>
+            <th>No</th><th>Sumber Transaksi</th><th class="text-right">Jumlah Paket</th>
             <th class="text-right">On Process</th><th class="text-right">Selesai</th>
             <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
           </tr></thead>
-          <tbody id="rk-transaksi-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="rk-transaksi-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
-        Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi), bukan rencana di RUP. Paket yang belum ada realisasinya dikelompokkan ke "Belum Ada Transaksi".
+        Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi), bukan rencana di RUP — jadi hanya berisi paket yang sudah punya transaksi. Paket yang belum ada realisasinya lihat catatan di atas tabel.
       </div>
     </div>
 
@@ -4399,15 +4402,27 @@ async function loadRekap() {
       </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── c.1) Tabel Sumber Transaksi (kanal realisasi aktual) ──
-    const transaksi = d.rekap_transaksi || [];
+    // "Belum Ada Transaksi" ditampilkan terpisah sebagai catatan (bukan baris
+    // tabel) karena kolom On Process/Selesai/Nilai Kontrak-nya selalu 0 —
+    // digabung ke tabel cuma bikin bingung ("kenapa Belum tidak muncul di
+    // baris lain" — karena secara struktur paket yg belum ada realisasi
+    // memang tidak dan tidak bisa punya sumber_transaksi).
+    const transaksiAll = d.rekap_transaksi || [];
+    const belumEntry = transaksiAll.find(r => r.sumber_transaksi === 'Belum Ada Transaksi');
+    const transaksi = transaksiAll.filter(r => r.sumber_transaksi !== 'Belum Ada Transaksi');
+    const belumNote = document.getElementById('rk-transaksi-belum-note');
+    if (belumEntry && belumEntry.total > 0) {
+      belumNote.style.display = 'block';
+      document.getElementById('rk-transaksi-belum-jml').textContent = fmt(belumEntry.total);
+      document.getElementById('rk-transaksi-belum-pagu').textContent = IDRf(belumEntry.nilai_pagu);
+    } else {
+      belumNote.style.display = 'none';
+    }
     cariTransaksiTbody.innerHTML = transaksi.length ? transaksi.map((r,i) => `
       <tr>
         <td>${i+1}</td>
-        <td>${r.sumber_transaksi === 'Belum Ada Transaksi'
-              ? '<span class="badge b-gray">⏳ Belum Ada Transaksi</span>'
-              : mbadge(r.sumber_transaksi)}</td>
+        <td>${mbadge(r.sumber_transaksi)}</td>
         <td class="text-right mono">${fmt(r.total)}</td>
-        <td class="text-right mono" style="color:#94A3B8">${fmt(r.belum)}</td>
         <td class="text-right mono" style="color:#B45309">${fmt(r.on_process)}</td>
         <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
         <td class="text-right mono">${IDRf(r.nilai_pagu)}</td>
@@ -4416,12 +4431,11 @@ async function loadRekap() {
       <tr style="font-weight:700;background:#F8FAFC">
         <td colspan="2">Total</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.total,0))}</td>
-        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.belum,0))}</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.on_process,0))}</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.selesai,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_pagu,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_kontrak,0))}</td>
-      </tr>` : `<tr><td colspan="8"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+      </tr>` : `<tr><td colspan="7"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── d) Tabel paket sedang berjalan (non-tender) ──
     const berjalan = d.paket_berjalan || [];
