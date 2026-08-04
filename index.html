@@ -1043,11 +1043,35 @@ thead .col-sep-h{
       </div>
     </div>
 
+    <!-- c.1) Rincian per Sumber Transaksi -->
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian Berdasarkan Sumber Transaksi</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr>
+            <th>No</th><th>Sumber Transaksi</th><th class="text-right">Total</th><th class="text-right">Belum</th>
+            <th class="text-right">On Process</th><th class="text-right">Selesai</th>
+            <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
+          </tr></thead>
+          <tbody id="rk-transaksi-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
+        Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi), bukan rencana di RUP. Paket yang belum ada realisasinya dikelompokkan ke "Belum Ada Transaksi".
+      </div>
+    </div>
+
     <!-- Grafik -->
     <div class="group-title">Grafik</div>
     <div class="chart-grid-2">
       <div class="chart-card"><div class="chart-title">Nilai Pagu per Cara Pengadaan</div><div style="height:220px"><canvas id="c-rk-cara"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Status Paket per Metode Pemilihan (Rencana RUP)</div><div style="height:220px"><canvas id="c-rk-metode"></canvas></div></div>
+    </div>
+
+    <!-- Grafik Sumber Transaksi -->
+    <div class="chart-grid-2" style="margin-top:14px">
+      <div class="chart-card"><div class="chart-title">Nilai Kontrak per Sumber Transaksi (Realisasi)</div><div style="height:220px"><canvas id="c-rk-transaksi-nilai"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Status Paket per Sumber Transaksi (Realisasi)</div><div style="height:220px"><canvas id="c-rk-transaksi-status"></canvas></div></div>
     </div>
 
     <!-- d) Paket sedang berjalan (non-tender) -->
@@ -4282,6 +4306,7 @@ async function loadRekap() {
   const cariCaraTbody   = document.getElementById('rk-cara-tbody');
   const cariJenisTbody  = document.getElementById('rk-jenis-tbody');
   const cariMetodeTbody = document.getElementById('rk-metode-tbody');
+  const cariTransaksiTbody = document.getElementById('rk-transaksi-tbody');
   const berjalanTbody   = document.getElementById('rk-berjalan-tbody');
   const tenderTbody     = document.getElementById('rk-tender-tbody');
 
@@ -4373,6 +4398,31 @@ async function loadRekap() {
         <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
       </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
+    // ── c.1) Tabel Sumber Transaksi (kanal realisasi aktual) ──
+    const transaksi = d.rekap_transaksi || [];
+    cariTransaksiTbody.innerHTML = transaksi.length ? transaksi.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.sumber_transaksi === 'Belum Ada Transaksi'
+              ? '<span class="badge b-gray">⏳ Belum Ada Transaksi</span>'
+              : mbadge(r.sumber_transaksi)}</td>
+        <td class="text-right mono">${fmt(r.total)}</td>
+        <td class="text-right mono" style="color:#94A3B8">${fmt(r.belum)}</td>
+        <td class="text-right mono" style="color:#B45309">${fmt(r.on_process)}</td>
+        <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
+        <td class="text-right mono">${IDRf(r.nilai_pagu)}</td>
+        <td class="text-right mono" style="color:#15803D">${IDRf(r.nilai_kontrak)}</td>
+      </tr>`).join('') + `
+      <tr style="font-weight:700;background:#F8FAFC">
+        <td colspan="2">Total</td>
+        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.total,0))}</td>
+        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.belum,0))}</td>
+        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.on_process,0))}</td>
+        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.selesai,0))}</td>
+        <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_pagu,0))}</td>
+        <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_kontrak,0))}</td>
+      </tr>` : `<tr><td colspan="8"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+
     // ── d) Tabel paket sedang berjalan (non-tender) ──
     const berjalan = d.paket_berjalan || [];
     document.getElementById('rk-berjalan-info').textContent =
@@ -4438,9 +4488,46 @@ async function loadRekap() {
       },
     });
 
+    if (S.rekapCharts.transNilai) S.rekapCharts.transNilai.destroy();
+    S.rekapCharts.transNilai = new Chart(document.getElementById('c-rk-transaksi-nilai'), {
+      type: 'doughnut',
+      data: {
+        labels: transaksi.map(r => r.sumber_transaksi),
+        datasets: [{
+          data: transaksi.map(r => r.nilai_kontrak),
+          backgroundColor: ['#2563EB','#0EA5E9','#16A34A','#F59E0B','#A855F7','#DC2626','#94A3B8'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${IDR(ctx.raw)}` } } },
+      },
+    });
+
+    if (S.rekapCharts.transStatus) S.rekapCharts.transStatus.destroy();
+    S.rekapCharts.transStatus = new Chart(document.getElementById('c-rk-transaksi-status'), {
+      type: 'bar',
+      data: {
+        labels: transaksi.map(r => r.sumber_transaksi),
+        datasets: [
+          { label:'Selesai',    data: transaksi.map(r=>r.selesai),    backgroundColor:'#16A34A' },
+          { label:'On Process', data: transaksi.map(r=>r.on_process), backgroundColor:'#F59E0B' },
+          { label:'Belum',      data: transaksi.map(r=>r.belum),      backgroundColor:'#CBD5E1' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked:true, grid:{display:false}, ticks:{font:{size:9.5}} },
+                  y: { stacked:true, grid:{color:'#F1F5F9'}, ticks:{font:{size:10}} } },
+        plugins: { legend: { position:'bottom', labels:{font:{size:11}, boxWidth:10} } },
+      },
+    });
+
   } catch(e) {
-    [cariCaraTbody, cariJenisTbody, cariMetodeTbody].forEach(t => {
-      if (t) t.innerHTML = `<tr><td colspan="6"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
+    [cariCaraTbody, cariJenisTbody, cariMetodeTbody, cariTransaksiTbody].forEach(t => {
+      if (t) t.innerHTML = `<tr><td colspan="8"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
     });
     berjalanTbody.innerHTML = `<tr><td colspan="5"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
     tenderTbody.innerHTML   = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
