@@ -3416,6 +3416,24 @@ function exportRowsToCSV(headers, rows, filename) {
   a.download=filename; a.click();
 }
 
+// Export CSV multi-section (dipakai saat 1 file perlu memuat beberapa
+// tabel dgn jumlah kolom berbeda, mis. Rekap per Satker + Rincian Paket).
+// Tiap section dipisah baris kosong + judul section, supaya tetap gampang
+// dibaca meski dibuka di Excel/Sheets sebagai 1 file.
+function exportRowsToCSVSections(sections, filename) {
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lines = [];
+  sections.forEach((sec, idx) => {
+    if (idx > 0) lines.push('');
+    if (sec.title) lines.push(esc(sec.title));
+    lines.push(sec.headers.map(esc).join(','));
+    sec.rows.forEach(r => lines.push(r.map(esc).join(',')));
+  });
+  const csv = lines.join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=filename; a.click();
+}
+
 
 // ============================================================
 // REKAP PER SATKER/OPD (Sandingan RUP)
@@ -3758,8 +3776,34 @@ function exportRekapSatkerCSV(groups) {
     g.selesaiCount > 0 ? (g.paguSelesai - g.kontrakSelesai) : '',
     g.selesai, g.berjalan, g.belum, g.batal,
   ]);
+
+  // Rincian per paket, dikelompokkan per satker mengikuti urutan tabel
+  // rekap (`groups`) yang sedang tampil — supaya baris detail tiap satker
+  // gampang ditelusuri persis di bawah ringkasannya di section berikutnya.
+  const detailHeaders = ['Kode Satker', 'Nama Satker', 'Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
+  const detailRows = [];
+  groups.forEach(g => {
+    const key = g.kode_satker || g.nama_satker || '—';
+    REKAP_SATKER_CACHE.items
+      .filter(r => (r.kode_satker || r.nama_satker || '—') === key)
+      .forEach(r => detailRows.push([
+        g.kode_satker, g.nama_satker,
+        r.nama_paket_rup || '—', r.kode_rup || '—',
+        r.metode_pengadaan_rup || r.metode_pengadaan || '—',
+        r.jenis_pengadaan_rup || r.jenis_pengadaan || '—',
+        r.pagu || 0,
+        r.status_realisasi || 'Belum Terealisasi',
+        r.nama_penyedia || '—',
+        r.ada_realisasi ? (r.nilai_kontrak || 0) : '',
+        r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+      ]));
+  });
+
   const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
-  exportRowsToCSV(headers, rows, `Rekap_Satker_Sandingan_${label}.csv`);
+  exportRowsToCSVSections([
+    { title: 'REKAP PER SATKER/OPD', headers, rows },
+    { title: 'RINCIAN PAKET', headers: detailHeaders, rows: detailRows },
+  ], `Rekap_Satker_Sandingan_${label}.csv`);
 }
 
 // Detail paket untuk 1 satker — diambil dari cache hasil showRekapSatker(),
