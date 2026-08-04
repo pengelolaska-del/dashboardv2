@@ -1047,7 +1047,8 @@ thead .col-sep-h{
     <div class="tbl-wrap" style="margin-top:14px">
       <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian Berdasarkan Sumber Transaksi</span></div>
       <div id="rk-transaksi-belum-note" style="display:none;padding:10px 14px;font-size:12px;color:#9A3412;background:#FFF7ED;border-bottom:1px solid #FED7AA">
-        ⏳ <b id="rk-transaksi-belum-jml">0</b> paket <b>belum ada transaksi/realisasi</b> sama sekali (pagu <span id="rk-transaksi-belum-pagu">Rp 0</span>) — belum tercatat di kanal manapun, jadi tidak masuk ke tabel sumber transaksi di bawah ini.
+        ⏳ <a href="#" id="rk-transaksi-belum-jml" style="color:inherit;font-weight:700" onclick="filterSandByTransaksi('','Belum Berproses');return false" title="Klik untuk lihat semua paket yang belum berproses">0</a>
+        paket <b>belum ada transaksi/realisasi</b> sama sekali (pagu <span id="rk-transaksi-belum-pagu">Rp 0</span>) — belum tercatat di kanal manapun, jadi tidak masuk ke tabel sumber transaksi di bawah ini.
       </div>
       <div class="tbl-scroll">
         <table class="tbl">
@@ -4108,18 +4109,26 @@ async function loadRecapJenis() {
   }
 }
 
-// Pindah ke menu Sandingan RUP, set filter jenis (dan opsional status), lalu reload tabel
-async function filterSandByJenis(jenisPengadaan, statusPaket) {
+// Pindah ke menu Sandingan RUP dengan filter tertentu (metode/jenis/status/
+// transaksi), lalu reload tabel — dipakai oleh angka-angka yang bisa diklik
+// di tabel-tabel Rekap Laporan (Jenis Pengadaan, Metode Pemilihan, Sumber
+// Transaksi) supaya langsung "tembus" lihat daftar paketnya di Sandingan RUP.
+async function gotoSandingan(f = {}) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-sandingan')?.classList.add('active');
   document.querySelector('[data-s="sandingan"]')?.classList.add('active');
   await loadSandingan(1);
-  document.getElementById('sand-jenis').value  = jenisPengadaan || '';
-  document.getElementById('sand-status').value = statusPaket    || '';
+  document.getElementById('sand-metode').value    = f.metode    || '';
+  document.getElementById('sand-jenis').value     = f.jenis     || '';
+  document.getElementById('sand-status').value    = f.status    || '';
+  document.getElementById('sand-transaksi').value = f.transaksi || '';
   applySand();
   document.getElementById('sec-sandingan').scrollIntoView({ behavior:'smooth' });
 }
+const filterSandByJenis     = (jenisPengadaan, statusPaket) => gotoSandingan({ jenis: jenisPengadaan, status: statusPaket });
+const filterSandByMetode    = (metode, statusPaket)         => gotoSandingan({ metode, status: statusPaket });
+const filterSandByTransaksi = (transaksi, statusPaket)      => gotoSandingan({ transaksi, status: statusPaket });
 
 function escJs(s) { return String(s||'').replace(/'/g, "\\'"); }
 
@@ -4395,10 +4404,18 @@ async function loadRekap() {
       <tr>
         <td>${i+1}</td>
         <td>${mbadge(r.metode_pengadaan)}</td>
-        <td class="text-right mono">${fmt(r.total)}</td>
-        <td class="text-right mono" style="color:#94A3B8">${fmt(r.belum)}</td>
-        <td class="text-right mono" style="color:#B45309">${fmt(r.on_process)}</td>
-        <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
+        <td class="text-right mono">
+          <a href="#" style="color:inherit" onclick="filterSandByMetode('${escJs(r.metode_pengadaan)}');return false" title="Klik untuk lihat semua paket metode ${escJs(r.metode_pengadaan)}">${fmt(r.total)}</a>
+        </td>
+        <td class="text-right mono" style="color:#94A3B8">
+          <a href="#" style="color:inherit" onclick="filterSandByMetode('${escJs(r.metode_pengadaan)}','Belum Berproses');return false" title="Klik untuk lihat paket ${escJs(r.metode_pengadaan)} yang belum berproses/belum dilaksanakan">${fmt(r.belum)}</a>
+        </td>
+        <td class="text-right mono" style="color:#B45309">
+          <a href="#" style="color:inherit" onclick="filterSandByMetode('${escJs(r.metode_pengadaan)}','Sedang Berjalan');return false" title="Klik untuk lihat paket ${escJs(r.metode_pengadaan)} yang sedang berjalan">${fmt(r.on_process)}</a>
+        </td>
+        <td class="text-right mono" style="color:#15803D;font-weight:600">
+          <a href="#" style="color:inherit" onclick="filterSandByMetode('${escJs(r.metode_pengadaan)}','Selesai');return false" title="Klik untuk lihat paket ${escJs(r.metode_pengadaan)} yang sudah selesai">${fmt(r.selesai)}</a>
+        </td>
       </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── c.1) Tabel Sumber Transaksi (kanal realisasi aktual) ──
@@ -4422,9 +4439,15 @@ async function loadRekap() {
       <tr>
         <td>${i+1}</td>
         <td>${mbadge(r.sumber_transaksi)}</td>
-        <td class="text-right mono">${fmt(r.total)}</td>
-        <td class="text-right mono" style="color:#B45309">${fmt(r.on_process)}</td>
-        <td class="text-right mono" style="color:#15803D;font-weight:600">${fmt(r.selesai)}</td>
+        <td class="text-right mono">
+          <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}');return false" title="Klik untuk lihat semua paket sumber transaksi ${escJs(r.sumber_transaksi)}">${fmt(r.total)}</a>
+        </td>
+        <td class="text-right mono" style="color:#B45309">
+          <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}','Sedang Berjalan');return false" title="Klik untuk lihat paket ${escJs(r.sumber_transaksi)} yang sedang berjalan">${fmt(r.on_process)}</a>
+        </td>
+        <td class="text-right mono" style="color:#15803D;font-weight:600">
+          <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}','Selesai');return false" title="Klik untuk lihat paket ${escJs(r.sumber_transaksi)} yang sudah selesai">${fmt(r.selesai)}</a>
+        </td>
         <td class="text-right mono">${IDRf(r.nilai_pagu)}</td>
         <td class="text-right mono" style="color:#15803D">${IDRf(r.nilai_kontrak)}</td>
       </tr>`).join('') + `
