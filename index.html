@@ -1048,20 +1048,20 @@ thead .col-sep-h{
       <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian Berdasarkan Sumber Transaksi</span></div>
       <div id="rk-transaksi-belum-note" style="display:none;padding:10px 14px;font-size:12px;color:#9A3412;background:#FFF7ED;border-bottom:1px solid #FED7AA">
         ⏳ <a href="#" id="rk-transaksi-belum-jml" style="color:inherit;font-weight:700" onclick="filterSandByTransaksi('','Belum Berproses');return false" title="Klik untuk lihat semua paket yang belum berproses">0</a>
-        paket <b>belum ada transaksi/realisasi</b> sama sekali (pagu <span id="rk-transaksi-belum-pagu">Rp 0</span>) — belum tercatat di kanal manapun, jadi tidak masuk ke tabel sumber transaksi di bawah ini.
+        paket <b>belum ada transaksi/realisasi</b> sama sekali (pagu <span id="rk-transaksi-belum-pagu">Rp 0</span>) — belum tercatat di kanal manapun (di luar paket rencana Tender/Seleksi, yang sudah digabung ke baris "Tender" di bawah sebagai kolom Belum).
       </div>
       <div class="tbl-scroll">
         <table class="tbl">
           <thead><tr>
             <th>No</th><th>Sumber Transaksi</th><th class="text-right">Jumlah Paket</th>
-            <th class="text-right">On Process</th><th class="text-right">Selesai</th>
+            <th class="text-right">Belum</th><th class="text-right">On Process</th><th class="text-right">Selesai</th>
             <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
           </tr></thead>
-          <tbody id="rk-transaksi-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="rk-transaksi-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
-        Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi), bukan rencana di RUP — jadi hanya berisi paket yang sudah punya transaksi. Paket yang belum ada realisasinya lihat catatan di atas tabel.
+        Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi). Kolom <b>Belum</b> pada baris "Tender" mencakup paket yang direncanakan di RUP dengan metode Tender atau Seleksi tapi belum direalisasikan — paket belum-berproses lainnya (di luar Tender/Seleksi) lihat catatan di atas tabel.
       </div>
     </div>
 
@@ -1165,7 +1165,7 @@ thead .col-sep-h{
           <!-- Status Realisasi -->
           <div class="fld">
             <label>Status Realisasi</label>
-            <select id="sand-status">
+            <select id="sand-status" onchange="warnSandTransaksiBelum()">
               <option value="">Semua Status</option>
               <option value="Selesai">✅ Selesai</option>
               <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
@@ -1181,13 +1181,21 @@ thead .col-sep-h{
           <!-- Sumber Transaksi -->
           <div class="fld">
             <label>Sumber Transaksi</label>
-            <select id="sand-transaksi"><option value="">Semua</option></select>
+            <select id="sand-transaksi" onchange="warnSandTransaksiBelum()"><option value="">Semua</option></select>
+            <div style="font-size:10px;color:#94A3B8;margin-top:3px;line-height:1.4">
+              Kanal <b>realisasi</b> aktual — paket yang belum ada transaksinya tidak akan muncul di sini walau metode rencananya sama.
+            </div>
           </div>
           <!-- Search -->
           <div class="fld" style="grid-column:span 2">
             <label>Cari Nama Paket / Kode RUP</label>
             <input id="sand-search" type="text" placeholder="Ketik nama paket atau kode RUP..."/>
           </div>
+        </div>
+        <div id="sand-transaksi-belum-warn" style="display:none;margin-top:10px;padding:9px 12px;font-size:11.5px;color:#9A3412;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px">
+          ⚠️ Kombinasi filter <b>Sumber Transaksi</b> + <b>Status Belum Berproses</b> akan selalu kosong — paket yang belum ada realisasinya memang belum punya Sumber Transaksi apapun.
+          Kalau maksudnya mencari paket dengan <b>metode rencana</b> tertentu (mis. Pengadaan Langsung) yang belum dilaksanakan, gunakan filter <b>Metode Pengadaan</b> di atas, bukan Sumber Transaksi.
+          (Khusus <b>Tender</b>, kombinasi ini tetap menampilkan paket rencana Tender/Seleksi yang belum berproses — jadi tidak berlaku kosong.)
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="applySand()">🔍 Terapkan Filter</button>
@@ -3981,6 +3989,7 @@ function resetSand()  {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('sand-search').value = '';
+  warnSandTransaksiBelum();
   loadSandingan(1);
 }
 function pageSand(d) { loadSandingan(Math.max(1, Math.min(SAND.totalPages, SAND.page + d))); }
@@ -4003,6 +4012,20 @@ function readSandFilter() {
     sumber_transaksi: v('sand-transaksi'),
     search:           v('sand-search'),
   };
+}
+
+// Paket "Belum Berproses" secara struktur tidak mungkin punya sumber_transaksi
+// (baru terisi begitu ada realisasi) — jadi filter Sumber Transaksi + Status
+// Belum Berproses biasanya menghasilkan 0 baris. KECUALI Sumber Transaksi =
+// "Tender": paket rencana metode Tender/Seleksi yang belum berproses tetap
+// ikut tampil (digabung lewat metode_pengadaan_rup di backend), jadi untuk
+// kasus itu peringatan ini tidak relevan / tidak ditampilkan.
+function warnSandTransaksiBelum() {
+  const warn = document.getElementById('sand-transaksi-belum-warn');
+  if (!warn) return;
+  const transaksi = v('sand-transaksi');
+  const konflik = transaksi && transaksi !== 'Tender' && v('sand-status') === 'Belum Berproses';
+  warn.style.display = konflik ? 'block' : 'none';
 }
 
 // ── Popup rincian fleksibel — dipanggil saat batang chart Analisis diklik ──
@@ -4123,6 +4146,7 @@ async function gotoSandingan(f = {}) {
   document.getElementById('sand-jenis').value     = f.jenis     || '';
   document.getElementById('sand-status').value    = f.status    || '';
   document.getElementById('sand-transaksi').value = f.transaksi || '';
+  warnSandTransaksiBelum();
   applySand();
   document.getElementById('sec-sandingan').scrollIntoView({ behavior:'smooth' });
 }
@@ -4419,11 +4443,12 @@ async function loadRekap() {
       </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── c.1) Tabel Sumber Transaksi (kanal realisasi aktual) ──
-    // "Belum Ada Transaksi" ditampilkan terpisah sebagai catatan (bukan baris
-    // tabel) karena kolom On Process/Selesai/Nilai Kontrak-nya selalu 0 —
-    // digabung ke tabel cuma bikin bingung ("kenapa Belum tidak muncul di
-    // baris lain" — karena secara struktur paket yg belum ada realisasi
-    // memang tidak dan tidak bisa punya sumber_transaksi).
+    // "Belum Ada Transaksi" (paket yg sama sekali belum berproses & rencana
+    // metodenya bukan Tender/Seleksi) ditampilkan terpisah sebagai catatan,
+    // bukan baris tabel, karena On Process/Selesai/Nilai Kontrak-nya selalu
+    // 0. Paket rencana Tender/Seleksi yang belum berproses TIDAK masuk
+    // bucket ini — backend menggabungkannya ke baris "Tender" di bawah
+    // (kolom Belum), karena tetap relevan disebut "belum dilaksanakan tender".
     const transaksiAll = d.rekap_transaksi || [];
     const belumEntry = transaksiAll.find(r => r.sumber_transaksi === 'Belum Ada Transaksi');
     const transaksi = transaksiAll.filter(r => r.sumber_transaksi !== 'Belum Ada Transaksi');
@@ -4442,6 +4467,11 @@ async function loadRekap() {
         <td class="text-right mono">
           <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}');return false" title="Klik untuk lihat semua paket sumber transaksi ${escJs(r.sumber_transaksi)}">${fmt(r.total)}</a>
         </td>
+        <td class="text-right mono" style="color:#9A3412">
+          ${r.belum > 0
+            ? `<a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}','Belum Berproses');return false" title="Klik untuk lihat paket ${escJs(r.sumber_transaksi)} yang belum berproses">${fmt(r.belum)}</a>`
+            : '—'}
+        </td>
         <td class="text-right mono" style="color:#B45309">
           <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}','Sedang Berjalan');return false" title="Klik untuk lihat paket ${escJs(r.sumber_transaksi)} yang sedang berjalan">${fmt(r.on_process)}</a>
         </td>
@@ -4454,11 +4484,12 @@ async function loadRekap() {
       <tr style="font-weight:700;background:#F8FAFC">
         <td colspan="2">Total</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.total,0))}</td>
+        <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.belum,0))}</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.on_process,0))}</td>
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.selesai,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_pagu,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_kontrak,0))}</td>
-      </tr>` : `<tr><td colspan="7"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+      </tr>` : `<tr><td colspan="8"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── d) Tabel paket sedang berjalan (non-tender) ──
     const berjalan = d.paket_berjalan || [];
