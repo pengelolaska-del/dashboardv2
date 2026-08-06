@@ -543,7 +543,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Cara Pengadaan</label>
-            <select id="rup-cara">
+            <select id="rup-cara" onchange="applyRUP()">
               <option value="">Semua</option>
               <option>Penyedia</option>
               <option>Swakelola</option>
@@ -551,22 +551,22 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Metode Pengadaan</label>
-            <select id="rup-metode"><option value="">Semua</option></select>
+            <select id="rup-metode" onchange="applyRUP()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Jenis Pengadaan</label>
-            <select id="rup-jenis"><option value="">Semua</option></select>
+            <select id="rup-jenis" onchange="applyRUP()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Sumber Dana</label>
-            <select id="rup-sumber"><option value="">Semua sumber dana</option></select>
+            <select id="rup-sumber" onchange="applyRUP()"><option value="">Semua sumber dana</option></select>
           </div>
           <!-- Filter baru: Status Realisasi -->
           <div class="fld">
             <label>Status Realisasi
               <span style="font-size:10px;background:#EFF6FF;color:#1D4ED8;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px">Baru</span>
             </label>
-            <select id="rup-status-real">
+            <select id="rup-status-real" onchange="applyRUP()">
               <option value="">Semua Status</option>
               <option value="Belum Berproses">⏳ Belum Berproses</option>
               <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
@@ -578,11 +578,11 @@ thead .col-sep-h{
         <div class="filter-row2">
           <div class="fld">
             <label>Kode RUP</label>
-            <input id="rup-kode" type="text" placeholder="Cari kode RUP..."/>
+            <input id="rup-kode" type="text" placeholder="Cari kode RUP..." onkeydown="if(event.key==='Enter')applyRUP()"/>
           </div>
           <div class="fld">
             <label>Nama Paket</label>
-            <input id="rup-nama" type="text" placeholder="Cari nama paket..."/>
+            <input id="rup-nama" type="text" placeholder="Cari nama paket..." onkeydown="if(event.key==='Enter')applyRUP()"/>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-primary" onclick="applyRUP()">Terapkan</button>
@@ -712,37 +712,37 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
-            <select id="real-transaksi"><option value="">Semua</option></select>
+            <select id="real-transaksi" onchange="applyReal()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Metode Pengadaan</label>
-            <select id="real-metode"><option value="">Semua</option></select>
+            <select id="real-metode" onchange="applyReal()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Status Paket</label>
-            <select id="real-status"><option value="">Semua status</option></select>
+            <select id="real-status" onchange="applyReal()"><option value="">Semua status</option></select>
           </div>
           <div class="fld" style="grid-column:span 2">
             <label>Sumber Dana</label>
-            <select id="real-sumber"><option value="">Semua sumber dana</option></select>
+            <select id="real-sumber" onchange="applyReal()"><option value="">Semua sumber dana</option></select>
           </div>
           <div class="fld" style="grid-column:span 2">
             <label>Jenis Pengadaan</label>
-            <select id="real-jenis"><option value="">Semua</option></select>
+            <select id="real-jenis" onchange="applyReal()"><option value="">Semua</option></select>
           </div>
         </div>
         <div class="filter-row3">
           <div class="fld">
             <label>Cari Penyedia</label>
-            <input id="real-penyedia" type="text" placeholder="Nama penyedia..."/>
+            <input id="real-penyedia" type="text" placeholder="Nama penyedia..." onkeydown="if(event.key==='Enter')applyReal()"/>
           </div>
           <div class="fld">
             <label>Cari Nama Paket</label>
-            <input id="real-nama" type="text" placeholder="Nama paket..."/>
+            <input id="real-nama" type="text" placeholder="Nama paket..." onkeydown="if(event.key==='Enter')applyReal()"/>
           </div>
           <div class="fld">
             <label>Cari Kode Paket</label>
-            <input id="real-kode" type="text" placeholder="Kode paket..."/>
+            <input id="real-kode" type="text" placeholder="Kode paket..." onkeydown="if(event.key==='Enter')applyReal()"/>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-primary" onclick="applyReal()">Terapkan</button>
@@ -831,15 +831,15 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
-            <select id="efi-transaksi"><option value="">Semua</option></select>
+            <select id="efi-transaksi" onchange="applyEfi()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Metode Pengadaan</label>
-            <select id="efi-metode"><option value="">Semua</option></select>
+            <select id="efi-metode" onchange="applyEfi()"><option value="">Semua</option></select>
           </div>
           <div class="fld">
             <label>Status Paket</label>
-            <select id="efi-status"><option value="">Semua status</option></select>
+            <select id="efi-status" onchange="applyEfi()"><option value="">Semua status</option></select>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
@@ -1138,7 +1138,7 @@ thead .col-sep-h{
           <!-- Metode & Jenis — filter UTAMA -->
           <div class="fld">
             <label>Metode Pengadaan <span style="color:#DC2626;font-size:10px;font-weight:700">★ Utama</span></label>
-            <select id="sand-metode">
+            <select id="sand-metode" onchange="applySand()">
               <option value="">Semua Metode</option>
               <option>E-Purchasing</option>
               <option>Pengadaan Langsung</option>
@@ -1151,7 +1151,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Jenis Pengadaan <span style="color:#DC2626;font-size:10px;font-weight:700">★ Utama</span></label>
-            <select id="sand-jenis">
+            <select id="sand-jenis" onchange="applySand()">
               <option value="">Semua Jenis</option>
               <option>Barang</option>
               <option>Jasa Konsultansi</option>
@@ -1165,7 +1165,7 @@ thead .col-sep-h{
           <!-- Status Realisasi -->
           <div class="fld">
             <label>Status Realisasi</label>
-            <select id="sand-status" onchange="warnSandTransaksiBelum()">
+            <select id="sand-status" onchange="warnSandTransaksiBelum();applySand()">
               <option value="">Semua Status</option>
               <option value="Selesai">✅ Selesai</option>
               <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
@@ -1176,12 +1176,12 @@ thead .col-sep-h{
           <!-- Sumber Dana -->
           <div class="fld">
             <label>Sumber Dana</label>
-            <select id="sand-sumber"><option value="">Semua</option></select>
+            <select id="sand-sumber" onchange="applySand()"><option value="">Semua</option></select>
           </div>
           <!-- Sumber Transaksi -->
           <div class="fld">
             <label>Sumber Transaksi</label>
-            <select id="sand-transaksi" onchange="warnSandTransaksiBelum()"><option value="">Semua</option></select>
+            <select id="sand-transaksi" onchange="warnSandTransaksiBelum();applySand()"><option value="">Semua</option></select>
             <div style="font-size:10px;color:#94A3B8;margin-top:3px;line-height:1.4">
               Kanal <b>realisasi</b> aktual — paket yang belum ada transaksinya tidak akan muncul di sini walau metode rencananya sama.
             </div>
@@ -1189,7 +1189,7 @@ thead .col-sep-h{
           <!-- Search -->
           <div class="fld" style="grid-column:span 2">
             <label>Cari Nama Paket / Kode RUP</label>
-            <input id="sand-search" type="text" placeholder="Ketik nama paket atau kode RUP..."/>
+            <input id="sand-search" type="text" placeholder="Ketik nama paket atau kode RUP..." onkeydown="if(event.key==='Enter')applySand()"/>
           </div>
         </div>
         <div id="sand-transaksi-belum-warn" style="display:none;margin-top:10px;padding:9px 12px;font-size:11.5px;color:#9A3412;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px">
@@ -2115,10 +2115,20 @@ function comboFilter(baseId) {
   }
 }
 
+// baseId -> fungsi 'Terapkan' halaman terkait, supaya milih Satuan Kerja
+// dari daftar combo langsung menerapkan filter juga (konsisten dgn semua
+// dropdown <select> lain yang sudah auto-apply lewat onchange).
+const COMBO_AUTO_APPLY = {
+  'rup-satker':  () => applyRUP(),
+  'real-satker': () => applyReal(),
+  'sand-satker': () => applySand(),
+  'efi-satker':  () => applyEfi(),
+};
 function comboChoose(baseId, kode) {
   comboSetValue(baseId, kode);
   const list = document.getElementById(baseId + '-list');
   if (list) list.classList.add('hidden');
+  if (COMBO_AUTO_APPLY[baseId]) COMBO_AUTO_APPLY[baseId]();
 }
 
 // onblur: tutup list, dan kalau teks yang diketik tidak match satupun opsi, kembalikan ke pilihan valid terakhir
