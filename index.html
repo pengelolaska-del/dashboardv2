@@ -4342,14 +4342,19 @@ async function loadSandingan(page=1) {
       const hasReal    = !!r.ada_realisasi;
       const isSelesai  = r.status_realisasi === 'Selesai';
       const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
+      const paguDiketahui = !r.is_unmatched || (r.pagu||0) > 0; // punya pagu asli, atau sudah diisi manual
       // Efisiensi murni HANYA dihitung utk paket berstatus "Selesai" (pagu &
       // nilai kontraknya sudah final). Paket "Sedang Berjalan" pagunya masih
       // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
       // sengaja TIDAK ditampilkan di sini agar tidak ikut mencemari total
       // efisiensi murni paket yang sudah selesai.
-      const efi      = (hasReal && isSelesai && !r.excluded_dari_efisiensi) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
+      // Kolom Efisiensi per baris di tabel ini TIDAK tunduk pada checklist
+      // "Metode Dikecualikan dari Efisiensi" (itu cuma memengaruhi angka
+      // AGREGAT di kartu KPI & halaman Analisis) — di sini efisiensi tetap
+      // dihitung & ditampilkan selama pagu-nya diketahui, supaya baris per
+      // baris tetap informatif walau metodenya dikecualikan dari total.
+      const efi      = (hasReal && isSelesai && paguDiketahui) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
-      const paguDiketahui = !r.is_unmatched || (r.pagu||0) > 0; // punya pagu asli, atau sudah diisi manual
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}">
         <td class="col-rupno mono" style="color:#94A3B8;font-size:11px">${rowNo}</td>
@@ -4415,8 +4420,8 @@ async function loadSandingan(page=1) {
             ? IDRf(efi)
             : isBerjalan
               ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
-              : r.excluded_dari_efisiensi
-                ? `<span title="${r.is_unmatched && !paguDiketahui ? 'Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (tombol + Set Pagu) supaya efisiensinya bisa muncul.' : 'Metode pengadaan paket ini dikecualikan dari perhitungan Efisiensi (lihat menu Analisis).'}" style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
+              : !paguDiketahui
+                ? `<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (tombol + Set Pagu) supaya efisiensinya bisa muncul." style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
                 : '—'}
         </td>
       </tr>`;
