@@ -2793,7 +2793,11 @@ async function savePagu() {
     if (res.status !== 'success') throw new Error(res.message);
     Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
     closePaguModal();
-    await loadKualitas(); // refresh tabel
+    // Refresh halaman yang sedang aktif — modal ini bisa dibuka dari
+    // Kualitas Data ATAU langsung dari baris "⚠ Belum Match" di Sandingan RUP.
+    const active = document.querySelector('.nav-link.active')?.dataset.s;
+    if (active === 'sandingan') await loadSandingan(SAND.page || 1);
+    else await loadKualitas();
   } catch(e) {
     Swal.fire('❌ Gagal', e.message, 'error');
   } finally {
@@ -4343,8 +4347,9 @@ async function loadSandingan(page=1) {
       // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
       // sengaja TIDAK ditampilkan di sini agar tidak ikut mencemari total
       // efisiensi murni paket yang sudah selesai.
-      const efi      = (hasReal && isSelesai && !r.is_unmatched) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
+      const efi      = (hasReal && isSelesai && !r.excluded_dari_efisiensi) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
+      const paguDiketahui = !r.is_unmatched || (r.pagu||0) > 0; // punya pagu asli, atau sudah diisi manual
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}">
         <td class="col-rupno mono" style="color:#94A3B8;font-size:11px">${rowNo}</td>
@@ -4353,7 +4358,7 @@ async function loadSandingan(page=1) {
           <div style="font-size:10px;color:#94A3B8;font-family:monospace">${r.kode_satker||''}</div>
         </td>
         <td class="col-paket" style="font-size:11.5px">
-          ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun — pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi." style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
+          ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun.${paguDiketahui ? ' Pagu sudah diisi manual oleh admin.' : ' Pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi sampai diisi manual.'}" style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
           ${r.is_realisasi_gabungan ? `<span title="1 kode RUP ini dipakai oleh ${r.realisasi_list.length} realisasi/kontrak terpisah — Pagu RUP dihitung sekali, Nilai Kontrak = jumlah semuanya. Lihat rincian di kolom Penyedia." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🔗 ${r.realisasi_list.length} Kontrak</span><br>` : ''}
           <div style="font-weight:500;color:#0F1C2E" title="${r.nama_paket_rup||r.nama_paket_realisasi||''}">
             ${r.is_unmatched
@@ -4371,7 +4376,17 @@ async function loadSandingan(page=1) {
         <td class="col-koderup">${r.is_unmatched ? `<span style="color:#9A3412;font-style:italic" title="Kode paket realisasi: ${r.kode_paket||'—'} — tidak ada kode RUP yang cocok">— (belum match)</span>` : (r.kode_rup||'—')}</td>
         <td class="col-metode">${mbadge(r.metode_pengadaan_rup||r.metode_pengadaan||'')}</td>
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
-        <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">${r.is_unmatched ? '<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>' : IDRf(r.pagu||0)+(r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))}</td>
+        <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">
+          ${paguDiketahui
+            ? IDRf(r.pagu||0) + (r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))
+            : `<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>`}
+          ${r.is_unmatched && S.isAdmin
+            ? `<button type="button" onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", pagu_manual:r.is_manual_pagu?r.pagu:""}).replace(/'/g,"&#39;")})'
+                style="display:block;margin-top:3px;font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:${r.is_manual_pagu?'#DCFCE7':'#EFF6FF'};color:${r.is_manual_pagu?'#16A34A':'#2563EB'}">
+                ${r.is_manual_pagu ? '✏ Edit Pagu' : '+ Set Pagu'}
+              </button>`
+            : ''}
+        </td>
         <!-- Pemisah: garis tebal tipis saja -->
         <td class="col-sep" style="background:#1E3A5F!important;border:none"></td>
         <!-- Kolom Realisasi -->
@@ -4400,8 +4415,8 @@ async function loadSandingan(page=1) {
             ? IDRf(efi)
             : isBerjalan
               ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
-              : r.is_unmatched
-                ? `<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun" style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
+              : r.excluded_dari_efisiensi
+                ? `<span title="${r.is_unmatched && !paguDiketahui ? 'Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (tombol + Set Pagu) supaya efisiensinya bisa muncul.' : 'Metode pengadaan paket ini dikecualikan dari perhitungan Efisiensi (lihat menu Analisis).'}" style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
                 : '—'}
         </td>
       </tr>`;
