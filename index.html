@@ -1062,6 +1062,7 @@ thead .col-sep-h{
       </div>
       <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
         Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi). Kolom <b>Belum</b> pada baris "Tender" mencakup paket yang direncanakan di RUP dengan metode Tender atau Seleksi tapi belum direalisasikan — paket belum-berproses lainnya (di luar Tender/Seleksi) lihat catatan di atas tabel.
+        Badge <b>⚠ angka</b> di kolom Jumlah Paket = paket yang sudah ada transaksinya tapi belum berhasil dicocokkan (match) ke RUP manapun; tetap dihitung di sini (supaya jumlahnya konsisten dengan menu Realisasi) tapi pagunya tidak diketahui sehingga tidak ikut dihitung ke Efisiensi. Detail baris ditandai sama di tabel Sandingan RUP.
       </div>
     </div>
 
@@ -1236,6 +1237,7 @@ thead .col-sep-h{
         <div class="sand-scard-lbl">Total Paket RUP</div>
         <div class="sand-scard-val" id="sand-kpi-total">—</div>
         <div class="sand-scard-pct" id="sand-kpi-pagu">—</div>
+        <div id="sand-kpi-unmatched-note" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ termasuk <span id="sand-kpi-unmatched-n">0</span> paket belum match ke RUP</div>
       </div>
       <div class="sand-scard done">
         <div class="sand-scard-lbl">✅ Sudah Dilaksanakan</div>
@@ -4253,6 +4255,15 @@ async function loadSandingan(page=1) {
     const st = d.summary || {};
     document.getElementById('sand-kpi-total').textContent   = fmt(d.total || 0);
     document.getElementById('sand-kpi-pagu').textContent    = IDRf(st.total_pagu || 0);
+    const unmatchedNote = document.getElementById('sand-kpi-unmatched-note');
+    if (unmatchedNote) {
+      if (st.jumlah_unmatched > 0) {
+        document.getElementById('sand-kpi-unmatched-n').textContent = fmt(st.jumlah_unmatched);
+        unmatchedNote.style.display = 'block';
+      } else {
+        unmatchedNote.style.display = 'none';
+      }
+    }
     document.getElementById('sand-kpi-selesai').textContent = fmt(st.selesai || 0);
     document.getElementById('sand-kpi-berjalan').textContent= fmt(st.sedang_berjalan || 0);
     document.getElementById('sand-kpi-belum').textContent   = fmt(st.belum_berproses || 0);
@@ -4330,7 +4341,7 @@ async function loadSandingan(page=1) {
       // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
       // sengaja TIDAK ditampilkan di sini agar tidak ikut mencemari total
       // efisiensi murni paket yang sudah selesai.
-      const efi      = (hasReal && isSelesai) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
+      const efi      = (hasReal && isSelesai && !r.is_unmatched) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}">
@@ -4340,21 +4351,24 @@ async function loadSandingan(page=1) {
           <div style="font-size:10px;color:#94A3B8;font-family:monospace">${r.kode_satker||''}</div>
         </td>
         <td class="col-paket" style="font-size:11.5px">
-          <div style="font-weight:500;color:#0F1C2E" title="${r.nama_paket_rup||''}">
-            ${(r.nama_paket_rup||'—').length > 60
-              ? (r.nama_paket_rup||'').slice(0,60) + '…'
-              : (r.nama_paket_rup||'—')}
+          ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun — pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi." style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
+          <div style="font-weight:500;color:#0F1C2E" title="${r.nama_paket_rup||r.nama_paket_realisasi||''}">
+            ${r.is_unmatched
+              ? ((r.nama_paket_realisasi||'—').length > 60 ? (r.nama_paket_realisasi||'').slice(0,60)+'…' : (r.nama_paket_realisasi||'—'))
+              : ((r.nama_paket_rup||'—').length > 60
+                  ? (r.nama_paket_rup||'').slice(0,60) + '…'
+                  : (r.nama_paket_rup||'—'))}
           </div>
-          ${r.nama_paket_realisasi && r.nama_paket_realisasi !== r.nama_paket_rup
+          ${!r.is_unmatched && r.nama_paket_realisasi && r.nama_paket_realisasi !== r.nama_paket_rup
             ? `<div style="font-size:10px;color:#6366F1;margin-top:2px" title="${r.nama_paket_realisasi}">
                  ↳ Real: ${r.nama_paket_realisasi.slice(0,50)}${r.nama_paket_realisasi.length>50?'…':''}
                </div>`
             : ''}
         </td>
-        <td class="col-koderup">${r.kode_rup||'—'}</td>
+        <td class="col-koderup">${r.is_unmatched ? `<span style="color:#9A3412;font-style:italic" title="Kode paket realisasi: ${r.kode_paket||'—'} — tidak ada kode RUP yang cocok">— (belum match)</span>` : (r.kode_rup||'—')}</td>
         <td class="col-metode">${mbadge(r.metode_pengadaan_rup||r.metode_pengadaan||'')}</td>
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
-        <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">${IDRf(r.pagu||0)}${r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : '')}</td>
+        <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">${r.is_unmatched ? '<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>' : IDRf(r.pagu||0)+(r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))}</td>
         <!-- Pemisah: garis tebal tipis saja -->
         <td class="col-sep" style="background:#1E3A5F!important;border:none"></td>
         <!-- Kolom Realisasi -->
@@ -4372,7 +4386,9 @@ async function loadSandingan(page=1) {
             ? IDRf(efi)
             : isBerjalan
               ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
-              : '—'}
+              : r.is_unmatched
+                ? `<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun" style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
+                : '—'}
         </td>
       </tr>`;
     }).join('');
@@ -4520,6 +4536,7 @@ async function loadRekap() {
         <td>${mbadge(r.sumber_transaksi)}</td>
         <td class="text-right mono">
           <a href="#" style="color:inherit" onclick="filterSandByTransaksi('${escJs(r.sumber_transaksi)}');return false" title="Klik untuk lihat semua paket sumber transaksi ${escJs(r.sumber_transaksi)}">${fmt(r.total)}</a>
+          ${r.tidak_match > 0 ? `<span title="${fmt(r.tidak_match)} dari paket ini sudah ada transaksinya tapi belum berhasil dicocokkan (match) ke RUP manapun — tetap terhitung di sini, ditandai ⚠ di tabel Sandingan RUP" style="display:inline-block;margin-left:4px;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:0 5px;cursor:help">⚠${fmt(r.tidak_match)}</span>` : ''}
         </td>
         <td class="text-right mono" style="color:#9A3412">
           ${r.belum > 0
