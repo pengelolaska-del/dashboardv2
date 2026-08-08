@@ -2847,9 +2847,18 @@ async function savePagu() {
     Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
     closePaguModal();
     // Refresh halaman yang sedang aktif — modal ini bisa dibuka dari
-    // Kualitas Data ATAU langsung dari baris "⚠ Belum Match" di Sandingan RUP.
+    // Kualitas Data, tab Detail Paket, ATAU tab Rekap/Rincian Satker di
+    // Sandingan RUP (SAND_VIEW menentukan mana yang perlu di-refresh).
     const active = document.querySelector('.nav-link.active')?.dataset.s;
-    if (active === 'sandingan') await loadSandingan(SAND.page || 1);
+    if (active === 'sandingan') {
+      if (SAND_VIEW === 'rekap' || SAND_VIEW === 'rincian') {
+        const satker = SAND_RINCIAN_SATKER;
+        await loadRekapSatkerInline();
+        if (SAND_VIEW === 'rincian' && satker) renderRincianSatkerInline(satker);
+      } else {
+        await loadSandingan(SAND.page || 1);
+      }
+    }
     else await loadKualitas();
   } catch(e) {
     Swal.fire('❌ Gagal', e.message, 'error');
@@ -3605,7 +3614,7 @@ function buildRekapSatker(items) {
       map.set(key, {
         kode_satker: r.kode_satker || '', nama_satker: r.nama_satker || '—',
         jumlah: 0, pagu: 0, paguRealisasi: 0, kontrak: 0, realisasiCount: 0,
-        paguSelesai: 0, kontrakSelesai: 0, selesaiCount: 0,
+        paguSelesai: 0, kontrakSelesai: 0, selesaiCount: 0, selesaiBelumPagu: 0,
         selesai: 0, berjalan: 0, belum: 0, batal: 0, metode: {},
       });
     }
@@ -3625,12 +3634,16 @@ function buildRekapSatker(items) {
     // Efisiensi murni HANYA dari paket berstatus "Selesai" — pagu paket
     // "Sedang Berjalan" masih HPS dari OPD (indikatif, belum final), jadi
     // tidak diikutkan supaya angka efisiensi tidak tercampur nilai yg belum pasti.
-    if (r.status_realisasi === 'Selesai') {
+    // Juga HARUS punya pagu yang diketahui: paket "Belum Match ke RUP" (is_unmatched)
+    // dengan pagu 0 belum diisi manual TIDAK ikut dijumlah — kalau dipaksa ikut,
+    // hasilnya "0 - nilai_kontrak" = defisit palsu, bukan efisiensi riil.
+    const paguDiketahui = !r.is_unmatched || (Number(r.pagu) || 0) > 0;
+    if (r.status_realisasi === 'Selesai' && paguDiketahui) {
       g.paguSelesai    += Number(r.pagu) || 0;
       g.kontrakSelesai += Number(r.nilai_kontrak) || 0;
       g.selesaiCount++;
     }
-    if (r.status_realisasi === 'Selesai') g.selesai++;
+    if (r.status_realisasi === 'Selesai') { g.selesai++; if (!paguDiketahui) g.selesaiBelumPagu = (g.selesaiBelumPagu||0) + 1; }
     else if (r.status_realisasi === 'Sedang Berjalan') g.berjalan++;
     else if (r.status_realisasi === 'Dibatalkan') g.batal++;
     else g.belum++;
@@ -3768,6 +3781,14 @@ function renderRekapSatkerTableHtml(groups) {
     const hasReal = g.realisasiCount > 0;
     const hasSelesai = g.selesaiCount > 0;
     const efi = hasSelesai ? g.paguSelesai - g.kontrakSelesai : null;
+    // Kalau tidak ada efisiensi bukan karena tidak ada paket Selesai, tapi
+    // karena SEMUA paket Selesai-nya "Belum Match ke RUP" (pagu belum diketahui),
+    // kasih catatan yang jelas alih-alih dash generik yang bisa disalahartikan.
+    const efiCellHtml = efi !== null
+      ? IDRf(efi)
+      : (g.selesaiBelumPagu > 0
+          ? `<span title="Ada ${g.selesaiBelumPagu} paket Selesai yang belum match ke RUP — pagunya belum diketahui, isi pagu manual dulu di menu Kualitas Data supaya efisiensinya bisa dihitung" style="font-weight:600;color:#94A3B8;font-size:11px;font-style:italic">Menunggu pagu manual</span>`
+          : '—');
     return `<tr>
         <td class="rekap-col-no"><span class="rekap-rank">${i + 1}</span></td>
         <td style="font-weight:700;color:#1E3A5F;min-width:220px;white-space:normal;font-size:14.5px">${g.nama_satker}
@@ -3777,7 +3798,7 @@ function renderRekapSatkerTableHtml(groups) {
         <td class="rekap-col-metode" style="white-space:normal;min-width:180px">${metodeBreakdownHtml(g)}</td>
         <td class="text-right mono rekap-col-money">${IDRf(g.pagu)}</td>
         <td class="text-right mono rekap-col-money" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(g.kontrak) : '—'}</td>
-        <td class="text-right mono rekap-col-money" style="font-weight:800;color:${efi === null ? '#94A3B8' : (efi < 0 ? '#DC2626' : '#16A34A')}">${efi === null ? '—' : IDRf(efi)}</td>
+        <td class="text-right mono rekap-col-money" style="font-weight:800;color:${efi === null ? '#94A3B8' : (efi < 0 ? '#DC2626' : '#16A34A')}">${efiCellHtml}</td>
         <td class="rekap-col-status">${sbudBarHtml(g)}</td>
         <td class="text-center rekap-col-aksi">
           <button class="btn btn-ghost rekap-detail-btn" style="font-size:12px;padding:6px 12px;font-weight:600" onclick='openRincianSatker(${JSON.stringify(g.kode_satker)})'>🔍 Rincian</button>
@@ -3898,7 +3919,8 @@ function exportRekapSatkerCSV(groups) {
         r.status_realisasi || 'Belum Terealisasi',
         r.nama_penyedia || '—',
         r.ada_realisasi ? (r.nilai_kontrak || 0) : '',
-        r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+        (r.status_realisasi === 'Selesai' && (!r.is_unmatched || (Number(r.pagu) || 0) > 0))
+          ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
       ]));
   });
 
@@ -3924,30 +3946,53 @@ function renderRincianSatkerInline(kodeSatker) {
   // kontraknya sudah final. Paket "Sedang Berjalan" masih pakai HPS dari OPD
   // (indikatif, bisa berubah), jadi tidak diikutkan supaya angka efisiensi
   // di kartu ini murni dan tidak "tercampur" indikasi yang belum final.
-  const selesaiItems = items.filter(r => r.status_realisasi === 'Selesai');
+  // Selain "Selesai", pagu-nya juga harus DIKETAHUI: paket "Belum Match ke
+  // RUP" (is_unmatched) dengan pagu 0 & belum diisi manual TIDAK ikut
+  // dijumlah — kalau dipaksa ikut, hasilnya defisit palsu ("0 - kontrak").
+  const paguDiketahuiRow = r => !r.is_unmatched || (Number(r.pagu) || 0) > 0;
+  const selesaiItems = items.filter(r => r.status_realisasi === 'Selesai' && paguDiketahuiRow(r));
   const paguSelesai    = selesaiItems.reduce((s, r) => s + (Number(r.pagu) || 0), 0);
   const kontrakSelesai = selesaiItems.reduce((s, r) => s + (Number(r.nilai_kontrak) || 0) , 0);
   const adaYangSelesai = selesaiItems.length > 0;
   const totalEfi = paguSelesai - kontrakSelesai;
+  const selesaiBelumPagu = items.filter(r => r.status_realisasi === 'Selesai' && !paguDiketahuiRow(r)).length;
 
   const theadHtml = '<tr>' + ['Nama Paket RUP','Kode RUP','Metode','Jenis','Pagu RUP','Status','Penyedia','Nilai Kontrak','Efisiensi'].map(h => `<th>${h}</th>`).join('') + '</tr>';
   const tbodyHtml = items.map(r => {
     const hasReal   = !!r.ada_realisasi;
     const isSelesai = r.status_realisasi === 'Selesai';
     const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
-    // Efisiensi hanya ditampilkan utk paket Selesai — paket Sedang Berjalan
-    // pagunya masih HPS OPD jadi efisiensinya sengaja tidak dimunculkan.
-    const efi = isSelesai ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
+    const paguDiketahui = paguDiketahuiRow(r);
+    // Efisiensi hanya ditampilkan utk paket Selesai DAN pagunya diketahui —
+    // paket Sedang Berjalan pagunya masih HPS OPD, sedangkan paket yang
+    // belum match ke RUP (pagu 0, belum diisi manual) belum bisa dihitung
+    // efisiensinya sama sekali (menunggu pagu manual dari admin).
+    const efi = (isSelesai && paguDiketahui) ? (Number(r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
+    const efiCellHtml = efi !== null
+      ? IDRf(efi)
+      : (!paguDiketahui
+          ? '<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (menu Kualitas Data) supaya efisiensinya bisa muncul." style="font-weight:600;font-size:11px;font-style:italic">Menunggu pagu manual</span>'
+          : (isBerjalan ? '<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;font-size:11px">Menunggu Selesai</span>' : '—'));
     return `<tr class="${sandStatusClass(r.status_realisasi)}">
         <td style="min-width:220px" title="${r.nama_paket_rup || ''}">${(r.nama_paket_rup || '—').slice(0, 70)}${(r.nama_paket_rup || '').length > 70 ? '…' : ''}</td>
         <td class="mono" style="color:#2563EB">${r.kode_rup || '—'}</td>
         <td>${r.metode_pengadaan_rup || r.metode_pengadaan || '—'}</td>
         <td>${r.jenis_pengadaan_rup || r.jenis_pengadaan || '—'}</td>
-        <td class="text-right mono" style="color:${isBerjalan ? '#B45309' : '#1A2332'}">${IDRf(r.pagu || 0)}${isBerjalan ? hpsPaguMark() : ''}</td>
+        <td class="text-right mono" style="color:${!paguDiketahui ? '#94A3B8' : (isBerjalan ? '#B45309' : '#1A2332')}">
+          ${paguDiketahui
+            ? IDRf(r.pagu || 0) + (r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))
+            : `<span style="font-style:italic" title="Paket ini belum match ke RUP manapun, pagunya belum diketahui">— (belum diketahui)</span>`}
+          ${r.is_unmatched && S.isAdmin
+            ? `<button type="button" onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", pagu_manual:r.is_manual_pagu?r.pagu:""}).replace(/'/g,"&#39;")})'
+                style="display:block;margin-top:3px;font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:${r.is_manual_pagu?'#DCFCE7':'#EFF6FF'};color:${r.is_manual_pagu?'#16A34A':'#2563EB'}">
+                ${r.is_manual_pagu ? '✏ Edit Pagu' : '+ Set Pagu'}
+              </button>`
+            : ''}
+        </td>
         <td>${sandStatusBadge(r)}</td>
         <td>${r.nama_penyedia || '—'}</td>
         <td class="text-right mono" style="color:${hasReal ? '#15803D' : '#CBD5E1'}">${hasReal ? IDRf(r.nilai_kontrak || 0) : '—'}</td>
-        <td class="text-right mono" style="font-weight:800;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efi !== null ? IDRf(efi) : (isBerjalan ? '<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;font-size:11px">Menunggu Selesai</span>' : '—')}</td>
+        <td class="text-right mono" style="font-weight:800;color:${efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8'}">${efiCellHtml}</td>
       </tr>`;
   }).join('');
 
@@ -3973,6 +4018,7 @@ function renderRincianSatkerInline(kodeSatker) {
         <div class="rekap-stat" style="--ac:#D97706">
           <div class="rekap-stat-label">Total Efisiensi <span style="font-weight:400;font-size:10px;color:#94A3B8">(paket Selesai)</span></div>
           <div class="rekap-stat-value" style="color:${!adaYangSelesai ? '#94A3B8' : (totalEfi < 0 ? '#DC2626' : '#16A34A')}">${adaYangSelesai ? IDRf(totalEfi) : '—'}</div>
+          ${selesaiBelumPagu > 0 ? `<div style="font-size:10.5px;color:#B45309;font-weight:600;margin-top:3px">⚠ ${selesaiBelumPagu} paket Selesai menunggu pagu manual</div>` : ''}
         </div>
       </div>
       <div class="rekap-table-wrap">
@@ -4008,7 +4054,8 @@ async function exportSandView() {
       r.nama_paket_rup || '—', r.kode_rup || '—', r.metode_pengadaan_rup || r.metode_pengadaan || '—',
       r.jenis_pengadaan_rup || r.jenis_pengadaan || '—', r.pagu || 0,
       r.status_realisasi || 'Belum Terealisasi', r.nama_penyedia || '—', r.nilai_kontrak || 0,
-      r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+      (r.status_realisasi === 'Selesai' && (!r.is_unmatched || (Number(r.pagu) || 0) > 0))
+        ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
     ]);
     exportRowsToCSV(headers, rows, `Rincian_${namaSatker.replace(/[^a-zA-Z0-9]+/g, '_')}_${label}.csv`);
   }
