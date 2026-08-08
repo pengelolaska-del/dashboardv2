@@ -1033,6 +1033,10 @@ thead .col-sep-h{
 
     <!-- Efisiensi per Satuan Kerja — dipisah tab Selesai vs Sedang Berjalan -->
     <div class="tbl-wrap" style="margin-top:14px">
+      <p style="font-size:11.5px;color:#94A3B8;margin:0 0 6px">
+        Hanya menampilkan satker yang punya minimal 1 paket dengan transaksi realisasi pada periode terpilih
+        (baik yang sudah maupun belum match ke RUP) — satker tanpa realisasi sama sekali di periode ini tidak ikut tampil.
+      </p>
       <div class="tbl-topbar" style="flex-wrap:wrap">
         <span class="tbl-topbar-info" id="efi-tbl-info">Efisiensi per Satuan Kerja</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2840,15 +2844,32 @@ function renderEfiOpdTable(tab) {
     `Efisiensi per Satuan Kerja — ${label} — ${fmt(list.length)} OPD`;
 
   document.getElementById('efi-tbody').innerHTML = list.length
-    ? list.map((r,i) => `<tr>
+    ? list.map((r,i) => {
+        // Rp 0 / 0.00% TIDAK selalu berarti "efisiensi memang nol" — kalau
+        // TIDAK ADA paket satker ini yang berhasil ikut dihitung (semua
+        // paketnya belum match ke RUP, dan/atau metodenya dikecualikan dari
+        // checklist Efisiensi), tampilkan "Belum ada data" alih-alih Rp 0
+        // supaya tidak disalahartikan sbg hasil pengadaan yang sempurna 0%.
+        const noData = !r.ada_data_efisiensi;
+        const unmatchedBadge = r.jumlah_belum_match_rup > 0
+          ? ` <span title="${r.jumlah_belum_match_rup} dari ${r.jumlah} paket satker ini belum match ke RUP manapun — pagunya belum diketahui. Isi pagu manual di menu Kualitas Data supaya ikut terhitung." style="display:inline-block;margin-left:4px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">⚠ ${r.jumlah_belum_match_rup} blm match RUP</span>`
+          : '';
+        const efiText = noData
+          ? `<span title="Belum ada satupun paket di satker ini yang bisa dihitung efisiensinya — ${r.jumlah_belum_match_rup > 0 ? r.jumlah_belum_match_rup + ' dari ' + r.jumlah + ' paket belum match ke RUP (pagu belum diketahui)' : 'metode pengadaan paketnya dikecualikan dari checklist Efisiensi di atas'}." style="font-style:italic;font-weight:600;color:#94A3B8">Belum ada data</span>`
+          : IDRf(r.efisiensi);
+        const pctCell = noData
+          ? '<span style="font-size:11px;color:#94A3B8;font-style:italic">—</span>'
+          : badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi));
+        return `<tr>
         <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
-        <td style="font-size:12px">${r.nama_satker}</td>
-        <td class="mono text-right">${IDRf(r.total_pagu)}</td>
-        <td class="mono text-right">${IDRf(r.total_kontrak)}</td>
-        <td class="mono text-right" style="color:${r.efisiensi<0?'#EF4444':'#16A34A'};font-weight:700">${IDRf(r.efisiensi)}</td>
-        <td class="text-center">${badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi))}</td>
+        <td style="font-size:12px">${r.nama_satker}${unmatchedBadge}</td>
+        <td class="mono text-right" style="color:${noData?'#CBD5E1':'inherit'}">${noData?'—':IDRf(r.total_pagu)}</td>
+        <td class="mono text-right" style="color:${noData?'#CBD5E1':'inherit'}">${noData?'—':IDRf(r.total_kontrak)}</td>
+        <td class="mono text-right" style="color:${noData?'#94A3B8':(r.efisiensi<0?'#EF4444':'#16A34A')};font-weight:700">${efiText}</td>
+        <td class="text-center">${pctCell}</td>
         <td class="mono text-center">${fmt(r.jumlah)}</td>
-      </tr>`).join('')
+      </tr>`;
+      }).join('')
     : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada paket berstatus "${label}" untuk filter saat ini.</p></div></td></tr>`;
 }
 
