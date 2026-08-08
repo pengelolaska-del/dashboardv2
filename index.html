@@ -211,6 +211,19 @@ table.dt th{
   white-space:nowrap;position:sticky;top:0;
 }
 table.dt th:first-child{border-radius:0}
+.sand-th-sort{cursor:pointer;user-select:none;transition:color .12s}
+.sand-th-sort:hover{color:#E2E8F0}
+.sand-th-sort span{opacity:.35;font-size:9px;margin-left:2px}
+.sand-th-sort.sand-th-sort-active span{opacity:1;color:#7DD3FC}
+/* Aksen warna per Satker/OPD — dibangkitkan JS lewat CSS var --satker-color
+   pada setiap <tr>, dipakai sbg garis kiri tipis + tint background lembut
+   supaya baris dari OPD yang sama gampang dikenali walau berselang-seling. */
+tr[data-satker-color]{
+  border-left:4px solid var(--satker-color, transparent);
+}
+tr[data-satker-color] td.col-satker{
+  background:color-mix(in srgb, var(--satker-color, #94A3B8) 7%, transparent);
+}
 table.dt td{padding:9px 13px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tr:hover td{background:#FAFBFF}
@@ -325,7 +338,7 @@ tr.row-override{
 /* Sticky kolom RUP di tabel sandingan */
 .dt .col-rupno  {width:34px}
 .dt .col-satker {min-width:135px}
-.dt .col-paket  {min-width:210px}
+.dt .col-paket  {min-width:210px;max-width:420px;white-space:normal;word-break:break-word}
 .dt .col-koderup{min-width:80px;font-family:monospace;font-size:11px}
 .dt .col-metode {min-width:95px}
 .dt .col-jenis  {min-width:105px}
@@ -1347,19 +1360,19 @@ thead .col-sep-h{
             <tr>
               <!-- Kolom RUP -->
               <th class="col-rupno">#</th>
-              <th class="col-satker">Satker / OPD</th>
-              <th class="col-paket">Nama Paket (RUP)</th>
-              <th class="col-koderup">Kode RUP</th>
-              <th class="col-metode">Metode</th>
-              <th class="col-jenis">Jenis</th>
-              <th class="col-pagu">Pagu RUP (Rp)</th>
+              <th class="col-satker sand-th-sort" onclick="sortSandBy('satker')" title="Urutkan berdasarkan Satker/OPD">Satker / OPD <span id="sand-sort-satker"></span></th>
+              <th class="col-paket sand-th-sort" onclick="sortSandBy('paket')" title="Urutkan berdasarkan Nama Paket">Nama Paket (RUP) <span id="sand-sort-paket"></span></th>
+              <th class="col-koderup sand-th-sort" onclick="sortSandBy('kode_rup')" title="Urutkan berdasarkan Kode RUP">Kode RUP <span id="sand-sort-kode_rup"></span></th>
+              <th class="col-metode sand-th-sort" onclick="sortSandBy('metode')" title="Urutkan berdasarkan Metode">Metode <span id="sand-sort-metode"></span></th>
+              <th class="col-jenis sand-th-sort" onclick="sortSandBy('jenis')" title="Urutkan berdasarkan Jenis">Jenis <span id="sand-sort-jenis"></span></th>
+              <th class="col-pagu sand-th-sort" onclick="sortSandBy('pagu')" title="Urutkan berdasarkan Pagu RUP">Pagu RUP (Rp) <span id="sand-sort-pagu"></span></th>
               <!-- Pemisah: garis tebal saja, tanpa teks lebar -->
               <th class="col-sep col-sep-h" title="Kolom Realisasi"></th>
               <!-- Kolom Realisasi -->
-              <th class="col-reals">Status</th>
-              <th style="min-width:110px">Penyedia</th>
-              <th class="col-kontrak">Nilai Kontrak (Rp)</th>
-              <th class="col-efi">Efisiensi (Rp)</th>
+              <th class="col-reals sand-th-sort" onclick="sortSandBy('status')" title="Urutkan berdasarkan Status">Status <span id="sand-sort-status"></span></th>
+              <th class="sand-th-sort" style="min-width:110px" onclick="sortSandBy('penyedia')" title="Urutkan berdasarkan Penyedia">Penyedia <span id="sand-sort-penyedia"></span></th>
+              <th class="col-kontrak sand-th-sort" onclick="sortSandBy('kontrak')" title="Urutkan berdasarkan Nilai Kontrak">Nilai Kontrak (Rp) <span id="sand-sort-kontrak"></span></th>
+              <th class="col-efi sand-th-sort" onclick="sortSandBy('efisiensi')" title="Urutkan berdasarkan Efisiensi">Efisiensi (Rp) <span id="sand-sort-efisiensi"></span></th>
             </tr>
           </thead>
           <tbody id="sand-tbody">
@@ -4110,7 +4123,50 @@ const SAND = {
   allData: [],    // cache hasil dari backend
   filtered: [],   // setelah filter client-side tambahan
   f: {},          // filter state aktif
+  sort: { by: null, dir: 'desc' }, // null = default backend (Selesai→Berjalan→Belum, lalu nama satker)
 };
+
+// ── Sort header "Detail Paket" — sort dilakukan di SERVER (bukan cuma
+// halaman aktif), karena datanya dipaginasi (bisa >16.000 baris). Klik
+// header yang sama membalik arah; klik header lain reset ke desc. ──────
+function sortSandBy(field) {
+  if (SAND.sort.by === field) {
+    SAND.sort.dir = SAND.sort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    SAND.sort = { by: field, dir: field === 'satker' || field === 'paket' ? 'asc' : 'desc' };
+  }
+  updateSandSortHeaderUI();
+  loadSandingan(1);
+}
+function updateSandSortHeaderUI() {
+  ['satker','paket','kode_rup','metode','jenis','pagu','status','penyedia','kontrak','efisiensi'].forEach(f => {
+    const th = document.getElementById('sand-sort-'+f);
+    const thEl = th?.closest('th');
+    if (!th) return;
+    if (SAND.sort.by === f) {
+      th.innerHTML = SAND.sort.dir === 'asc' ? '▲' : '▼';
+      thEl?.classList.add('sand-th-sort-active');
+    } else {
+      th.innerHTML = '▲▼';
+      thEl?.classList.remove('sand-th-sort-active');
+    }
+  });
+}
+
+// ── Warna aksen per Satker/OPD — hash nama/kode jadi hue HSL yang stabil
+// (satker yang sama SELALU dapat warna yang sama, lintas halaman/sort),
+// supaya baris dari OPD yang sama gampang dikenali sekilas di tabel. ────
+const SAND_SATKER_COLOR_CACHE = {};
+function sandSatkerColor(kodeSatker) {
+  const key = kodeSatker || '—';
+  if (SAND_SATKER_COLOR_CACHE[key]) return SAND_SATKER_COLOR_CACHE[key];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  const hue = hash % 360;
+  const color = `hsl(${hue} 62% 45%)`;
+  SAND_SATKER_COLOR_CACHE[key] = color;
+  return color;
+}
 
 // ── Status helper ──────────────────────────────────────────
 function sandStatusClass(st) {
@@ -4381,6 +4437,8 @@ async function loadSandingan(page=1) {
       sumber_dana:      f.sumber_dana      || undefined,
       sumber_transaksi: f.sumber_transaksi || undefined,
       search:           f.search           || undefined,
+      sort_by:          SAND.sort.by       || undefined,
+      sort_dir:         SAND.sort.dir      || undefined,
       page,
       per_page:         SAND.perPage,
     });
@@ -4458,6 +4516,7 @@ async function loadSandingan(page=1) {
       SAND.total ? `Total ${fmt(SAND.total)} paket — Halaman ${page} dari ${SAND.totalPages}` : '';
     document.getElementById('sand-prev').disabled = page <= 1;
     document.getElementById('sand-next').disabled = page >= SAND.totalPages;
+    updateSandSortHeaderUI();
 
     // ── Render tabel ──
     const items = d.items || [];
@@ -4490,25 +4549,21 @@ async function loadSandingan(page=1) {
       const efi      = (hasReal && isSelesai && paguDiketahui) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
 
-      return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}">
+      return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}" style="--satker-color:${sandSatkerColor(r.kode_satker)}" data-satker-color="1">
         <td class="col-rupno mono" style="color:#94A3B8;font-size:11px">${rowNo}</td>
         <td class="col-satker" style="font-size:11.5px">
-          <div style="font-weight:600;color:#1E3A5F">${r.nama_satker||'—'}</div>
+          <div style="font-weight:600;color:var(--satker-color)">${r.nama_satker||'—'}</div>
           <div style="font-size:10px;color:#94A3B8;font-family:monospace">${r.kode_satker||''}</div>
         </td>
         <td class="col-paket" style="font-size:11.5px">
           ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun.${paguDiketahui ? ' Pagu sudah diisi manual oleh admin.' : ' Pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi sampai diisi manual.'}" style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
           ${r.is_realisasi_gabungan ? `<span title="1 kode RUP ini dipakai oleh ${r.realisasi_list.length} realisasi/kontrak terpisah — Pagu RUP dihitung sekali, Nilai Kontrak = jumlah semuanya. Lihat rincian di kolom Penyedia." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🔗 ${r.realisasi_list.length} Kontrak</span><br>` : ''}
-          <div style="font-weight:500;color:#0F1C2E" title="${r.nama_paket_rup||r.nama_paket_realisasi||''}">
-            ${r.is_unmatched
-              ? ((r.nama_paket_realisasi||'—').length > 60 ? (r.nama_paket_realisasi||'').slice(0,60)+'…' : (r.nama_paket_realisasi||'—'))
-              : ((r.nama_paket_rup||'—').length > 60
-                  ? (r.nama_paket_rup||'').slice(0,60) + '…'
-                  : (r.nama_paket_rup||'—'))}
+          <div style="font-weight:500;color:#0F1C2E">
+            ${r.is_unmatched ? (r.nama_paket_realisasi||'—') : (r.nama_paket_rup||'—')}
           </div>
           ${!r.is_unmatched && r.nama_paket_realisasi && r.nama_paket_realisasi !== r.nama_paket_rup
-            ? `<div style="font-size:10px;color:#6366F1;margin-top:2px" title="${r.nama_paket_realisasi}">
-                 ↳ Real: ${r.nama_paket_realisasi.slice(0,50)}${r.nama_paket_realisasi.length>50?'…':''}
+            ? `<div style="font-size:10px;color:#6366F1;margin-top:2px">
+                 ↳ Real: ${r.nama_paket_realisasi}
                </div>`
             : ''}
         </td>
