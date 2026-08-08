@@ -1266,7 +1266,7 @@ thead .col-sep-h{
         <div class="sand-scard-lbl">Total Paket RUP</div>
         <div class="sand-scard-val" id="sand-kpi-total">—</div>
         <div class="sand-scard-pct" id="sand-kpi-pagu">—</div>
-        <div id="sand-kpi-unmatched-note" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ termasuk <span id="sand-kpi-unmatched-n">0</span> paket belum match ke RUP</div>
+        <div id="sand-kpi-unmatched-note" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ + <span id="sand-kpi-unmatched-n">0</span> transaksi realisasi belum match ke RUP (di luar angka ini)</div>
       </div>
       <div class="sand-scard done">
         <div class="sand-scard-lbl">✅ Sudah Dilaksanakan</div>
@@ -4498,7 +4498,11 @@ async function loadSandingan(page=1) {
 
     // ── KPI summary ──
     const st = d.summary || {};
-    document.getElementById('sand-kpi-total').textContent   = fmt(d.total || 0);
+    // "Total Paket RUP" HARUS pakai total_paket_rup (murni dari data RUP),
+    // BUKAN d.total — d.total termasuk baris "orphan" (transaksi realisasi
+    // yg belum match ke RUP manapun), yang kalau dipakai bisa membuat angka
+    // ini melebihi jumlah paket sebenarnya di menu Rencana (RUP).
+    document.getElementById('sand-kpi-total').textContent   = fmt(st.total_paket_rup ?? d.total ?? 0);
     document.getElementById('sand-kpi-pagu').textContent    = IDRf(st.total_pagu || 0);
     const unmatchedNote = document.getElementById('sand-kpi-unmatched-note');
     if (unmatchedNote) {
