@@ -295,6 +295,14 @@ tr.row-override{
 .sand-legend-item{display:flex;align-items:center;gap:5px}
 .sand-legend-dot{width:11px;height:11px;border-radius:50%}
 
+/* View switcher tabs (Detail Paket / Rekap per Satker / Rincian) */
+.sand-viewtab{
+  padding:7px 14px;border:1px solid #E2E8F0;border-radius:8px;background:#fff;
+  font-size:12px;font-weight:600;color:#475569;cursor:pointer;transition:all .12s
+}
+.sand-viewtab:hover{background:#F8FAFC;border-color:#CBD5E1}
+.sand-viewtab.active{background:#1D4ED8;border-color:#1D4ED8;color:#fff}
+
 /* Summary bar sandingan */
 .sand-summary{
   display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px
@@ -429,9 +437,28 @@ thead .col-sep-h{
   .tbl-topbar{flex-wrap:wrap;gap:8px}
   .grid-3-resp-sm,.grid-4-resp-sm{grid-template-columns:1fr}
 }
+/* ── Cetak PDF (window.print) — dipakai oleh printHtmlTable() ───────── */
+#print-report-area { display: none; }
+@media print {
+  body.printing-report * { visibility: hidden; }
+  body.printing-report #print-report-area,
+  body.printing-report #print-report-area * { visibility: visible; }
+  body.printing-report #print-report-area {
+    display: block; position: absolute; top: 0; left: 0; width: 100%; padding: 16px;
+  }
+  body.printing-report #print-report-area h1 { font-size: 16px; margin: 0 0 2px; }
+  body.printing-report #print-report-area .print-sub { font-size: 11px; color: #475569; margin-bottom: 12px; }
+  body.printing-report #print-report-area table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  body.printing-report #print-report-area th, body.printing-report #print-report-area td {
+    border: 1px solid #94A3B8; padding: 3px 5px; text-align: left;
+  }
+  body.printing-report #print-report-area thead { display: table-header-group; }
+  @page { size: landscape; margin: 10mm; }
+}
 </style>
 </head>
 <body>
+  <div id="print-report-area"></div>
 
 <!-- ======================================================
      SIDEBAR
@@ -1203,17 +1230,6 @@ thead .col-sep-h{
           <button class="btn btn-ghost btn-icon" onclick="resetSand()" title="Reset filter">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan RUP ↔ Realisasi untuk periode ini (perlu login admin)" style="margin-left:auto">
-            ⚙ Jalankan Ulang Matching
-          </button>
-          <button class="btn btn-ghost" onclick="showDetailPaket('sand')">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            Detail Paket
-          </button>
-          <button class="btn btn-ghost" onclick="showRekapSatker()" title="Rekap jumlah paket per Satker/OPD, dengan detail dan export CSV">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1m-1 4h1m4-4h1m-1 4h1m-6 8v-4h4v4"/></svg>
-            Rekap per Satker
-          </button>
         </div>
       </div>
     </div>
@@ -1285,8 +1301,27 @@ thead .col-sep-h{
       </div>
     </div>
 
-    <!-- Tabel Sandingan -->
-    <div class="tbl-wrap">
+    <!-- View switcher: Detail Paket / Rekap per Satker / Rincian per Satker,
+         semuanya ditampilkan LANGSUNG di halaman (tanpa popup), lengkap
+         dgn Export CSV & Cetak PDF di tiap mode. -->
+    <div class="sand-viewtabs" style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <button class="sand-viewtab active" id="sand-vt-detail" onclick="setSandView('detail')">📄 Detail Paket</button>
+      <button class="sand-viewtab" id="sand-vt-rekap" onclick="setSandView('rekap')">🏢 Rekap per Satker</button>
+      <span id="sand-vt-rincian-wrap" style="display:none">
+        <span style="color:#CBD5E1">›</span>
+        <button class="sand-viewtab" id="sand-vt-rincian" onclick="setSandView('rincian')">🔍 Rincian Satker</button>
+      </span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-ghost" style="font-size:11.5px;padding:6px 12px" onclick="exportSandView()">⬇ Export CSV</button>
+        <button class="btn btn-ghost" style="font-size:11.5px;padding:6px 12px" onclick="printSandView()">🖨️ Cetak PDF</button>
+        <button class="btn btn-ghost" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan RUP ↔ Realisasi untuk periode ini (perlu login admin)">
+          ⚙ Jalankan Ulang Matching
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabel Sandingan (mode: Detail Paket) -->
+    <div class="tbl-wrap" id="sand-detail-view">
       <div class="tbl-topbar">
         <span class="tbl-topbar-info" id="sand-tbl-info">—</span>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -1343,6 +1378,11 @@ thead .col-sep-h{
         <span class="page-num" id="sand-pg-num2"></span>
         <button class="page-btn" onclick="pageSand(1)">›</button>
       </div>
+    </div>
+
+    <!-- Tabel Rekap per Satker / Rincian per Satker (mode: rekap / rincian) -->
+    <div class="tbl-wrap" id="sand-alt-view" style="display:none">
+      <div class="empty-state"><div class="spin"></div></div>
     </div>
   </section>
 
@@ -3450,6 +3490,19 @@ function exportRowsToCSVSections(sections, filename) {
   a.download=filename; a.click();
 }
 
+// Cetak PDF generik: suntikkan judul + tabel ke #print-report-area (yang
+// disembunyikan dari layar normal), lalu panggil window.print() — browser
+// yang menyediakan "Save as PDF" di dialog cetaknya (tidak perlu generate
+// PDF di server). tableHtml = HTML <table>...</table> lengkap yang sudah jadi.
+function printHtmlTable(title, subtitle, tableHtml) {
+  const area = document.getElementById('print-report-area');
+  if (!area) return;
+  area.innerHTML = `<h1>${title}</h1><div class="print-sub">${subtitle||''} · Dicetak ${new Date().toLocaleString('id-ID')}</div>${tableHtml}`;
+  document.body.classList.add('printing-report');
+  const cleanup = () => { document.body.classList.remove('printing-report'); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 50);
+}
 
 // ============================================================
 // REKAP PER SATKER/OPD (Sandingan RUP)
@@ -3637,8 +3690,32 @@ function sbudBarHtml(g) {
     </div>`;
 }
 
-async function showRekapSatker() {
-  Swal.fire({ title: 'Memuat rekap per satker...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+// ============================================================
+// VIEW SWITCHER — Detail Paket / Rekap per Satker / Rincian Satker
+// Ketiganya tampil LANGSUNG di halaman (bukan popup), berbagi tombol
+// Export CSV & Cetak PDF yang sama di header (lihat exportSandView /
+// printSandView), menyesuaikan isinya dengan mode yang sedang aktif.
+// ============================================================
+let SAND_VIEW = 'detail';
+let SAND_RINCIAN_SATKER = null; // kode_satker yang sedang dibuka di mode 'rincian'
+
+function setSandView(mode) {
+  SAND_VIEW = mode;
+  document.querySelectorAll('.sand-viewtab').forEach(b => b.classList.remove('active'));
+  document.getElementById('sand-vt-' + mode)?.classList.add('active');
+  document.getElementById('sand-detail-view').style.display = mode === 'detail' ? '' : 'none';
+  document.getElementById('sand-alt-view').style.display    = mode === 'detail' ? 'none' : '';
+  if (mode === 'detail') return;
+  if (mode === 'rekap') { loadRekapSatkerInline(); return; }
+  if (mode === 'rincian') {
+    if (!SAND_RINCIAN_SATKER) { setSandView('rekap'); return; } // belum ada satker terpilih, jangan macet
+    renderRincianSatkerInline(SAND_RINCIAN_SATKER);
+  }
+}
+
+async function loadRekapSatkerInline() {
+  const wrap = document.getElementById('sand-alt-view');
+  wrap.innerHTML = '<div class="empty-state"><div class="spin"></div></div>';
   try {
     const tahun = v('g-tahun'), bulan = v('g-bulan'), f = SAND.f;
     const periode = bulan ? tahun + '-' + bulan : undefined;
@@ -3652,12 +3729,10 @@ async function showRekapSatker() {
     });
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat data sandingan.');
     const items = res.data?.items || [];
-    Swal.close();
-    if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ada paket yang cocok dengan filter saat ini.', 'info'); return; }
-
+    if (!items.length) { wrap.innerHTML = '<div class="empty-state"><p>Tidak ada paket yang cocok dengan filter saat ini.</p></div>'; return; }
     REKAP_SATKER_CACHE = { items, periode: periode || '', tahun };
-    renderRekapSatkerModal();
-  } catch (e) { Swal.fire('❌ Error', e.message, 'error'); }
+    renderRekapSatkerInline();
+  } catch (e) { wrap.innerHTML = `<div class="empty-state"><p>❌ ${e.message}</p></div>`; }
 }
 
 function renderRekapSatkerTableHtml(groups) {
@@ -3689,7 +3764,7 @@ function renderRekapSatkerTableHtml(groups) {
         <td class="text-right mono rekap-col-money" style="font-weight:800;color:${efi === null ? '#94A3B8' : (efi < 0 ? '#DC2626' : '#16A34A')}">${efi === null ? '—' : IDRf(efi)}</td>
         <td class="rekap-col-status">${sbudBarHtml(g)}</td>
         <td class="text-center rekap-col-aksi">
-          <button class="btn btn-ghost rekap-detail-btn" style="font-size:10.5px;padding:5px 10px" onclick='showRekapSatkerDetail(${JSON.stringify(g.kode_satker)})'>🔍 Detail</button>
+          <button class="btn btn-ghost rekap-detail-btn" style="font-size:10.5px;padding:5px 10px" onclick='openRincianSatker(${JSON.stringify(g.kode_satker)})'>🔍 Rincian</button>
         </td>
       </tr>`;
   }).join('');
@@ -3725,7 +3800,13 @@ function renderRekapSatkerTableHtml(groups) {
     </table>`;
 }
 
-function renderRekapSatkerModal() {
+function openRincianSatker(kodeSatker) {
+  SAND_RINCIAN_SATKER = kodeSatker;
+  document.getElementById('sand-vt-rincian-wrap').style.display = '';
+  setSandView('rincian');
+}
+
+function renderRekapSatkerInline() {
   ensureRekapModalStyles();
   const groups = sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items));
   const totalPagu = groups.reduce((s, g) => s + g.pagu, 0);
@@ -3737,10 +3818,10 @@ function renderRekapSatkerModal() {
   const totalKontrakSelesai = groups.reduce((s, g) => s + g.kontrakSelesai, 0);
   const totalEfi = totalPaguSelesai - totalKontrakSelesai;
 
-  const html = `
-    <div class="rekap-body">
+  document.getElementById('sand-alt-view').innerHTML = `
+    <div class="rekap-body" style="padding:16px">
       <div class="rekap-subtitle">
-        Kolom status &nbsp;<span style="color:#16A34A;font-weight:700">■ Selesai</span>
+        🏢 Rekap Sandingan per Satker/OPD — Kolom status &nbsp;<span style="color:#16A34A;font-weight:700">■ Selesai</span>
         &nbsp;<span style="color:#CA8A04;font-weight:700">■ Berjalan</span>
         &nbsp;<span style="color:#94A3B8;font-weight:700">■ Belum</span>
         &nbsp;<span style="color:#DC2626;font-weight:700">■ Batal</span>
@@ -3770,16 +3851,6 @@ function renderRekapSatkerModal() {
       </div>
       <div class="rekap-table-wrap" id="rekap-satker-tablewrap">${renderRekapSatkerTableHtml(groups)}</div>
     </div>`;
-
-  Swal.fire({
-    title: '🏢 Rekap Sandingan per Satker/OPD',
-    html, showCloseButton: true,
-    customClass: { popup: 'rekap-modal-popup' },
-    showDenyButton: true, denyButtonText: '⬇ Export CSV Rekap',
-    confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB',
-  }).then(res => {
-    if (res.isDenied) exportRekapSatkerCSV(sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items)));
-  });
 }
 
 function exportRekapSatkerCSV(groups) {
@@ -3822,15 +3893,15 @@ function exportRekapSatkerCSV(groups) {
   ], `Rekap_Satker_Sandingan_${label}.csv`);
 }
 
-// Detail paket untuk 1 satker — diambil dari cache hasil showRekapSatker(),
+// Detail paket untuk 1 satker — diambil dari cache hasil loadRekapSatkerInline(),
 // tanpa perlu fetch ulang ke server.
-function showRekapSatkerDetail(kodeSatker) {
+function renderRincianSatkerInline(kodeSatker) {
   ensureRekapModalStyles();
+  const wrap = document.getElementById('sand-alt-view');
   const items = REKAP_SATKER_CACHE.items.filter(r => (r.kode_satker || '') === kodeSatker);
-  if (!items.length) { Swal.fire('Tidak ada data', 'Tidak ditemukan paket untuk satker ini.', 'info'); return; }
+  if (!items.length) { wrap.innerHTML = '<div class="empty-state"><p>Tidak ditemukan paket untuk satker ini.</p></div>'; return; }
   const namaSatker = items[0].nama_satker || '—';
   const totalPagu = items.reduce((s, r) => s + (Number(r.pagu) || 0), 0);
-  const paguRealisasi = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.pagu) || 0 : 0), 0);
   const totalKontrak = items.reduce((s, r) => s + (r.ada_realisasi ? Number(r.nilai_kontrak) || 0 : 0), 0);
   const adaYangRealisasi = items.some(r => r.ada_realisasi);
   // Efisiensi murni HANYA dari paket berstatus "Selesai" — pagu & nilai
@@ -3843,15 +3914,7 @@ function showRekapSatkerDetail(kodeSatker) {
   const adaYangSelesai = selesaiItems.length > 0;
   const totalEfi = paguSelesai - kontrakSelesai;
 
-  const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
-  const rows = items.map(r => [
-    r.nama_paket_rup || '—', r.kode_rup || '—', r.metode_pengadaan_rup || r.metode_pengadaan || '—',
-    r.jenis_pengadaan_rup || r.jenis_pengadaan || '—', r.pagu || 0,
-    r.status_realisasi || 'Belum Terealisasi', r.nama_penyedia || '—', r.nilai_kontrak || 0,
-    r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
-  ]);
-
-  const theadHtml = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  const theadHtml = '<tr>' + ['Nama Paket RUP','Kode RUP','Metode','Jenis','Pagu RUP','Status','Penyedia','Nilai Kontrak','Efisiensi'].map(h => `<th>${h}</th>`).join('') + '</tr>';
   const tbodyHtml = items.map(r => {
     const hasReal   = !!r.ada_realisasi;
     const isSelesai = r.status_realisasi === 'Selesai';
@@ -3872,9 +3935,12 @@ function showRekapSatkerDetail(kodeSatker) {
       </tr>`;
   }).join('');
 
-  const html = `
-    <div class="rekap-body">
-      <div class="rekap-subtitle">${fmt(items.length)} paket tercatat untuk satker/OPD ini</div>
+  wrap.innerHTML = `
+    <div class="rekap-body" style="padding:16px">
+      <div class="rekap-subtitle">
+        <a href="#" onclick="setSandView('rekap');return false" style="color:#2563EB;font-weight:600">‹ Kembali ke Rekap per Satker</a>
+        &nbsp;·&nbsp;🔍 Rincian — <b>${namaSatker}</b> — ${fmt(items.length)} paket
+      </div>
       <div class="rekap-stat-row" style="grid-template-columns:repeat(4,1fr)">
         <div class="rekap-stat" style="--ac:#7C3AED">
           <div class="rekap-stat-label">Jumlah Paket</div>
@@ -3900,22 +3966,56 @@ function showRekapSatkerDetail(kodeSatker) {
         </table>
       </div>
     </div>`;
+}
 
-  Swal.fire({
-    title: `📋 Detail Paket — ${namaSatker}`,
-    html, showCloseButton: true,
-    customClass: { popup: 'rekap-modal-popup' },
-    showDenyButton: true, denyButtonText: '⬇ Export CSV',
-    showCancelButton: true, cancelButtonText: '‹ Kembali ke Rekap',
-    confirmButtonText: 'Tutup', confirmButtonColor: '#64748B', denyButtonColor: '#2563EB', cancelButtonColor: '#94A3B8',
-  }).then(res => {
-    if (res.isDenied) {
-      const label = REKAP_SATKER_CACHE.periode || REKAP_SATKER_CACHE.tahun || 'periode';
-      exportRowsToCSV(headers, rows, `Detail_${namaSatker.replace(/[^a-zA-Z0-9]+/g, '_')}_${label}.csv`);
-    } else if (res.dismiss === Swal.DismissReason.cancel) {
-      renderRekapSatkerModal();
-    }
-  });
+// ── Export CSV & Cetak PDF — mengikuti SAND_VIEW yang sedang aktif ────
+async function exportSandView() {
+  const tahun = v('g-tahun'), bulan = v('g-bulan');
+  const label = tahun + (bulan ? '_' + bulan : '');
+  if (SAND_VIEW === 'detail') {
+    Swal.fire({title:'Menyiapkan CSV...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+      const { headers, rows, filename } = await fetchDetailData('sand');
+      Swal.close();
+      if (!rows.length) { Swal.fire('Tidak ada data','Tidak ada paket yang cocok dengan filter saat ini.','info'); return; }
+      exportRowsToCSV(headers, rows, filename);
+    } catch (e) { Swal.fire('❌ Error', e.message, 'error'); }
+  } else if (SAND_VIEW === 'rekap') {
+    if (!REKAP_SATKER_CACHE.items.length) { Swal.fire('Tidak ada data','Buka dulu tampilan Rekap per Satker.','info'); return; }
+    exportRekapSatkerCSV(sortRekapSatkerGroups(buildRekapSatker(REKAP_SATKER_CACHE.items)));
+  } else if (SAND_VIEW === 'rincian') {
+    const items = REKAP_SATKER_CACHE.items.filter(r => (r.kode_satker || '') === SAND_RINCIAN_SATKER);
+    if (!items.length) return;
+    const namaSatker = items[0].nama_satker || '—';
+    const headers = ['Nama Paket RUP', 'Kode RUP', 'Metode', 'Jenis', 'Pagu RUP', 'Status', 'Penyedia', 'Nilai Kontrak', 'Efisiensi'];
+    const rows = items.map(r => [
+      r.nama_paket_rup || '—', r.kode_rup || '—', r.metode_pengadaan_rup || r.metode_pengadaan || '—',
+      r.jenis_pengadaan_rup || r.jenis_pengadaan || '—', r.pagu || 0,
+      r.status_realisasi || 'Belum Terealisasi', r.nama_penyedia || '—', r.nilai_kontrak || 0,
+      r.status_realisasi === 'Selesai' ? (r.pagu || 0) - (r.nilai_kontrak || 0) : '',
+    ]);
+    exportRowsToCSV(headers, rows, `Rincian_${namaSatker.replace(/[^a-zA-Z0-9]+/g, '_')}_${label}.csv`);
+  }
+}
+
+function printSandView() {
+  const tahun = v('g-tahun'), bulan = v('g-bulan');
+  const subtitle = `Periode ${tahun}${bulan ? '-' + bulan : ''}`;
+  if (SAND_VIEW === 'detail') {
+    const tbl = document.getElementById('t-sand');
+    if (!tbl || !document.getElementById('sand-tbody').children.length) { Swal.fire('Tidak ada data', 'Tidak ada paket untuk dicetak di halaman ini.', 'info'); return; }
+    printHtmlTable('Sandingan RUP — Detail Paket', subtitle + ' · Menampilkan baris di halaman saat ini saja (gunakan "Tampilkan" utk perbesar halaman sebelum cetak)', tbl.outerHTML);
+  } else if (SAND_VIEW === 'rekap') {
+    const wrap = document.getElementById('rekap-satker-tablewrap');
+    if (!wrap) { Swal.fire('Tidak ada data', 'Buka dulu tampilan Rekap per Satker.', 'info'); return; }
+    printHtmlTable('Rekap Sandingan per Satker/OPD', subtitle, wrap.innerHTML);
+  } else if (SAND_VIEW === 'rincian') {
+    const items = REKAP_SATKER_CACHE.items.filter(r => (r.kode_satker || '') === SAND_RINCIAN_SATKER);
+    const namaSatker = items[0]?.nama_satker || '—';
+    const wrap = document.querySelector('#sand-alt-view .rekap-table-wrap');
+    if (!wrap) return;
+    printHtmlTable(`Rincian Paket — ${namaSatker}`, subtitle, wrap.innerHTML);
+  }
 }
 
 async function showDetailPaket(type) {
@@ -4043,7 +4143,17 @@ function sandStatusBadge(r) {
 }
 
 // ── Terapkan filter dan load ────────────────────────────────
-function applySand()  { SAND.f = readSandFilter(); loadSandingan(1); }
+function applySand()  {
+  SAND.f = readSandFilter();
+  // Filter baru diterapkan — kembali ke tampilan Detail Paket & lupakan
+  // rincian satker yang mungkin sedang terbuka (datanya sudah tidak relevan
+  // dgn filter baru).
+  SAND_RINCIAN_SATKER = null;
+  const rincianWrap = document.getElementById('sand-vt-rincian-wrap');
+  if (rincianWrap) rincianWrap.style.display = 'none';
+  setSandView('detail');
+  loadSandingan(1);
+}
 function resetSand()  {
   SAND.f = {};
   comboClear('sand-satker');
@@ -4052,6 +4162,10 @@ function resetSand()  {
   });
   document.getElementById('sand-search').value = '';
   warnSandTransaksiBelum();
+  SAND_RINCIAN_SATKER = null;
+  const rincianWrap = document.getElementById('sand-vt-rincian-wrap');
+  if (rincianWrap) rincianWrap.style.display = 'none';
+  setSandView('detail');
   loadSandingan(1);
 }
 function pageSand(d) { loadSandingan(Math.max(1, Math.min(SAND.totalPages, SAND.page + d))); }
@@ -4203,6 +4317,10 @@ async function gotoSandingan(f = {}) {
   document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-sandingan')?.classList.add('active');
   document.querySelector('[data-s="sandingan"]')?.classList.add('active');
+  SAND_RINCIAN_SATKER = null;
+  const rincianWrap = document.getElementById('sand-vt-rincian-wrap');
+  if (rincianWrap) rincianWrap.style.display = 'none';
+  setSandView('detail');
   await loadSandingan(1);
   document.getElementById('sand-metode').value    = f.metode    || '';
   document.getElementById('sand-jenis').value     = f.jenis     || '';
