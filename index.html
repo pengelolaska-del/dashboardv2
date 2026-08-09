@@ -1641,6 +1641,22 @@ thead .col-sep-h{
           <button class="btn btn-danger" onclick="hapusPeriode()">Hapus Periode</button>
         </div>
       </div>
+
+      <!-- Pengaturan Notifikasi Menu — dinamis, tersimpan di sheet _MENU_NOTICE -->
+      <div class="upload-card" style="margin-top:16px">
+        <div class="upload-card-title">
+          <span>🔔 Pengaturan Notifikasi Menu</span>
+        </div>
+        <p style="font-size:12px;color:#64748B;margin-bottom:10px">
+          Centang menu yang ingin dimunculkan popup "Masih dalam Pengembangan" saat diakses user.
+          Menu yang dicentang <b>tetap bisa dibuka seperti biasa</b> — cuma munculkan pemberitahuan.
+          Menu yang tidak dicentang tidak akan menampilkan popup apapun. Perubahan tersimpan otomatis.
+        </p>
+        <div id="menu-notice-list" style="display:flex;flex-wrap:wrap;gap:6px 18px">
+          <span style="font-size:12px;color:#94A3B8">Memuat daftar menu…</span>
+        </div>
+        <div id="menu-notice-status" style="font-size:11.5px;color:#16A34A;margin-top:6px;height:14px"></div>
+      </div>
     </div>
   </section>
 
@@ -2132,6 +2148,12 @@ async function init() {
     document.getElementById('sb-period').textContent = `Periode aktif: ${latest_periode||'—'}`;
     syncUploadPeriode();
 
+    // Muat pengaturan menu mana yang perlu munculkan popup "Masih dalam
+    // Pengembangan" (diatur dinamis oleh admin) — HARUS selesai sebelum
+    // loadSection pertama, supaya kalau halaman dibuka langsung ke menu
+    // yang dicentang (mis. lewat URL #efisiensi), popup tetap muncul.
+    await loadMenuNoticeSettings();
+
     // Load halaman aktif — hormati hash URL (mis. dibuka via klik kanan
     // "Buka di tab baru" pada menu sidebar) kalau ada, kalau tidak pakai
     // default (rup) seperti biasa.
@@ -2158,7 +2180,30 @@ function showConnErr(msg) {
 // ============================================================
 // NAVIGATION
 // ============================================================
+// Menu dgn popup "Masih dalam Pengembangan" — diatur DINAMIS oleh admin
+// (checklist di halaman Upload Data → tersimpan di sheet _MENU_NOTICE).
+// Kalau menu ada di sini, popup muncul TAPI menu tetap bisa diakses &
+// datanya tetap dimuat normal (tidak diblokir). Diisi via loadMenuNoticeSettings()
+// saat init & di-refresh tiap kali admin menyimpan perubahan checklist.
+S.menuNoticeSet = new Set();
+
+async function loadMenuNoticeSettings() {
+  try {
+    const res = await api({ action:'listMenuNotice' });
+    if (res.status === 'success') S.menuNoticeSet = new Set(res.data.enabled || []);
+  } catch(e) { /* diamkan — kalau gagal, anggap tidak ada menu yg perlu notice */ }
+}
+
 async function loadSection(name, skipNav=false) {
+  if (S.menuNoticeSet.has(name)) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Menu Dalam Pengembangan',
+      text: 'Menu ini Masih dalam Pengembangan, Silahkan kunjungi Menu yang lain.',
+      confirmButtonText: 'Mengerti',
+      confirmButtonColor: '#3B82F6',
+    });
+  }
   if (!skipNav) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
@@ -2605,6 +2650,53 @@ async function toggleEfiExclude(chkEl) {
       setTimeout(() => { if (statusEl.textContent === '✓ Tersimpan') statusEl.textContent = ''; }, 2000);
     }
     loadEfisiensi(); // refresh KPI/tabel/chart supaya ikut angka exclude terbaru
+  } catch (e) {
+    chkEl.checked = !chkEl.checked; // batalkan perubahan kalau gagal simpan
+    if (statusEl) statusEl.textContent = '✗ Gagal menyimpan, coba lagi.';
+  } finally {
+    chkEl.disabled = false;
+  }
+}
+
+// ============================================================
+// PENGATURAN: NOTIFIKASI MENU "MASIH DALAM PENGEMBANGAN"
+// Khusus admin (di halaman Upload Data, setelah login). Menu yg dicentang
+// akan munculkan popup pemberitahuan saat user membukanya — TAPI menu tetap
+// bisa diakses normal (lihat S.menuNoticeSet & loadSection). Setiap centang
+// langsung tersimpan ke sheet _MENU_NOTICE & me-refresh S.menuNoticeSet
+// supaya efeknya langsung terasa tanpa reload halaman.
+// ============================================================
+async function loadMenuNoticeAdmin() {
+  const box = document.getElementById('menu-notice-list');
+  if (!box) return;
+  try {
+    const res = await api({ action:'listMenuNotice' });
+    const { menu_options=[], enabled=[] } = res.data || {};
+    const enabledSet = new Set(enabled);
+
+    box.innerHTML = menu_options.length
+      ? menu_options.map(m => `
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#334155;cursor:pointer">
+            <input type="checkbox" class="menu-notice-chk" value="${m.key}" ${enabledSet.has(m.key)?'checked':''} onchange="toggleMenuNotice(this)">
+            <span>${m.label}</span>
+          </label>`).join('')
+      : `<span style="font-size:12px;color:#94A3B8">Tidak ada menu yang bisa diatur.</span>`;
+  } catch (e) {
+    box.innerHTML = `<span style="font-size:12px;color:#DC2626">Gagal memuat daftar menu.</span>`;
+  }
+}
+
+async function toggleMenuNotice(chkEl) {
+  chkEl.disabled = true;
+  const statusEl = document.getElementById('menu-notice-status');
+  const enabledList = [...document.querySelectorAll('.menu-notice-chk:checked')].map(el => el.value);
+  try {
+    await api({ action:'saveMenuNotice', token:S.adminToken, enabled: enabledList });
+    S.menuNoticeSet = new Set(enabledList); // langsung berlaku tanpa reload
+    if (statusEl) {
+      statusEl.textContent = '✓ Tersimpan';
+      setTimeout(() => { if (statusEl.textContent === '✓ Tersimpan') statusEl.textContent = ''; }, 2000);
+    }
   } catch (e) {
     chkEl.checked = !chkEl.checked; // batalkan perubahan kalau gagal simpan
     if (statusEl) statusEl.textContent = '✗ Gagal menyimpan, coba lagi.';
@@ -3809,7 +3901,7 @@ async function verifyToken() {
       document.getElementById('upload-panel').classList.remove('hidden');
       document.getElementById('nav-kualitas').classList.remove('hidden');
       document.getElementById('inp-token').style.borderColor='#86EFAC';
-      syncUploadPeriode(); loadLog();
+      syncUploadPeriode(); loadLog(); loadMenuNoticeAdmin();
     } else {
       msg.innerHTML='<span style="color:#EF4444">❌ Token salah</span>';
       document.getElementById('inp-token').style.borderColor='#FCA5A5';
