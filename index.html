@@ -5102,6 +5102,13 @@ async function loadSandingan(page=1) {
       const efi      = (hasReal && isSelesai && paguDiketahui && !isSekunderGabungan)
         ? (Number(r.pagu_efisiensi ?? r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
+      // Baris grup kode RUP (gabungan) kini sudah digabung jadi 1 baris di
+      // backend — anggota lainnya ada di r.group_members. "Pagu" yang
+      // ditampilkan utk baris ini pakai total gabungan (pagu_efisiensi),
+      // bukan pagu individual paket ini saja.
+      const groupMembers   = r.is_gabungan_kode_rup && Array.isArray(r.group_members) ? r.group_members : [];
+      const isGrupGabungan = groupMembers.length > 0;
+      const paguTampil     = isGrupGabungan ? (Number(r.pagu_efisiensi)||0) : (Number(r.pagu)||0);
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}" style="--satker-color:${sandSatkerColor(r.kode_satker)}" data-satker-color="1">
         <td class="col-rupno mono" style="color:#94A3B8;font-size:11px">${rowNo}</td>
@@ -5112,10 +5119,20 @@ async function loadSandingan(page=1) {
         <td class="col-paket" style="font-size:11.5px">
           ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun.${paguDiketahui ? ' Pagu sudah diisi manual oleh admin.' : ' Pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi sampai diisi manual.'}" style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
           ${r.is_realisasi_gabungan ? `<span title="1 kode RUP ini dipakai oleh ${r.realisasi_list.length} realisasi/kontrak terpisah — Pagu RUP dihitung sekali, Nilai Kontrak = jumlah semuanya. Lihat rincian di kolom Penyedia." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🔗 ${r.realisasi_list.length} Kontrak</span><br>` : ''}
-          ${r.is_gabungan_kode_rup ? (r.is_primary_gabungan
-            ? `<span title="Baris ini adalah 'primary' dari grup kode RUP gabungan — Nilai Kontrak & Efisiensi yang tampil sudah mewakili SELURUH anggota grup (pagu gabungan vs kontrak gabungan), bukan cuma pagu paket ini sendiri." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🧩 Primary Grup</span><br>`
-            : `<span title="Kode RUP ini bagian dari transaksi realisasi yang digabung dari beberapa kode RUP sekaligus. Nilai Kontrak & Efisiensi gabungan sudah dihitung di baris 'primary' grup ini — Rp 0 & 'Lihat baris grup' di sini bukan berarti belum bayar." style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FEF3C7;border:1px solid #FDE68A;border-radius:99px;padding:1px 7px;margin-bottom:3px">🧩 Bagian Grup — nilai di baris lain</span><br>`
-          ) : ''}
+          ${isGrupGabungan
+            ? `<details style="margin-bottom:4px">
+                 <summary style="cursor:pointer;list-style:none;display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px" title="Baris ini gabungan dari ${groupMembers.length+1} kode RUP yang tercatat sebagai 1 realisasi/kontrak. Pagu, Nilai Kontrak & Efisiensi yang tampil sudah mewakili SELURUH anggota grup. Klik untuk lihat rincian paket RUP lainnya.">🧩 Gabungan ${groupMembers.length+1} Paket RUP ▾</summary>
+                 <div style="margin-top:5px;padding:7px 9px;background:#F8FAFF;border:1px solid #E0E7FF;border-radius:8px">
+                   <div style="font-size:9.5px;font-weight:700;color:#4338CA;margin-bottom:5px">Paket RUP lain dalam grup ini:</div>
+                   ${groupMembers.map(m => `
+                     <div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed #E0E7FF;font-size:10.5px">
+                       <div style="font-weight:600;color:#1E293B">${m.nama_paket_rup||'—'}</div>
+                       <div style="color:#64748B;font-family:monospace;font-size:9.5px;margin-top:1px">${m.kode_rup||''}</div>
+                       <div style="color:#94A3B8;font-size:9.5px;margin-top:1px">${m.jenis_pengadaan_rup||'—'} · Pagu ${IDRf(m.pagu||0)}${m.is_manual_pagu ? manualPaguMark() : ''}</div>
+                     </div>`).join('')}
+                 </div>
+               </details>`
+            : ''}
           <div style="font-weight:500;color:#0F1C2E">
             ${r.is_unmatched ? (r.nama_paket_realisasi||'—') : (r.nama_paket_rup||'—')}
           </div>
@@ -5130,7 +5147,8 @@ async function loadSandingan(page=1) {
         <td class="col-jenis" style="font-size:11px">${r.jenis_pengadaan_rup||r.jenis_pengadaan||'—'}</td>
         <td class="col-pagu mono" style="color:${isBerjalan ? '#B45309' : '#1D4ED8'};font-weight:600;font-size:12px">
           ${paguDiketahui
-            ? IDRf(r.pagu||0) + (r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))
+            ? IDRf(paguTampil) + (r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))
+              + (isGrupGabungan ? `<div style="font-size:9px;color:#6366F1;font-weight:600;margin-top:1px">Gabungan ${groupMembers.length+1} paket</div>` : '')
             : `<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>`}
           ${r.is_unmatched && S.isAdmin
             ? `<button type="button" onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", pagu_manual:r.is_manual_pagu?r.pagu:""}).replace(/'/g,"&#39;")})'
