@@ -1812,6 +1812,50 @@ thead .col-sep-h{
   </div>
 
   <!-- ============================================================
+       MODAL: DAFTAR PAKET "BELUM MATCH KE RUP" per kelompok
+       (dibuka dari badge ⚠ di tabel breakdown Efisiensi — Analisis)
+       ============================================================ -->
+  <div id="modal-unmatched-list" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.18)">
+      <div style="padding:18px 22px 14px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <span style="font-size:15px;font-weight:700;color:#1A2332" id="mul-title">Paket Belum Match ke RUP</span>
+          <div style="font-size:11.5px;color:#94A3B8;margin-top:2px" id="mul-subtitle"></div>
+        </div>
+        <button onclick="closeUnmatchedGroupModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1">×</button>
+      </div>
+      <div style="padding:12px 22px;overflow-y:auto;flex:1" id="mul-body">
+        <div class="empty-state"><div class="spin"></div></div>
+      </div>
+      <div style="padding:10px 22px;border-top:1px solid #E2E8F0;font-size:11px;color:#94A3B8;flex-shrink:0">
+        💡 <b>+ Set Pagu</b> = isi angka pagu manual tanpa menautkan ke baris RUP tertentu. <b>🔗 Pilih RUP</b> = tautkan langsung ke satu baris RUP asli (lebih akurat — pagu & metode ikut baris RUP itu, dan paket resmi jadi "MATCHED").
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: PILIH RUP UNTUK DITAUTKAN (match manual)
+       ============================================================ -->
+  <div id="modal-match-rup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:580px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+      <div style="padding:18px 22px 14px;border-bottom:1px solid #E2E8F0;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:15px;font-weight:700;color:#1A2332">Pilih RUP untuk Ditautkan</span>
+          <button onclick="closeRupPickerModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1">×</button>
+        </div>
+        <div style="font-size:12px;color:#64748B;margin-top:6px" id="mrp-paket-info"></div>
+      </div>
+      <div style="padding:14px 22px 8px;flex-shrink:0">
+        <input id="mrp-search" type="text" placeholder="Cari kode RUP atau nama paket..." style="width:100%;border:1.5px solid #CBD5E1;border-radius:7px;padding:9px 12px;font-size:13px;outline:none" oninput="debounceSearchRup()" onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#CBD5E1'"/>
+        <div style="font-size:10.5px;color:#94A3B8;margin-top:5px">Default menampilkan RUP dari satker yang sama dengan paketnya.</div>
+      </div>
+      <div style="padding:4px 22px 18px;overflow-y:auto;flex:1" id="mrp-results">
+        <p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px 0">Mencari...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        MODAL: TAMBAH RUP MANUAL
        (untuk realisasi yang kode_rup-nya tidak ada di data RUP sama sekali)
        ============================================================ -->
@@ -2912,23 +2956,24 @@ function renderEfiOpdTable(tab) {
   const list = (S.efiOpdData && S.efiOpdData[tab]) || [];
   document.getElementById('efi-tbl-info').textContent =
     `Efisiensi per Satuan Kerja — ${label} — ${fmt(list.length)} OPD`;
-  renderEfiDimRows('efi-tbody', list, label, r => r.nama_satker);
+  renderEfiDimRows('efi-tbody', list, label, r => r.nama_satker, 'satker', r => r.kode_satker, tab);
 }
 
 // Render generik tabel rincian efisiensi per dimensi (Sumber Transaksi /
 // Metode / Jenis Pengadaan) — dipanggil dari loadEfisiensi() & switchEfiOpdTab().
+const DIM_KEY_BY_PREFIX = { 'efi-transaksi':'transaksi', 'efi-metode':'metode', 'efi-jenis':'jenis' };
 function renderEfiDimTable(prefix, data, tab, dimLabel) {
   const label = tab === 'selesai' ? 'Selesai' : 'Sedang Berjalan (Indikatif)';
   const list = (data && data[tab]) || [];
   document.getElementById(prefix+'-tbl-info').textContent =
     `Efisiensi per ${dimLabel} — ${label} — ${fmt(list.length)} ${dimLabel}`;
-  renderEfiDimRows(prefix+'-tbody', list, label, r => r.label);
+  renderEfiDimRows(prefix+'-tbody', list, label, r => r.label, DIM_KEY_BY_PREFIX[prefix], r => r.label, tab);
 }
 
 // Baris tabel dipakai bersama oleh renderEfiOpdTable & renderEfiDimTable —
 // satu-satunya tempat yang menentukan tampilan "Rp 0 riil" vs "Belum ada
 // data" (lihat komentar ada_data_efisiensi di Code.gs).
-function renderEfiDimRows(tbodyId, list, statusLabel, getLabel) {
+function renderEfiDimRows(tbodyId, list, statusLabel, getLabel, dim, getValue, statusKey) {
   document.getElementById(tbodyId).innerHTML = list.length
     ? list.map((r,i) => {
         // Rp 0 / 0.00% TIDAK selalu berarti "efisiensi memang nol" — kalau
@@ -2937,8 +2982,11 @@ function renderEfiDimRows(tbodyId, list, statusLabel, getLabel) {
         // checklist Efisiensi), tampilkan "Belum ada data" alih-alih Rp 0
         // supaya tidak disalahartikan sbg hasil pengadaan yang sempurna 0%.
         const noData = !r.ada_data_efisiensi;
+        // Badge "⚠ X blm match RUP" bisa diklik — buka popup daftar paketnya
+        // langsung, lengkap dengan aksi "+ Set Pagu" / "🔗 Pilih RUP".
+        const badgeCtx = { dim, value: getValue(r), status: statusKey, label: getLabel(r) };
         const unmatchedBadge = r.jumlah_belum_match_rup > 0
-          ? ` <span title="${r.jumlah_belum_match_rup} dari ${r.jumlah} paket di baris ini belum match ke RUP manapun — pagunya belum diketahui. Isi pagu manual di menu Kualitas Data supaya ikut terhitung." style="display:inline-block;margin-left:4px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">⚠ ${r.jumlah_belum_match_rup} blm match RUP</span>`
+          ? ` <button type="button" onclick='openUnmatchedGroupPopup(${JSON.stringify(badgeCtx).replace(/'/g,"&#39;")})' title="Klik untuk lihat &amp; tautkan ${r.jumlah_belum_match_rup} paket yang belum match ke RUP" style="display:inline-block;margin-left:4px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap;border:none;cursor:pointer">⚠ ${r.jumlah_belum_match_rup} blm match RUP</button>`
           : '';
         const efiText = noData
           ? `<span title="Belum ada satupun paket di baris ini yang bisa dihitung efisiensinya — ${r.jumlah_belum_match_rup > 0 ? r.jumlah_belum_match_rup + ' dari ' + r.jumlah + ' paket belum match ke RUP (pagu belum diketahui)' : 'metode pengadaan paketnya dikecualikan dari checklist Efisiensi di atas'}." style="font-style:italic;font-weight:600;color:#94A3B8">Belum ada data</span>`
@@ -3155,8 +3203,8 @@ async function savePagu() {
     Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
     closePaguModal();
     // Refresh halaman yang sedang aktif — modal ini bisa dibuka dari
-    // Kualitas Data, tab Detail Paket, ATAU tab Rekap/Rincian Satker di
-    // Sandingan RUP (SAND_VIEW menentukan mana yang perlu di-refresh).
+    // Kualitas Data, tab Detail Paket, tab Rekap/Rincian Satker di
+    // Sandingan RUP, ATAU popup "Paket Belum Match ke RUP" di Analisis.
     const active = document.querySelector('.nav-link.active')?.dataset.s;
     if (active === 'sandingan') {
       if (SAND_VIEW === 'rekap' || SAND_VIEW === 'rincian') {
@@ -3167,11 +3215,153 @@ async function savePagu() {
         await loadSandingan(SAND.page || 1);
       }
     }
+    else if (active === 'efisiensi') await loadEfisiensi();
     else await loadKualitas();
+    // Popup daftar "belum match" bisa dibuka di atas halaman manapun —
+    // refresh isinya juga kalau sedang terbuka.
+    if (document.getElementById('modal-unmatched-list').style.display === 'flex') await refreshUnmatchedGroupList();
   } catch(e) {
     Swal.fire('❌ Gagal', e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Simpan Pagu';
+  }
+}
+
+// ============================================================
+// POPUP "PAKET BELUM MATCH KE RUP" per kelompok (dim: satker / sumber
+// transaksi / metode / jenis) — dibuka dari badge ⚠ di tabel breakdown
+// Efisiensi (menu Analisis). Dari sini admin bisa langsung "+ Set Pagu"
+// (override angka pagu saja) atau "🔗 Pilih RUP" (tautkan ke satu baris
+// RUP asli — lebih akurat, lihat openRupPickerModal di bawah).
+// ============================================================
+const DIM_LABEL = { satker:'Satuan Kerja', transaksi:'Sumber Transaksi', metode:'Metode Pengadaan', jenis:'Jenis Pengadaan' };
+let S_unmatchedCtx = null;
+
+async function openUnmatchedGroupPopup(ctx) {
+  S_unmatchedCtx = ctx;
+  document.getElementById('mul-title').textContent = `Paket Belum Match ke RUP — ${DIM_LABEL[ctx.dim]||ctx.dim}: ${ctx.label}`;
+  document.getElementById('mul-subtitle').textContent = `Status paket: ${ctx.status === 'berjalan' ? 'Sedang Berjalan' : 'Selesai'}`;
+  document.getElementById('mul-body').innerHTML = '<div class="empty-state"><div class="spin"></div></div>';
+  document.getElementById('modal-unmatched-list').style.display = 'flex';
+  await refreshUnmatchedGroupList();
+}
+
+function closeUnmatchedGroupModal() {
+  document.getElementById('modal-unmatched-list').style.display = 'none';
+  S_unmatchedCtx = null;
+}
+
+async function refreshUnmatchedGroupList() {
+  const ctx = S_unmatchedCtx;
+  if (!ctx) return;
+  const tahun = v('g-tahun'), bulan = v('g-bulan');
+  const body = document.getElementById('mul-body');
+  try {
+    const res = await api({
+      action: 'dashboardAnalisisDetail', tipe: 'dim_unmatched',
+      dim: ctx.dim, value: ctx.value, status: ctx.status,
+      tahun, periode: bulan ? tahun+'-'+bulan : undefined, per_page: 200,
+    });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat data.');
+    const items = res.data.items || [];
+    if (!items.length) {
+      body.innerHTML = `<div class="empty-state"><p>🎉 Semua paket di kelompok ini sudah match / sudah diisi pagu manual.</p></div>`;
+      return;
+    }
+    const actionsHtml = it => S.isAdmin ? `
+        <button type="button" onclick='openPaguModal(${JSON.stringify({kode_paket:it.kode_paket, nama_paket:it.nama_paket, nama_satker:it.nama_satker}).replace(/'/g,"&#39;")})' style="font-size:10.5px;padding:4px 9px;border-radius:5px;border:none;background:#EFF6FF;color:#2563EB;font-weight:600;cursor:pointer;margin-right:5px;white-space:nowrap">+ Set Pagu</button>
+        <button type="button" onclick='openRupPickerModal(${JSON.stringify({kode_paket:it.kode_paket, periode:it.periode, kode_satker:it.kode_satker, nama_paket:it.nama_paket, nama_satker:it.nama_satker}).replace(/'/g,"&#39;")})' style="font-size:10.5px;padding:4px 9px;border-radius:5px;border:none;background:#F0FDF4;color:#16A34A;font-weight:600;cursor:pointer;white-space:nowrap">🔗 Pilih RUP</button>`
+      : `<span style="font-size:10.5px;color:#94A3B8;font-style:italic">Login admin utk edit</span>`;
+    body.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="border-bottom:1.5px solid #E2E8F0;text-align:left">
+          <th style="padding:6px 8px">Nama Paket</th>
+          <th style="padding:6px 8px">Satuan Kerja</th>
+          <th style="padding:6px 8px;text-align:right">Nilai Kontrak</th>
+          <th style="padding:6px 8px;text-align:center">Aksi</th>
+        </tr></thead>
+        <tbody>${items.map(it => `
+          <tr style="border-bottom:1px solid #F1F5F9">
+            <td style="padding:7px 8px;max-width:260px">${it.nama_paket || '—'}<div style="font-size:10px;color:#94A3B8;font-family:monospace;margin-top:2px">${it.kode_paket||''}</div></td>
+            <td style="padding:7px 8px;font-size:11.5px;max-width:180px">${it.nama_satker || '—'}</td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace">${IDRf(it.nilai_kontrak||0)}</td>
+            <td style="padding:7px 8px;text-align:center;white-space:nowrap">${actionsHtml(it)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    body.innerHTML = `<div class="error-state">⚠ ${e.message}</div>`;
+  }
+}
+
+// ── Pilih RUP (match manual) ──
+let S_rupPickCtx = null;
+let S_rupSearchTimer = null;
+
+function openRupPickerModal(ctx) {
+  S_rupPickCtx = ctx;
+  document.getElementById('mrp-paket-info').textContent = `Menautkan paket: ${ctx.nama_paket || ctx.kode_paket}${ctx.nama_satker ? ' — '+ctx.nama_satker : ''}`;
+  document.getElementById('mrp-search').value = '';
+  document.getElementById('mrp-results').innerHTML = '<p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px 0">Mencari...</p>';
+  document.getElementById('modal-match-rup').style.display = 'flex';
+  runRupSearch();
+}
+
+function closeRupPickerModal() {
+  document.getElementById('modal-match-rup').style.display = 'none';
+  S_rupPickCtx = null;
+}
+
+function debounceSearchRup() {
+  clearTimeout(S_rupSearchTimer);
+  S_rupSearchTimer = setTimeout(runRupSearch, 350);
+}
+
+async function runRupSearch() {
+  const ctx = S_rupPickCtx;
+  if (!ctx) return;
+  const keyword = v('mrp-search');
+  const box = document.getElementById('mrp-results');
+  box.innerHTML = '<p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px 0">Mencari...</p>';
+  try {
+    const res = await api({ action:'searchRupCandidates', periode: ctx.periode, kode_satker: ctx.kode_satker, keyword, per_page: 25 });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal mencari RUP.');
+    const items = res.data.items || [];
+    box.innerHTML = items.length ? items.map(it => `
+      <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="min-width:0">
+          <div style="font-size:12.5px;font-weight:600;color:#1A2332;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.nama_paket || '—'}</div>
+          <div style="font-size:10.5px;color:#94A3B8;font-family:monospace;margin-top:2px">${it.kode_rup} · ${it.nama_satker || ''}</div>
+          <div style="font-size:11px;color:#16A34A;font-weight:600;margin-top:2px">${IDRf(it.pagu||0)}</div>
+        </div>
+        <button type="button" onclick='confirmMatchRup(${JSON.stringify(it.kode_rup)})' style="flex-shrink:0;font-size:11px;padding:6px 13px;border-radius:6px;border:none;background:#1E3A5F;color:#fff;font-weight:700;cursor:pointer">Pilih</button>
+      </div>`).join('') : `<p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px 0">Tidak ada RUP yang cocok. Coba kata kunci lain.</p>`;
+  } catch(e) {
+    box.innerHTML = `<div class="error-state">⚠ ${e.message}</div>`;
+  }
+}
+
+async function confirmMatchRup(kode_rup) {
+  const ctx = S_rupPickCtx;
+  if (!ctx) return;
+  const conf = await Swal.fire({
+    title: 'Tautkan paket ini?',
+    html: `Paket <b>${escJs(ctx.nama_paket||ctx.kode_paket)}</b> akan ditautkan ke RUP <b>${escJs(kode_rup)}</b>. Pagu &amp; efisiensi paket ini akan mengikuti data RUP tersebut.`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Tautkan', cancelButtonText: 'Batal',
+    confirmButtonColor: '#1E3A5F',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({ action:'manualMatchPaket', token: S.adminToken, periode: ctx.periode, kode_paket: ctx.kode_paket, kode_rup });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal menautkan paket.');
+    Swal.fire('✅ Berhasil', 'Paket berhasil ditautkan ke RUP.', 'success');
+    closeRupPickerModal();
+    await refreshUnmatchedGroupList();
+    const active = document.querySelector('.nav-link.active')?.dataset.s;
+    if (active === 'efisiensi' && typeof loadEfisiensi === 'function') loadEfisiensi();
+    else if (active === 'kualitas' && typeof loadKualitas === 'function') loadKualitas();
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
   }
 }
 
