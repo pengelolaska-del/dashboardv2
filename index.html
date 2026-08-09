@@ -1067,6 +1067,60 @@ thead .col-sep-h{
         </table>
       </div>
     </div>
+
+    <!-- Rincian efisiensi per Sumber Transaksi / Metode / Jenis Pengadaan —
+         ikut toggle ✅ Selesai / 🔄 Sedang Berjalan di kartu "Efisiensi per
+         Satuan Kerja" di atas (satu state, S.efiOpdTab, dipakai bareng). -->
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info" id="efi-transaksi-tbl-info">Efisiensi per Sumber Transaksi</span></div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th>No</th><th>Sumber Transaksi</th>
+            <th class="text-right">Total Pagu</th>
+            <th class="text-right">Total Kontrak</th>
+            <th class="text-right">Efisiensi (Rp)</th>
+            <th class="text-center">% Efi</th>
+            <th class="text-center">Jml Paket</th>
+          </tr></thead>
+          <tbody id="efi-transaksi-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info" id="efi-metode-tbl-info">Efisiensi per Metode Pengadaan</span></div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th>No</th><th>Metode Pengadaan</th>
+            <th class="text-right">Total Pagu</th>
+            <th class="text-right">Total Kontrak</th>
+            <th class="text-right">Efisiensi (Rp)</th>
+            <th class="text-center">% Efi</th>
+            <th class="text-center">Jml Paket</th>
+          </tr></thead>
+          <tbody id="efi-metode-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-topbar"><span class="tbl-topbar-info" id="efi-jenis-tbl-info">Efisiensi per Jenis Pengadaan</span></div>
+      <div class="tbl-scroll">
+        <table class="dt">
+          <thead><tr>
+            <th>No</th><th>Jenis Pengadaan</th>
+            <th class="text-right">Total Pagu</th>
+            <th class="text-right">Total Kontrak</th>
+            <th class="text-right">Efisiensi (Rp)</th>
+            <th class="text-center">% Efi</th>
+            <th class="text-center">Jml Paket</th>
+          </tr></thead>
+          <tbody id="efi-jenis-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <!-- ===================== REKAP LAPORAN ===================== -->
@@ -1115,11 +1169,15 @@ thead .col-sep-h{
           <thead><tr>
             <th>No</th><th>Jenis Pengadaan</th><th class="text-right">Jumlah Paket</th><th class="text-right">Nilai (Rp)</th>
             <th class="text-right">✅ Sudah Berproses</th><th class="text-right">⏳ Belum Berproses</th><th class="text-right">Progress</th>
+            <th class="text-right">Efisiensi (Rp)</th><th class="text-center">% Efi</th>
           </tr></thead>
-          <tbody id="rk-jenis-tbody"><tr><td colspan="7"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="rk-jenis-tbody"><tr><td colspan="9"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div id="rk-jenis-manual-note" style="display:none;padding:8px 14px;font-size:12px;color:#64748B;border-top:1px solid #E2E8F0;background:#FAFBFC"></div>
+      <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
+        Kolom <b>Efisiensi</b> hanya dihitung dari paket berstatus <b>Selesai</b> yang sudah match ke RUP (pagu diketahui) — sama basis dengan kartu "Efisiensi (Selesai)" di menu Sandingan RUP.
+      </div>
     </div>
 
     <!-- c) Rincian per Metode Pemilihan -->
@@ -1127,12 +1185,14 @@ thead .col-sep-h{
       <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian sesuai Metode Pemilihan</span></div>
       <div class="tbl-scroll">
         <table class="tbl">
-          <thead><tr><th>No</th><th>Metode Pemilihan</th><th class="text-right">Total</th><th class="text-right">Belum</th><th class="text-right">On Process</th><th class="text-right">Selesai</th></tr></thead>
-          <tbody id="rk-metode-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <thead><tr><th>No</th><th>Metode Pemilihan</th><th class="text-right">Total</th><th class="text-right">Belum</th><th class="text-right">On Process</th><th class="text-right">Selesai</th>
+            <th class="text-right">Efisiensi (Rp)</th><th class="text-center">% Efi</th></tr></thead>
+          <tbody id="rk-metode-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
         Berdasarkan metode pengadaan yang <b>direncanakan di RUP</b>. Bisa berbeda dari kanal realisasi aktual (lihat tabel "Daftar Paket Tender Selesai" di bawah, yang memakai sumber transaksi realisasi).
+        Kolom <b>Efisiensi</b> hanya dari paket <b>Selesai</b> yang pagunya diketahui (match ke RUP) — konsisten dengan menu Analisis.
       </div>
     </div>
 
@@ -1149,13 +1209,15 @@ thead .col-sep-h{
             <th>No</th><th>Sumber Transaksi</th><th class="text-right">Jumlah Paket</th>
             <th class="text-right">Belum</th><th class="text-right">On Process</th><th class="text-right">Selesai</th>
             <th class="text-right">Pagu RUP (Rp)</th><th class="text-right">Nilai Kontrak (Rp)</th>
+            <th class="text-right">Efisiensi (Rp)</th><th class="text-center">% Efi</th>
           </tr></thead>
-          <tbody id="rk-transaksi-tbody"><tr><td colspan="8"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="rk-transaksi-tbody"><tr><td colspan="10"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
         Berdasarkan kanal <b>realisasi aktual</b> (SPSE/sumber transaksi). Kolom <b>Belum</b> pada baris "Tender" mencakup paket yang direncanakan di RUP dengan metode Tender atau Seleksi tapi belum direalisasikan — paket belum-berproses lainnya (di luar Tender/Seleksi) lihat catatan di atas tabel.
         Badge <b>⚠ angka</b> di kolom Jumlah Paket = paket yang sudah ada transaksinya tapi belum berhasil dicocokkan (match) ke RUP manapun; tetap dihitung di sini (supaya jumlahnya konsisten dengan menu Realisasi) tapi pagunya tidak diketahui sehingga tidak ikut dihitung ke Efisiensi. Detail baris ditandai sama di tabel Sandingan RUP.
+        Kolom <b>Pagu RUP</b>/<b>Nilai Kontrak</b> di atas mencakup semua status; kolom <b>Efisiensi</b> di paling kanan HANYA dari paket <b>Selesai</b> yang pagunya diketahui.
       </div>
     </div>
 
@@ -2681,8 +2743,16 @@ async function loadEfisiensi() {
       selesai:  d.by_opd_selesai  || [],
       berjalan: d.by_opd_berjalan || [],
     };
+    // Rincian per Sumber Transaksi / Metode / Jenis Pengadaan — sama pola,
+    // dikendalikan tab yang sama dengan tabel "Efisiensi per Satuan Kerja".
+    S.efiTransaksiData = { selesai: d.by_sumber_transaksi_selesai || [], berjalan: d.by_sumber_transaksi_berjalan || [] };
+    S.efiMetodeData    = { selesai: d.by_metode_selesai           || [], berjalan: d.by_metode_berjalan           || [] };
+    S.efiJenisData     = { selesai: d.by_jenis_selesai            || [], berjalan: d.by_jenis_berjalan            || [] };
     if (!S.efiOpdTab) S.efiOpdTab = 'selesai';
     renderEfiOpdTable(S.efiOpdTab);
+    renderEfiDimTable('efi-transaksi', S.efiTransaksiData, S.efiOpdTab, 'Sumber Transaksi');
+    renderEfiDimTable('efi-metode',    S.efiMetodeData,    S.efiOpdTab, 'Metode Pengadaan');
+    renderEfiDimTable('efi-jenis',     S.efiJenisData,     S.efiOpdTab, 'Jenis Pengadaan');
 
   } catch(e) {
     document.getElementById('efi-tbody').innerHTML = `<tr><td colspan="7"><div class="error-state">⚠ ${e.message}</div></td></tr>`;
@@ -2838,31 +2908,47 @@ async function bandingkanPeriode() {
 
 // Render tabel "Efisiensi per Satuan Kerja" untuk tab yang aktif (Selesai / Sedang Berjalan)
 function renderEfiOpdTable(tab) {
-  const list = (S.efiOpdData && S.efiOpdData[tab]) || [];
   const label = tab === 'selesai' ? 'Selesai' : 'Sedang Berjalan (Indikatif)';
+  const list = (S.efiOpdData && S.efiOpdData[tab]) || [];
   document.getElementById('efi-tbl-info').textContent =
     `Efisiensi per Satuan Kerja — ${label} — ${fmt(list.length)} OPD`;
+  renderEfiDimRows('efi-tbody', list, label, r => r.nama_satker);
+}
 
-  document.getElementById('efi-tbody').innerHTML = list.length
+// Render generik tabel rincian efisiensi per dimensi (Sumber Transaksi /
+// Metode / Jenis Pengadaan) — dipanggil dari loadEfisiensi() & switchEfiOpdTab().
+function renderEfiDimTable(prefix, data, tab, dimLabel) {
+  const label = tab === 'selesai' ? 'Selesai' : 'Sedang Berjalan (Indikatif)';
+  const list = (data && data[tab]) || [];
+  document.getElementById(prefix+'-tbl-info').textContent =
+    `Efisiensi per ${dimLabel} — ${label} — ${fmt(list.length)} ${dimLabel}`;
+  renderEfiDimRows(prefix+'-tbody', list, label, r => r.label);
+}
+
+// Baris tabel dipakai bersama oleh renderEfiOpdTable & renderEfiDimTable —
+// satu-satunya tempat yang menentukan tampilan "Rp 0 riil" vs "Belum ada
+// data" (lihat komentar ada_data_efisiensi di Code.gs).
+function renderEfiDimRows(tbodyId, list, statusLabel, getLabel) {
+  document.getElementById(tbodyId).innerHTML = list.length
     ? list.map((r,i) => {
         // Rp 0 / 0.00% TIDAK selalu berarti "efisiensi memang nol" — kalau
-        // TIDAK ADA paket satker ini yang berhasil ikut dihitung (semua
+        // TIDAK ADA paket kelompok ini yang berhasil ikut dihitung (semua
         // paketnya belum match ke RUP, dan/atau metodenya dikecualikan dari
         // checklist Efisiensi), tampilkan "Belum ada data" alih-alih Rp 0
         // supaya tidak disalahartikan sbg hasil pengadaan yang sempurna 0%.
         const noData = !r.ada_data_efisiensi;
         const unmatchedBadge = r.jumlah_belum_match_rup > 0
-          ? ` <span title="${r.jumlah_belum_match_rup} dari ${r.jumlah} paket satker ini belum match ke RUP manapun — pagunya belum diketahui. Isi pagu manual di menu Kualitas Data supaya ikut terhitung." style="display:inline-block;margin-left:4px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">⚠ ${r.jumlah_belum_match_rup} blm match RUP</span>`
+          ? ` <span title="${r.jumlah_belum_match_rup} dari ${r.jumlah} paket di baris ini belum match ke RUP manapun — pagunya belum diketahui. Isi pagu manual di menu Kualitas Data supaya ikut terhitung." style="display:inline-block;margin-left:4px;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;vertical-align:middle;white-space:nowrap">⚠ ${r.jumlah_belum_match_rup} blm match RUP</span>`
           : '';
         const efiText = noData
-          ? `<span title="Belum ada satupun paket di satker ini yang bisa dihitung efisiensinya — ${r.jumlah_belum_match_rup > 0 ? r.jumlah_belum_match_rup + ' dari ' + r.jumlah + ' paket belum match ke RUP (pagu belum diketahui)' : 'metode pengadaan paketnya dikecualikan dari checklist Efisiensi di atas'}." style="font-style:italic;font-weight:600;color:#94A3B8">Belum ada data</span>`
+          ? `<span title="Belum ada satupun paket di baris ini yang bisa dihitung efisiensinya — ${r.jumlah_belum_match_rup > 0 ? r.jumlah_belum_match_rup + ' dari ' + r.jumlah + ' paket belum match ke RUP (pagu belum diketahui)' : 'metode pengadaan paketnya dikecualikan dari checklist Efisiensi di atas'}." style="font-style:italic;font-weight:600;color:#94A3B8">Belum ada data</span>`
           : IDRf(r.efisiensi);
         const pctCell = noData
           ? '<span style="font-size:11px;color:#94A3B8;font-style:italic">—</span>'
           : badge(r.persen_efisiensi<0?'b-red':r.persen_efisiensi>50?'b-green':'b-yellow',pct(r.persen_efisiensi));
         return `<tr>
         <td class="mono" style="color:#94A3B8;font-size:11px">${i+1}</td>
-        <td style="font-size:12px">${r.nama_satker}${unmatchedBadge}</td>
+        <td style="font-size:12px">${getLabel(r)}${unmatchedBadge}</td>
         <td class="mono text-right" style="color:${noData?'#CBD5E1':'inherit'}">${noData?'—':IDRf(r.total_pagu)}</td>
         <td class="mono text-right" style="color:${noData?'#CBD5E1':'inherit'}">${noData?'—':IDRf(r.total_kontrak)}</td>
         <td class="mono text-right" style="color:${noData?'#94A3B8':(r.efisiensi<0?'#EF4444':'#16A34A')};font-weight:700">${efiText}</td>
@@ -2870,13 +2956,16 @@ function renderEfiOpdTable(tab) {
         <td class="mono text-center">${fmt(r.jumlah)}</td>
       </tr>`;
       }).join('')
-    : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada paket berstatus "${label}" untuk filter saat ini.</p></div></td></tr>`;
+    : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📊</div><p>Tidak ada paket berstatus "${statusLabel}" untuk filter saat ini.</p></div></td></tr>`;
 }
 
 function switchEfiOpdTab(tab) {
   S.efiOpdTab = tab;
   document.querySelectorAll('#efi-opd-tabs .seg-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   renderEfiOpdTable(tab);
+  renderEfiDimTable('efi-transaksi', S.efiTransaksiData, tab, 'Sumber Transaksi');
+  renderEfiDimTable('efi-metode',    S.efiMetodeData,    tab, 'Metode Pengadaan');
+  renderEfiDimTable('efi-jenis',     S.efiJenisData,      tab, 'Jenis Pengadaan');
 }
 
 // ============================================================
@@ -4910,13 +4999,29 @@ async function loadRekap() {
   const tenderTbody     = document.getElementById('rk-tender-tbody');
 
   try {
-    const res = await api({
-      action: 'laporanRekap',
-      tahun,
-      periode: bulan ? tahun + '-' + bulan : undefined,
-    });
+    const [res, resEfi] = await Promise.all([
+      api({ action: 'laporanRekap', tahun, periode: bulan ? tahun + '-' + bulan : undefined }),
+      // Data efisiensi (paket Selesai, exclude-aware) per Jenis/Metode/Sumber
+      // Transaksi — sumber sama dengan tabel breakdown di menu Analisis, cuma
+      // di sini digabung sbg kolom tambahan ke tabel yang sudah ada.
+      api({ action: 'listEfisiensi', tahun, periode: bulan ? tahun + '-' + bulan : undefined }),
+    ]);
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rekap laporan.');
     const d = res.data || {};
+    // Kalau panggilan efisiensi gagal, jangan sampai gagalkan seluruh halaman
+    // Rekap — cukup kolom Efisiensi-nya kosong.
+    const efiD = (resEfi && resEfi.status === 'success') ? (resEfi.data || {}) : {};
+    const efiByJenis     = {}; (efiD.by_jenis_selesai            || []).forEach(r => efiByJenis[r.label]     = r);
+    const efiByMetode    = {}; (efiD.by_metode_selesai           || []).forEach(r => efiByMetode[r.label]    = r);
+    const efiByTransaksi = {}; (efiD.by_sumber_transaksi_selesai || []).forEach(r => efiByTransaksi[r.label] = r);
+    // Sel Efisiensi bersama, dipakai di 3 tabel Rekap di bawah.
+    const efiCellsHtml = m => {
+      if (!m || !m.ada_data_efisiensi) {
+        return `<td class="text-right mono" style="color:#94A3B8;font-style:italic;font-size:11px" title="Belum ada paket Selesai di kelompok ini yang pagunya diketahui (match RUP)">—</td><td class="text-center" style="color:#94A3B8;font-size:11px">—</td>`;
+      }
+      const color = m.efisiensi < 0 ? '#DC2626' : '#16A34A';
+      return `<td class="text-right mono" style="font-weight:700;color:${color}">${IDRf(m.efisiensi)}</td><td class="text-center mono" style="font-weight:700;color:${color}">${m.persen_efisiensi.toFixed(2)}%</td>`;
+    };
 
     // ── KPI ──
     document.getElementById('rk-total-paket').textContent = fmt(d.total_paket || 0);
@@ -4964,6 +5069,7 @@ async function loadRekap() {
             <span style="font-size:11px;color:#475569">${r.progress.toFixed(1)}%</span>
           </div>
         </td>
+        ${efiCellsHtml(efiByJenis[r.jenis_pengadaan])}
       </tr>`).join('') + `
       <tr style="font-weight:700;background:#F8FAFC">
         <td colspan="2">Total</td>
@@ -4972,7 +5078,8 @@ async function loadRekap() {
         <td class="text-right mono">${fmt(jenis.reduce((s,r)=>s+r.sudah_berproses,0))}</td>
         <td class="text-right mono">${fmt(jenis.reduce((s,r)=>s+r.belum_berproses,0))}</td>
         <td></td>
-      </tr>` : `<tr><td colspan="7"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+        <td colspan="2"></td>
+      </tr>` : `<tr><td colspan="9"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── b.1) Footnote transparansi RUP manual (biar jelas kalau
     //         dibandingkan manual ke pivot Google Sheets, yang cuma baca
@@ -5003,7 +5110,8 @@ async function loadRekap() {
         <td class="text-right mono" style="color:#15803D;font-weight:600">
           <a href="#" style="color:inherit" onclick="filterSandByMetode('${escJs(r.metode_pengadaan)}','Selesai');return false" title="Klik untuk lihat paket ${escJs(r.metode_pengadaan)} yang sudah selesai">${fmt(r.selesai)}</a>
         </td>
-      </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+        ${efiCellsHtml(efiByMetode[r.metode_pengadaan])}
+      </tr>`).join('') : `<tr><td colspan="8"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── c.1) Tabel Sumber Transaksi (kanal realisasi aktual) ──
     // "Belum Ada Transaksi" (paket yg sama sekali belum berproses & rencana
@@ -5044,6 +5152,7 @@ async function loadRekap() {
         </td>
         <td class="text-right mono">${IDRf(r.nilai_pagu)}</td>
         <td class="text-right mono" style="color:#15803D">${IDRf(r.nilai_kontrak)}</td>
+        ${efiCellsHtml(efiByTransaksi[r.sumber_transaksi])}
       </tr>`).join('') + `
       <tr style="font-weight:700;background:#F8FAFC">
         <td colspan="2">Total</td>
@@ -5053,7 +5162,8 @@ async function loadRekap() {
         <td class="text-right mono">${fmt(transaksi.reduce((s,r)=>s+r.selesai,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_pagu,0))}</td>
         <td class="text-right mono">${IDRf(transaksi.reduce((s,r)=>s+r.nilai_kontrak,0))}</td>
-      </tr>` : `<tr><td colspan="8"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
+        <td colspan="2"></td>
+      </tr>` : `<tr><td colspan="10"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── d) Tabel paket sedang berjalan (non-tender) ──
     const berjalan = d.paket_berjalan || [];
