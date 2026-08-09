@@ -5095,7 +5095,12 @@ async function loadSandingan(page=1) {
       // AGREGAT di kartu KPI & halaman Analisis) — di sini efisiensi tetap
       // dihitung & ditampilkan selama pagu-nya diketahui, supaya baris per
       // baris tetap informatif walau metodenya dikecualikan dari total.
-      const efi      = (hasReal && isSelesai && paguDiketahui) ? (Number(r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
+      // Baris anggota grup gabungan yang BUKAN primary sengaja nilai_kontrak=0
+      // (nilainya sudah ditampilkan di baris primary — lihat is_gabungan_kode_rup
+      // di Code.gs) — Efisiensi (pagu - 0) di baris ini SEMU, jadi disembunyikan.
+      const isSekunderGabungan = r.is_gabungan_kode_rup && !r.is_primary_gabungan;
+      const efi      = (hasReal && isSelesai && paguDiketahui && !isSekunderGabungan)
+        ? (Number(r.pagu_efisiensi ?? r.pagu)||0) - (Number(r.nilai_kontrak)||0) : null;
       const efiClr   = efi !== null ? (efi < 0 ? '#DC2626' : '#16A34A') : '#94A3B8';
 
       return `<tr class="${rowClass}" title="${r.nama_paket_rup||''}" style="--satker-color:${sandSatkerColor(r.kode_satker)}" data-satker-color="1">
@@ -5107,7 +5112,10 @@ async function loadSandingan(page=1) {
         <td class="col-paket" style="font-size:11.5px">
           ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun.${paguDiketahui ? ' Pagu sudah diisi manual oleh admin.' : ' Pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi sampai diisi manual.'}" style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
           ${r.is_realisasi_gabungan ? `<span title="1 kode RUP ini dipakai oleh ${r.realisasi_list.length} realisasi/kontrak terpisah — Pagu RUP dihitung sekali, Nilai Kontrak = jumlah semuanya. Lihat rincian di kolom Penyedia." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🔗 ${r.realisasi_list.length} Kontrak</span><br>` : ''}
-          ${r.is_gabungan_kode_rup ? `<span title="Kode RUP ini bagian dari transaksi realisasi yang digabung dari beberapa kode RUP sekaligus. Nilai Kontrak & Efisiensi hanya dihitung di salah satu baris (baris 'primary') supaya tidak dobel-hitung di total KPI — Rp 0 di baris ini bukan berarti belum bayar." style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FEF3C7;border:1px solid #FDE68A;border-radius:99px;padding:1px 7px;margin-bottom:3px">🧩 Bagian Grup — nilai di baris lain</span><br>` : ''}
+          ${r.is_gabungan_kode_rup ? (r.is_primary_gabungan
+            ? `<span title="Baris ini adalah 'primary' dari grup kode RUP gabungan — Nilai Kontrak & Efisiensi yang tampil sudah mewakili SELURUH anggota grup (pagu gabungan vs kontrak gabungan), bukan cuma pagu paket ini sendiri." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🧩 Primary Grup</span><br>`
+            : `<span title="Kode RUP ini bagian dari transaksi realisasi yang digabung dari beberapa kode RUP sekaligus. Nilai Kontrak & Efisiensi gabungan sudah dihitung di baris 'primary' grup ini — Rp 0 & 'Lihat baris grup' di sini bukan berarti belum bayar." style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FEF3C7;border:1px solid #FDE68A;border-radius:99px;padding:1px 7px;margin-bottom:3px">🧩 Bagian Grup — nilai di baris lain</span><br>`
+          ) : ''}
           <div style="font-weight:500;color:#0F1C2E">
             ${r.is_unmatched ? (r.nama_paket_realisasi||'—') : (r.nama_paket_rup||'—')}
           </div>
@@ -5157,11 +5165,13 @@ async function loadSandingan(page=1) {
         <td class="col-efi mono" style="font-weight:700;font-size:12px;color:${efiClr}">
           ${efi !== null
             ? IDRf(efi)
-            : isBerjalan
-              ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
-              : !paguDiketahui
-                ? `<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (tombol + Set Pagu) supaya efisiensinya bisa muncul." style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
-                : '—'}
+            : isSekunderGabungan
+              ? `<span title="Paket ini bagian dari transaksi yang digabung ke beberapa kode RUP sekaligus — Efisiensi gabungannya dihitung di baris primary grup ini, bukan di sini." style="font-weight:600;color:#9A3412;font-size:11px">Lihat baris grup</span>`
+              : isBerjalan
+                ? `<span title="Pagu masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket ini Selesai" style="font-weight:600;color:#B45309;font-size:11px">Menunggu Selesai</span>`
+                : !paguDiketahui
+                  ? `<span title="Tidak bisa dihitung — pagu RUP tidak diketahui karena paket ini belum match ke RUP manapun. Isi pagu manual (tombol + Set Pagu) supaya efisiensinya bisa muncul." style="font-weight:600;color:#94A3B8;font-size:11px">N/A</span>`
+                  : '—'}
         </td>
       </tr>`;
     }).join('');
