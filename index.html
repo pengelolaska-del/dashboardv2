@@ -1787,6 +1787,67 @@ thead .col-sep-h{
         </div>
       </div>
     </div>
+
+    <!-- Kode RUP Berubah (Alias) -->
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
+          🔀 Kode RUP Berubah (Revisi Paket)
+        </p>
+        <button onclick="cariUsulanAlias()" id="btn-cari-alias" style="font-size:11px;background:#1E3A5F;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-weight:600">
+          🔍 Cari Usulan Alias
+        </button>
+      </div>
+      <p style="font-size:11.5px;color:#94A3B8;margin:0 0 10px">
+        Kadang SIRUP mengganti <b>kode_rup</b> saat paket direvisi (nama/pagu berubah) — realisasi lama jadi kelihatan
+        "belum terealisasi" walau sebenarnya sudah. Klik "Cari Usulan Alias" untuk membandingkan RUP periode ini dengan
+        periode sebelumnya; sistem akan mengusulkan pasangan kode lama→baru berdasarkan kemiripan nama paket. Review dan
+        konfirmasi satu per satu — tidak ada yang diterapkan otomatis.
+      </p>
+
+      <div id="alias-candidates-wrap" style="display:none;margin-bottom:18px">
+        <div class="tbl-wrap">
+          <div class="tbl-scroll">
+          <table class="dt" id="t-alias-candidates">
+            <thead>
+              <tr>
+                <th>Satker</th>
+                <th>Kode Lama</th>
+                <th>Nama Paket Lama</th>
+                <th class="text-right">Pagu Lama</th>
+                <th>Kode Baru</th>
+                <th>Nama Paket Baru</th>
+                <th class="text-right">Pagu Baru</th>
+                <th class="text-center">Mirip</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0 0 8px">📎 Alias Terkonfirmasi</p>
+      <div class="tbl-wrap">
+        <div class="tbl-scroll">
+        <table class="dt" id="t-alias-confirmed">
+          <thead>
+            <tr>
+              <th>Kode Lama</th>
+              <th>Nama Paket Lama</th>
+              <th>Kode Baru</th>
+              <th>Nama Paket Baru</th>
+              <th>Catatan</th>
+              <th>Dibuat</th>
+              <th class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada alias kode RUP.</p></div></td></tr></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ============================================================
@@ -3221,6 +3282,7 @@ async function loadKualitas() {
     // Tabel daftar pagu manual & RUP manual
     renderManualPaguTable(resPagu.data||[]);
     renderManualRupTable(resRup.data||[]);
+    loadAliasConfirmed(); // tidak perlu await, tidak menghambat render bagian lain
 
   } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
@@ -3247,7 +3309,113 @@ function renderManualPaguTable(list) {
     : `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual yang diinput.</p></div></td></tr>`;
 }
 
-// ── Modal Pagu Manual ──────────────────────────────────────
+// ── Alias Kode RUP (revisi paket SIRUP) ────────────────────
+
+async function loadAliasConfirmed() {
+  try {
+    const res = await api({ action:'listKodeRupAlias' });
+    renderAliasConfirmedTable(res.data||[]);
+  } catch(e) { /* diam-diam gagal, tidak ganggu load Kualitas Data lainnya */ }
+}
+
+function renderAliasConfirmedTable(list) {
+  document.querySelector('#t-alias-confirmed tbody').innerHTML = list.length
+    ? list.map(r => `<tr>
+        <td style="font-size:11px;font-family:monospace;color:#C2410C">${r.kode_rup_lama||'—'}</td>
+        <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_lama||''}">${r.nama_paket_lama||'—'}</td>
+        <td style="font-size:11px;font-family:monospace;color:#2563EB">${r.kode_rup_baru||'—'}</td>
+        <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_baru||''}">${r.nama_paket_baru||'—'}</td>
+        <td style="font-size:11.5px;color:#64748B">${r.catatan||'—'}</td>
+        <td style="font-size:11px;color:#94A3B8">${r.dibuat_pada?new Date(r.dibuat_pada).toLocaleString('id-ID'):'-'}</td>
+        <td style="text-align:center">
+          <button onclick="hapusAlias('${r.id}')"
+            style="font-size:10px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;border-radius:5px;cursor:pointer;font-weight:600">
+            🗑
+          </button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada alias kode RUP.</p></div></td></tr>`;
+}
+
+async function cariUsulanAlias() {
+  if (!S.isAdmin) { Swal.fire('Perlu Login Admin', 'Silakan login di menu Upload Data terlebih dahulu.', 'warning'); return; }
+  const periode = getPeriode();
+  if (!periode) { Swal.fire('Periode kosong', 'Pilih Tahun & Bulan pada filter global dulu.', 'info'); return; }
+
+  const btn = document.getElementById('btn-cari-alias');
+  btn.disabled = true; btn.textContent = '⏳ Mencari...';
+  try {
+    const res = await api({ action:'suggestKodeRupAlias', periode });
+    if (res.status !== 'success') throw new Error(res.message);
+    renderAliasCandidates(res.data||[], periode);
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Cari Usulan Alias';
+  }
+}
+
+function renderAliasCandidates(list, periode) {
+  const wrap = document.getElementById('alias-candidates-wrap');
+  wrap.style.display = 'block';
+  document.querySelector('#t-alias-candidates tbody').innerHTML = list.length
+    ? list.map(c => `<tr>
+        <td style="font-size:11.5px">${c.nama_satker||'—'}</td>
+        <td style="font-size:11px;font-family:monospace;color:#C2410C">${c.kode_rup_lama}</td>
+        <td style="font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.nama_paket_lama||''}">${c.nama_paket_lama||'—'}</td>
+        <td style="font-size:12px;text-align:right">${IDRf(c.pagu_lama)}</td>
+        <td style="font-size:11px;font-family:monospace;color:#2563EB">${c.kode_rup_baru}</td>
+        <td style="font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.nama_paket_baru||''}">${c.nama_paket_baru||'—'}</td>
+        <td style="font-size:12px;text-align:right">${IDRf(c.pagu_baru)}</td>
+        <td style="text-align:center;font-size:11px;font-weight:700;color:${c.skor_kemiripan_nama>=0.85?'#16A34A':'#CA8A04'}">${Math.round(c.skor_kemiripan_nama*100)}%</td>
+        <td style="text-align:center">
+          <button onclick='konfirmasiAlias(${JSON.stringify(c)})'
+            style="font-size:10px;padding:3px 8px;background:#DCFCE7;color:#16A34A;border:none;border-radius:5px;cursor:pointer;font-weight:600">
+            ✓ Konfirmasi
+          </button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="9"><div class="empty-state" style="padding:16px"><p>Tidak ditemukan kandidat alias untuk periode ${periode}.</p></div></td></tr>`;
+}
+
+async function konfirmasiAlias(c) {
+  const conf = await Swal.fire({
+    title: 'Konfirmasi alias kode RUP?',
+    html: `<b>${c.kode_rup_lama}</b> (${c.nama_paket_lama||'—'})<br>akan dianggap sama dengan<br><b>${c.kode_rup_baru}</b> (${c.nama_paket_baru||'—'})<br><br>
+           <small style="color:#94A3B8">Realisasi yang mereferensi kode lama akan otomatis ter-match ke RUP kode baru setelah matching dijalankan ulang.</small>`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Konfirmasi', cancelButtonText: 'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({
+      action:'confirmKodeRupAlias', token:S.adminToken,
+      kode_rup_lama: c.kode_rup_lama, kode_rup_baru: c.kode_rup_baru,
+      nama_paket_lama: c.nama_paket_lama, nama_paket_baru: c.nama_paket_baru,
+    });
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'✅ Alias Tersimpan', text:res.message, timer:2000, showConfirmButton:false});
+    await loadAliasConfirmed();
+    // Hapus kandidat ini dari daftar usulan supaya tidak dikonfirmasi dobel
+    const rows = [...document.querySelectorAll('#t-alias-candidates tbody tr')];
+    rows.forEach(tr => { if (tr.innerHTML.includes(c.kode_rup_lama)) tr.remove(); });
+  } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
+}
+
+async function hapusAlias(id) {
+  const conf = await Swal.fire({
+    title:'Hapus alias ini?', icon:'warning', showCancelButton:true,
+    confirmButtonColor:'#DC2626', confirmButtonText:'Ya, Hapus', cancelButtonText:'Batal',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({ action:'deleteKodeRupAlias', token:S.adminToken, id });
+    if (res.status !== 'success') throw new Error(res.message);
+    Swal.fire({icon:'success', title:'Dihapus', timer:1200, showConfirmButton:false});
+    await loadAliasConfirmed();
+  } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
+}
+
+
 
 function openPaguModal(prefill) {
   const modal = document.getElementById('modal-pagu');
