@@ -467,6 +467,42 @@ thead .col-sep-h{
   }
   body.printing-report #print-report-area thead { display: table-header-group; }
   @page { size: landscape; margin: 10mm; }
+/* Kartu Usulan Alias Kode RUP */
+.alias-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;
+}
+.alias-card{
+  border:1px solid #E2E8F0; border-radius:10px; padding:12px 14px; background:#fff;
+}
+.alias-card .satker{
+  font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;
+  margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed #E2E8F0;
+}
+.alias-compare{
+  display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:start;
+}
+.alias-compare .arrow{ color:#94A3B8; font-size:16px; padding-top:22px; }
+.alias-side .kode{
+  display:inline-block; font-family:monospace; font-size:11px; font-weight:700;
+  padding:1px 6px; border-radius:4px; margin-bottom:5px;
+}
+.alias-side.lama .kode{ color:#C2410C; background:#FFF7ED; }
+.alias-side.baru .kode{ color:#2563EB; background:#EFF6FF; }
+.alias-side .nama{
+  font-size:12.5px; color:#1A2332; line-height:1.4; margin-bottom:4px;
+  word-break:break-word;
+}
+.alias-side .pagu{ font-size:12px; font-weight:700; color:#334155; }
+.alias-footer{
+  display:flex; align-items:center; justify-content:space-between; margin-top:12px;
+  padding-top:10px; border-top:1px dashed #E2E8F0;
+}
+.alias-mirip{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+.alias-mirip.tinggi{ color:#16A34A; background:#DCFCE7; }
+.alias-mirip.sedang{ color:#CA8A04; background:#FEF9C3; }
+@media (max-width:520px){
+  .alias-compare{ grid-template-columns:1fr; }
+  .alias-compare .arrow{ padding-top:0; text-align:center; transform:rotate(90deg); }
 }
 </style>
 </head>
@@ -1808,46 +1844,12 @@ thead .col-sep-h{
       </p>
 
       <div id="alias-candidates-wrap" style="display:none;margin-bottom:18px">
-        <div class="tbl-wrap">
-          <div class="tbl-scroll">
-          <table class="dt" id="t-alias-candidates">
-            <thead>
-              <tr>
-                <th>Satker</th>
-                <th>Kode Lama</th>
-                <th>Nama Paket Lama</th>
-                <th class="text-right">Pagu Lama</th>
-                <th>Kode Baru</th>
-                <th>Nama Paket Baru</th>
-                <th class="text-right">Pagu Baru</th>
-                <th class="text-center">Mirip</th>
-                <th class="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-          </div>
-        </div>
+        <div class="alias-grid" id="t-alias-candidates"></div>
       </div>
 
       <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0 0 8px">📎 Alias Terkonfirmasi</p>
-      <div class="tbl-wrap">
-        <div class="tbl-scroll">
-        <table class="dt" id="t-alias-confirmed">
-          <thead>
-            <tr>
-              <th>Kode Lama</th>
-              <th>Nama Paket Lama</th>
-              <th>Kode Baru</th>
-              <th>Nama Paket Baru</th>
-              <th>Catatan</th>
-              <th>Dibuat</th>
-              <th class="text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody><tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada alias kode RUP.</p></div></td></tr></tbody>
-        </table>
-        </div>
+      <div class="alias-grid" id="t-alias-confirmed">
+        <div class="empty-state" style="padding:16px;grid-column:1/-1"><p>Belum ada alias kode RUP.</p></div>
       </div>
     </div>
   </section>
@@ -3321,22 +3323,33 @@ async function loadAliasConfirmed() {
 }
 
 function renderAliasConfirmedTable(list) {
-  document.querySelector('#t-alias-confirmed tbody').innerHTML = list.length
-    ? list.map(r => `<tr>
-        <td style="font-size:11px;font-family:monospace;color:#C2410C">${r.kode_rup_lama||'—'}</td>
-        <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_lama||''}">${r.nama_paket_lama||'—'}</td>
-        <td style="font-size:11px;font-family:monospace;color:#2563EB">${r.kode_rup_baru||'—'}</td>
-        <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket_baru||''}">${r.nama_paket_baru||'—'}</td>
-        <td style="font-size:11.5px;color:#64748B">${r.catatan||'—'}</td>
-        <td style="font-size:11px;color:#94A3B8">${r.dibuat_pada?new Date(r.dibuat_pada).toLocaleString('id-ID'):'-'}</td>
-        <td style="text-align:center">
+  const wrap = document.getElementById('t-alias-confirmed');
+  wrap.innerHTML = list.length
+    ? list.map(r => `
+      <div class="alias-card">
+        <div class="satker">${r.nama_satker || '&nbsp;'}</div>
+        <div class="alias-compare">
+          <div class="alias-side lama">
+            <span class="kode">${r.kode_rup_lama||'—'}</span>
+            <div class="nama">${r.nama_paket_lama||'—'}</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="alias-side baru">
+            <span class="kode">${r.kode_rup_baru||'—'}</span>
+            <div class="nama">${r.nama_paket_baru||'—'}</div>
+          </div>
+        </div>
+        <div class="alias-footer">
+          <span style="font-size:11px;color:#94A3B8">
+            ${r.dibuat_pada?new Date(r.dibuat_pada).toLocaleDateString('id-ID'):'-'}${r.catatan?' · '+r.catatan:''}
+          </span>
           <button onclick="hapusAlias('${r.id}')"
             style="font-size:10px;padding:3px 8px;background:#FEE2E2;color:#DC2626;border:none;border-radius:5px;cursor:pointer;font-weight:600">
-            🗑
+            🗑 Hapus
           </button>
-        </td>
-      </tr>`).join('')
-    : `<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada alias kode RUP.</p></div></td></tr>`;
+        </div>
+      </div>`).join('')
+    : `<div class="empty-state" style="padding:16px;grid-column:1/-1"><p>Belum ada alias kode RUP.</p></div>`;
 }
 
 async function cariUsulanAlias() {
@@ -3360,24 +3373,36 @@ async function cariUsulanAlias() {
 function renderAliasCandidates(list, periode) {
   const wrap = document.getElementById('alias-candidates-wrap');
   wrap.style.display = 'block';
-  document.querySelector('#t-alias-candidates tbody').innerHTML = list.length
-    ? list.map(c => `<tr>
-        <td style="font-size:11.5px">${c.nama_satker||'—'}</td>
-        <td style="font-size:11px;font-family:monospace;color:#C2410C">${c.kode_rup_lama}</td>
-        <td style="font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.nama_paket_lama||''}">${c.nama_paket_lama||'—'}</td>
-        <td style="font-size:12px;text-align:right">${IDRf(c.pagu_lama)}</td>
-        <td style="font-size:11px;font-family:monospace;color:#2563EB">${c.kode_rup_baru}</td>
-        <td style="font-size:12px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.nama_paket_baru||''}">${c.nama_paket_baru||'—'}</td>
-        <td style="font-size:12px;text-align:right">${IDRf(c.pagu_baru)}</td>
-        <td style="text-align:center;font-size:11px;font-weight:700;color:${c.skor_kemiripan_nama>=0.85?'#16A34A':'#CA8A04'}">${Math.round(c.skor_kemiripan_nama*100)}%</td>
-        <td style="text-align:center">
+  const target = document.getElementById('t-alias-candidates');
+  target.innerHTML = list.length
+    ? list.map(c => {
+        const pct = Math.round(c.skor_kemiripan_nama*100);
+        return `
+      <div class="alias-card" data-kode-lama="${c.kode_rup_lama}">
+        <div class="satker">${c.nama_satker || '&nbsp;'}</div>
+        <div class="alias-compare">
+          <div class="alias-side lama">
+            <span class="kode">${c.kode_rup_lama}</span>
+            <div class="nama">${c.nama_paket_lama||'—'}</div>
+            <div class="pagu">${IDRf(c.pagu_lama)}</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="alias-side baru">
+            <span class="kode">${c.kode_rup_baru}</span>
+            <div class="nama">${c.nama_paket_baru||'—'}</div>
+            <div class="pagu">${IDRf(c.pagu_baru)}</div>
+          </div>
+        </div>
+        <div class="alias-footer">
+          <span class="alias-mirip ${pct>=85?'tinggi':'sedang'}">${pct}% mirip</span>
           <button onclick='konfirmasiAlias(${JSON.stringify(c)})'
-            style="font-size:10px;padding:3px 8px;background:#DCFCE7;color:#16A34A;border:none;border-radius:5px;cursor:pointer;font-weight:600">
+            style="font-size:11px;padding:5px 12px;background:#DCFCE7;color:#16A34A;border:none;border-radius:6px;cursor:pointer;font-weight:600">
             ✓ Konfirmasi
           </button>
-        </td>
-      </tr>`).join('')
-    : `<tr><td colspan="9"><div class="empty-state" style="padding:16px"><p>Tidak ditemukan kandidat alias untuk periode ${periode}.</p></div></td></tr>`;
+        </div>
+      </div>`;
+      }).join('')
+    : `<div class="empty-state" style="padding:16px;grid-column:1/-1"><p>Tidak ditemukan kandidat alias untuk periode ${periode}.</p></div>`;
 }
 
 async function konfirmasiAlias(c) {
@@ -3398,8 +3423,8 @@ async function konfirmasiAlias(c) {
     Swal.fire({icon:'success', title:'✅ Alias Tersimpan', text:res.message, timer:2000, showConfirmButton:false});
     await loadAliasConfirmed();
     // Hapus kandidat ini dari daftar usulan supaya tidak dikonfirmasi dobel
-    const rows = [...document.querySelectorAll('#t-alias-candidates tbody tr')];
-    rows.forEach(tr => { if (tr.innerHTML.includes(c.kode_rup_lama)) tr.remove(); });
+    const el = document.querySelector(`#t-alias-candidates .alias-card[data-kode-lama="${c.kode_rup_lama}"]`);
+    if (el) el.remove();
   } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
 }
 
