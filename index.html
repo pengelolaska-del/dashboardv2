@@ -1665,9 +1665,11 @@ thead .col-sep-h{
     <h1 class="page-title">Kualitas Data</h1>
     <div class="summary-grid-3" id="kual-kpi"></div>
 
-    <div class="grid-2-resp" style="margin-bottom:20px">
-      <!-- Unmatched RUP -->
-      <div>
+    <div class="grid-2-resp" style="margin-bottom:20px;grid-template-columns:1fr">
+      <!-- Unmatched RUP — DISEMBUNYIKAN SEMENTARA (bukan dihapus).
+           Untuk memunculkan lagi: hapus style="display:none" di div bawah ini,
+           dan kembalikan grid-template-columns:1fr 1fr di style inline atas. -->
+      <div style="display:none">
         <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
           Unmatched RUP
           <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
