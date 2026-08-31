@@ -1730,6 +1730,37 @@ thead .col-sep-h{
       </div>
     </div>
 
+    <!-- Audit relasi kode_rup <-> kode_paket -->
+    <div class="grid-2-resp" style="margin-bottom:20px">
+      <!-- Kode RUP dipakai banyak paket -->
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+          🔗 Kode RUP Dipakai Banyak Paket
+          <span style="font-weight:400;color:#94A3B8">(<span id="kual-rup-banyak-n">0</span> kode RUP — lihat semua realisasi yg menyebutnya sebelum menganggap salah satu "hilang")</span>
+        </p>
+        <div class="tbl-wrap" style="max-height:320px;overflow:auto">
+          <table class="dt" id="t-rup-banyak-paket">
+            <thead><tr><th>Kode RUP</th><th>Nama Paket RUP</th><th>Satker</th><th class="text-center">Jml Paket</th><th>Daftar Kode Paket Realisasi</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 1 paket pakai banyak kode RUP -->
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+          🔀 1 Paket Realisasi Pakai Banyak Kode RUP
+          <span style="font-weight:400;color:#94A3B8">(<span id="kual-real-banyak-n">0</span> realisasi — 1 kontrak menyandingkan >1 paket RUP sekaligus)</span>
+        </p>
+        <div class="tbl-wrap" style="max-height:320px;overflow:auto">
+          <table class="dt" id="t-real-banyak-rup">
+            <thead><tr><th>Kode Paket</th><th>Nama Paket Realisasi</th><th>Satker</th><th class="text-center">Jml RUP</th><th>Daftar Kode RUP</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Daftar RUP Manual -->
     <div style="margin-top:4px;margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -3182,6 +3213,24 @@ async function loadKualitas() {
       r=>r.metode_pengadaan_rup||'—',
       r=>r.jenis_pengadaan_rup||'—',
       r=>`<span style="text-align:right;display:block">${IDRf(r.pagu_rup)}</span>`,
+    ]);
+
+    // ── Audit: kode_rup dipakai banyak paket & 1 paket pakai banyak kode_rup
+    document.getElementById('kual-rup-banyak-n').textContent  = fmt(d.total_kode_rup_banyak_paket||0);
+    document.getElementById('kual-real-banyak-n').textContent = fmt(d.total_realisasi_banyak_rup||0);
+    fillTbl('#t-rup-banyak-paket', d.kode_rup_banyak_paket, [
+      r=>`<a href="#sandingan" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${r.kode_rup}';applySand();},50)" style="color:#2563EB;font-weight:600">${r.kode_rup}</a>`,
+      r=>r.nama_paket_rup||'—',
+      r=>r.nama_satker||'—',
+      r=>`<span style="text-align:center;display:block;font-weight:700">${r.jumlah_paket}</span>`,
+      r=>r.daftar_paket.map(x=>`<div style="white-space:nowrap">${x.kode_paket} <span style="color:#94A3B8">(${x.status_paket||'—'}, ${IDRf(x.nilai_kontrak)})</span></div>`).join(''),
+    ]);
+    fillTbl('#t-real-banyak-rup', d.realisasi_banyak_rup, [
+      r=>r.kode_paket,
+      r=>r.nama_paket_realisasi||'—',
+      r=>r.nama_satker||'—',
+      r=>`<span style="text-align:center;display:block;font-weight:700">${r.jumlah_rup}</span>`,
+      r=>r.daftar_kode_rup.map(kr=>`<div style="white-space:nowrap"><a href="#sandingan" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${kr}';applySand();},50)" style="color:#2563EB">${kr}</a></div>`).join(''),
     ]);
 
     // Tabel Unmatched Realisasi — dengan kolom Metode, Jenis, Kode Paket + tombol Set Pagu
