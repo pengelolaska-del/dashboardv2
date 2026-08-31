@@ -282,6 +282,9 @@ table.dt tr:hover td{background:#FAFBFF}
 .audit-chip-kode{font-family:ui-monospace,monospace;color:#475569;white-space:nowrap}
 .audit-chip-meta{color:#94A3B8;white-space:nowrap;flex-shrink:0;text-align:right}
 .audit-empty{padding:24px;text-align:center;color:#94A3B8;font-size:12.5px}
+.audit-list-wide{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;max-height:none;overflow:visible;align-content:start}
+.audit-list-wide .audit-card{height:fit-content}
+@media (max-width:640px){.audit-list-wide{grid-template-columns:1fr}}
 
 /* ============================================================
    SANDINGAN — tabel RUP vs Realisasi berdampingan
@@ -1688,146 +1691,161 @@ thead .col-sep-h{
     <h1 class="page-title">Kualitas Data</h1>
     <div class="summary-grid-3" id="kual-kpi"></div>
 
-    <div class="grid-2-resp" style="margin-bottom:20px">
-      <!-- Unmatched RUP -->
-      <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
-          Unmatched RUP
-          <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
-        </p>
-        <div class="grid-3-resp-sm">
-          <div class="fld">
-            <label>Metode Pengadaan</label>
-            <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
-          </div>
-          <div class="fld">
-            <label>Jenis Pengadaan</label>
-            <select id="kual-rup-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
-          </div>
-          <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()">↺</button>
-        </div>
-        <div class="tbl-wrap" style="max-height:280px;overflow:auto">
-          <table class="dt" id="t-um-rup">
-            <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
+    <!-- Sub-menu Kualitas Data — tiap bagian dipisah tab supaya panel bisa
+         full-width (lebih nyaman utk daftar panjang) & lebih gampang dicari
+         saat maintenance, tanpa perlu scroll satu section super panjang. -->
+    <div class="seg-tabs" id="kual-tabs" style="margin-bottom:16px;display:inline-flex">
+      <button class="seg-tab active" data-tab="unmatched" onclick="switchKualTab('unmatched')">⚠️ Belum Match</button>
+      <button class="seg-tab" data-tab="relasi" onclick="switchKualTab('relasi')">🔗 Relasi Kode RUP</button>
+      <button class="seg-tab" data-tab="manual" onclick="switchKualTab('manual')">📌 Data Manual</button>
+    </div>
 
-      <!-- Unmatched Realisasi + tombol Set Pagu -->
-      <div>
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
-          Unmatched Realisasi
-          <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
-        </p>
-        <div class="grid-4-resp-sm">
-          <div class="fld">
-            <label>Sumber Transaksi</label>
-            <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
+    <!-- ── Tab: Belum Match ─────────────────────────────────────────── -->
+    <div class="kual-panel" id="kual-panel-unmatched">
+      <div class="grid-2-resp" style="margin-bottom:20px">
+        <!-- Unmatched RUP -->
+        <div>
+          <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+            Unmatched RUP
+            <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
+          </p>
+          <div class="grid-3-resp-sm">
+            <div class="fld">
+              <label>Metode Pengadaan</label>
+              <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+            </div>
+            <div class="fld">
+              <label>Jenis Pengadaan</label>
+              <select id="kual-rup-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+            </div>
+            <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()">↺</button>
           </div>
-          <div class="fld">
-            <label>Metode Pengadaan</label>
-            <select id="kual-real-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+          <div class="tbl-wrap" style="max-height:280px;overflow:auto">
+            <table class="dt" id="t-um-rup">
+              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <div class="fld">
-            <label>Jenis Pengadaan</label>
-            <select id="kual-real-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
-          </div>
-          <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()">↺</button>
         </div>
-        <div class="tbl-wrap" style="max-height:280px;overflow:auto">
-          <table class="dt" id="t-um-real">
-            <thead>
-              <tr>
-                <th>Satker</th>
-                <th>Nama Paket</th>
-                <th>Metode</th>
-                <th>Jenis</th>
-                <th>Kode Paket</th>
-                <th class="text-right">Kontrak</th>
-                <th class="text-center">Pagu Manual</th>
-                <th class="text-center">Aksi RUP</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+
+        <!-- Unmatched Realisasi + tombol Set Pagu -->
+        <div>
+          <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
+            Unmatched Realisasi
+            <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
+          </p>
+          <div class="grid-4-resp-sm">
+            <div class="fld">
+              <label>Sumber Transaksi</label>
+              <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
+            </div>
+            <div class="fld">
+              <label>Metode Pengadaan</label>
+              <select id="kual-real-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+            </div>
+            <div class="fld">
+              <label>Jenis Pengadaan</label>
+              <select id="kual-real-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+            </div>
+            <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()">↺</button>
+          </div>
+          <div class="tbl-wrap" style="max-height:280px;overflow:auto">
+            <table class="dt" id="t-um-real">
+              <thead>
+                <tr>
+                  <th>Satker</th>
+                  <th>Nama Paket</th>
+                  <th>Metode</th>
+                  <th>Jenis</th>
+                  <th>Kode Paket</th>
+                  <th class="text-right">Kontrak</th>
+                  <th class="text-center">Pagu Manual</th>
+                  <th class="text-center">Aksi RUP</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Audit relasi kode_rup <-> kode_paket -->
-    <div class="grid-2-resp" style="margin-bottom:20px">
-      <!-- Kode RUP dipakai banyak paket -->
-      <div>
+    <!-- ── Tab: Relasi Kode RUP ↔ Kode Paket ────────────────────────── -->
+    <div class="kual-panel" id="kual-panel-relasi" style="display:none">
+      <!-- Full-width (bukan grid-2) — daftarnya bisa panjang & tiap kartu
+           punya sub-daftar sendiri, jadi lebih nyaman kalau lebar penuh. -->
+      <div style="margin-bottom:20px">
         <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
           🔗 Kode RUP Dipakai Banyak Paket
           <span style="font-weight:400;color:#94A3B8">(<span id="kual-rup-banyak-n">0</span> kode RUP — lihat semua realisasi yg menyebutnya sebelum menganggap salah satu "hilang")</span>
         </p>
-        <div class="audit-list" id="t-rup-banyak-paket"></div>
+        <div class="audit-list audit-list-wide" id="t-rup-banyak-paket"></div>
       </div>
 
-      <!-- 1 paket pakai banyak kode RUP -->
       <div>
         <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
           🔀 1 Paket Realisasi Pakai Banyak Kode RUP
           <span style="font-weight:400;color:#94A3B8">(<span id="kual-real-banyak-n">0</span> realisasi — 1 kontrak menyandingkan >1 paket RUP sekaligus)</span>
         </p>
-        <div class="audit-list" id="t-real-banyak-rup"></div>
+        <div class="audit-list audit-list-wide" id="t-real-banyak-rup"></div>
       </div>
     </div>
 
-    <!-- Daftar RUP Manual -->
-    <div style="margin-top:4px;margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
-          📌 Daftar RUP Manual
-          <span style="font-weight:400;color:#94A3B8;margin-left:4px">— baris RUP yang ditambahkan langsung (kode RUP-nya tidak pernah ter-upload dari SIRUP)</span>
-        </p>
-      </div>
-      <div class="tbl-wrap">
-        <div class="tbl-scroll">
-        <table class="dt" id="t-manual-rup">
-          <thead>
-            <tr>
-              <th>Kode RUP</th>
-              <th>Nama Paket</th>
-              <th>Nama Satker</th>
-              <th class="text-right">Pagu</th>
-              <th class="text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody><tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Belum ada RUP manual.</p></div></td></tr></tbody>
-        </table>
+    <!-- ── Tab: Data Manual (RUP Manual + Pagu Manual) ──────────────── -->
+    <div class="kual-panel" id="kual-panel-manual" style="display:none">
+      <!-- Daftar RUP Manual -->
+      <div style="margin-top:4px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
+            📌 Daftar RUP Manual
+            <span style="font-weight:400;color:#94A3B8;margin-left:4px">— baris RUP yang ditambahkan langsung (kode RUP-nya tidak pernah ter-upload dari SIRUP)</span>
+          </p>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-scroll">
+          <table class="dt" id="t-manual-rup">
+            <thead>
+              <tr>
+                <th>Kode RUP</th>
+                <th>Nama Paket</th>
+                <th>Nama Satker</th>
+                <th class="text-right">Pagu</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody><tr><td colspan="5"><div class="empty-state" style="padding:16px"><p>Belum ada RUP manual.</p></div></td></tr></tbody>
+          </table>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Daftar Pagu Manual -->
-    <div style="margin-top:4px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
-          📋 Daftar Pagu Manual
-          <span style="font-weight:400;color:#94A3B8;margin-left:4px">— digunakan untuk hitung efisiensi paket tanpa kode RUP</span>
-        </p>
-        <button onclick="openPaguModal()" style="font-size:11px;background:#1E3A5F;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-weight:600">
-          + Tambah Pagu Manual
-        </button>
-      </div>
-      <div class="tbl-wrap">
-        <div class="tbl-scroll">
-        <table class="dt" id="t-manual-pagu">
-          <thead>
-            <tr>
-              <th>Kode Paket</th>
-              <th>Nama Paket</th>
-              <th>Nama Satker</th>
-              <th class="text-right">Pagu Manual</th>
-              <th>Diperbarui</th>
-              <th class="text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody><tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
-        </table>
+      <!-- Daftar Pagu Manual -->
+      <div style="margin-top:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <p style="font-size:12px;font-weight:700;color:#1A2332;margin:0">
+            📋 Daftar Pagu Manual
+            <span style="font-weight:400;color:#94A3B8;margin-left:4px">— digunakan untuk hitung efisiensi paket tanpa kode RUP</span>
+          </p>
+          <button onclick="openPaguModal()" style="font-size:11px;background:#1E3A5F;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-weight:600">
+            + Tambah Pagu Manual
+          </button>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-scroll">
+          <table class="dt" id="t-manual-pagu">
+            <thead>
+              <tr>
+                <th>Kode Paket</th>
+                <th>Nama Paket</th>
+                <th>Nama Satker</th>
+                <th class="text-right">Pagu Manual</th>
+                <th>Diperbarui</th>
+                <th class="text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody><tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
+          </table>
+          </div>
         </div>
       </div>
     </div>
@@ -3185,6 +3203,15 @@ function resetKualitasReal() {
 }
 
 // Toggle expand/collapse detail chip-list di kartu audit (Kualitas Data)
+// Sub-menu Kualitas Data — pisah per bagian (Belum Match / Relasi Kode RUP /
+// Data Manual) supaya tiap panel bisa full-width & gampang dicari saat edit,
+// tanpa harus scroll satu section yang sangat panjang. Data sudah dimuat
+// sekaligus lewat loadKualitas(); ini cuma toggle tampilan (tidak fetch ulang).
+function switchKualTab(tab) {
+  document.querySelectorAll('#kual-tabs .seg-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.kual-panel').forEach(p => { p.style.display = (p.id === 'kual-panel-'+tab) ? '' : 'none'; });
+}
+
 function toggleAuditChips(btn) {
   const chips = btn.nextElementSibling;
   const open  = chips.classList.toggle('open');
