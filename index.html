@@ -1377,16 +1377,19 @@ thead .col-sep-h{
         <div class="sand-scard-val" id="sand-kpi-total">—</div>
         <div class="sand-scard-pct" id="sand-kpi-pagu">—</div>
         <div id="sand-kpi-unmatched-note" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ + <span id="sand-kpi-unmatched-n">0</span> transaksi realisasi belum match ke RUP (di luar angka ini)</div>
+        <div style="font-size:10px;color:#64748B;margin-top:2px" title="Total baris di menu Realisasi utk periode yg sama — 1 paket RUP bisa mewakili banyak transaksi (lihat badge 🔗 di tabel), jadi angka ini bisa lebih besar dari Total Paket RUP di atas.">🔗 <span id="sand-kpi-transaksi-total">0</span> transaksi realisasi (sesuai menu Realisasi)</div>
       </div>
       <div class="sand-scard done">
         <div class="sand-scard-lbl">✅ Sudah Dilaksanakan</div>
         <div class="sand-scard-val" id="sand-kpi-selesai">—</div>
         <div class="sand-scard-pct" id="sand-kpi-selesai-pct">—</div>
+        <div style="font-size:10px;color:#64748B;margin-top:2px"><span id="sand-kpi-selesai-tx">0</span> transaksi</div>
       </div>
       <div class="sand-scard run">
         <div class="sand-scard-lbl">🔄 Sedang Berjalan</div>
         <div class="sand-scard-val" id="sand-kpi-berjalan">—</div>
         <div class="sand-scard-pct" id="sand-kpi-berjalan-pct">—</div>
+        <div style="font-size:10px;color:#64748B;margin-top:2px"><span id="sand-kpi-berjalan-tx">0</span> transaksi</div>
       </div>
       <div class="sand-scard wait">
         <div class="sand-scard-lbl">⏳ Belum Dilaksanakan</div>
@@ -5102,6 +5105,12 @@ async function loadSandingan(page=1) {
     document.getElementById('sand-kpi-berjalan').textContent= fmt(st.sedang_berjalan || 0);
     document.getElementById('sand-kpi-belum').textContent   = fmt(st.belum_berproses || 0);
     document.getElementById('sand-kpi-batal').textContent   = fmt(st.dibatalkan || 0);
+
+    // ── Jumlah TRANSAKSI (bukan paket RUP) — supaya angka di kartu ini bisa
+    // direkonsiliasi langsung ke menu Realisasi (yg menghitung per-transaksi).
+    document.getElementById('sand-kpi-selesai-tx').textContent  = fmt(st.transaksi_selesai || 0);
+    document.getElementById('sand-kpi-berjalan-tx').textContent = fmt(st.transaksi_berjalan || 0);
+    document.getElementById('sand-kpi-transaksi-total').textContent = fmt(st.transaksi_total || 0);
 
     const pct = n => d.total > 0 ? (n/d.total*100).toFixed(1)+'%' : '—';
     document.getElementById('sand-kpi-selesai-pct').textContent  = pct(st.selesai || 0);
