@@ -259,6 +259,31 @@ table.dt tr:hover td{background:#FAFBFF}
 .b-teal{background:#F0FDFA;color:#0F766E}
 
 /* ============================================================
+   AUDIT CARDS — Kualitas Data, relasi kode_rup <-> kode_paket
+   (Kode RUP Dipakai Banyak Paket / 1 Paket Pakai Banyak RUP)
+   ============================================================ */
+.audit-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding:2px 2px 2px 0}
+.audit-card{background:#fff;border:1px solid #E5E9F0;border-radius:10px;padding:11px 13px;transition:border-color .15s}
+.audit-card:hover{border-color:#CBD5E1}
+.audit-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.audit-card-kode{font-family:ui-monospace,monospace;font-size:12px;font-weight:700;color:#2563EB;text-decoration:none}
+.audit-card-kode:hover{text-decoration:underline}
+.audit-card-nama{font-size:12.5px;font-weight:600;color:#1A2332;margin-top:3px;line-height:1.4}
+.audit-card-sub{font-size:11px;color:#94A3B8;margin-top:2px}
+.audit-card-count{flex-shrink:0;background:#FFF7ED;color:#C2410C;font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap;margin-top:1px}
+.audit-toggle{margin-top:9px;font-size:11px;font-weight:600;color:#2563EB;background:#EFF6FF;border:none;border-radius:6px;cursor:pointer;padding:4px 9px;display:inline-flex;align-items:center;gap:4px;transition:background .15s}
+.audit-toggle:hover{background:#DBEAFE}
+.audit-toggle .arw{transition:transform .15s;font-size:9px}
+.audit-toggle.open .arw{transform:rotate(180deg)}
+.audit-chips{display:none;margin-top:9px;padding-top:9px;border-top:1px dashed #E5E9F0;max-height:190px;overflow-y:auto}
+.audit-chips.open{display:block}
+.audit-chip{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;padding:4px 2px;border-bottom:1px solid #F8FAFC}
+.audit-chip:last-child{border-bottom:none}
+.audit-chip-kode{font-family:ui-monospace,monospace;color:#475569;white-space:nowrap}
+.audit-chip-meta{color:#94A3B8;white-space:nowrap;flex-shrink:0;text-align:right}
+.audit-empty{padding:24px;text-align:center;color:#94A3B8;font-size:12.5px}
+
+/* ============================================================
    SANDINGAN — tabel RUP vs Realisasi berdampingan
    ============================================================ */
 
@@ -1738,12 +1763,7 @@ thead .col-sep-h{
           🔗 Kode RUP Dipakai Banyak Paket
           <span style="font-weight:400;color:#94A3B8">(<span id="kual-rup-banyak-n">0</span> kode RUP — lihat semua realisasi yg menyebutnya sebelum menganggap salah satu "hilang")</span>
         </p>
-        <div class="tbl-wrap" style="max-height:320px;overflow:auto">
-          <table class="dt" id="t-rup-banyak-paket">
-            <thead><tr><th>Kode RUP</th><th>Nama Paket RUP</th><th>Satker</th><th class="text-center">Jml Paket</th><th>Daftar Kode Paket Realisasi</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div class="audit-list" id="t-rup-banyak-paket"></div>
       </div>
 
       <!-- 1 paket pakai banyak kode RUP -->
@@ -1752,12 +1772,7 @@ thead .col-sep-h{
           🔀 1 Paket Realisasi Pakai Banyak Kode RUP
           <span style="font-weight:400;color:#94A3B8">(<span id="kual-real-banyak-n">0</span> realisasi — 1 kontrak menyandingkan >1 paket RUP sekaligus)</span>
         </p>
-        <div class="tbl-wrap" style="max-height:320px;overflow:auto">
-          <table class="dt" id="t-real-banyak-rup">
-            <thead><tr><th>Kode Paket</th><th>Nama Paket Realisasi</th><th>Satker</th><th class="text-center">Jml RUP</th><th>Daftar Kode RUP</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div class="audit-list" id="t-real-banyak-rup"></div>
       </div>
     </div>
 
@@ -3169,6 +3184,45 @@ function resetKualitasReal() {
   applyKualitas();
 }
 
+// Toggle expand/collapse detail chip-list di kartu audit (Kualitas Data)
+function toggleAuditChips(btn) {
+  const chips = btn.nextElementSibling;
+  const open  = chips.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.querySelector('.lbl').textContent = open ? 'Sembunyikan' : btn.dataset.lblOpen;
+}
+
+// Render daftar kartu audit (dipakai utk 2 panel di Kualitas Data:
+// "Kode RUP Dipakai Banyak Paket" & "1 Paket Pakai Banyak RUP") — beda dari
+// fillTbl karena tiap baris punya sub-daftar variabel panjang yg perlu
+// collapse/expand supaya tabel tidak meledak tingginya.
+function renderAuditCards(containerId, rows, cfg) {
+  const el = document.getElementById(containerId);
+  if (!rows || !rows.length) {
+    el.innerHTML = `<div class="audit-empty">Tidak ada data — semua relasi kode RUP ↔ kode paket 1-ke-1, aman 👍</div>`;
+    return;
+  }
+  el.innerHTML = rows.map((r, i) => {
+    const chips = cfg.chips(r).join('');
+    const n = cfg.count(r);
+    return `
+      <div class="audit-card">
+        <div class="audit-card-head">
+          <div style="min-width:0">
+            ${cfg.head(r)}
+            <div class="audit-card-nama">${cfg.nama(r)}</div>
+            <div class="audit-card-sub">${cfg.sub(r)}</div>
+          </div>
+          <div class="audit-card-count">${n} ${cfg.unit}</div>
+        </div>
+        <button class="audit-toggle" data-lbl-open="Lihat ${n} ${cfg.unit}" onclick="toggleAuditChips(this)">
+          <span class="lbl">Lihat ${n} ${cfg.unit}</span><span class="arw">▾</span>
+        </button>
+        <div class="audit-chips">${chips}</div>
+      </div>`;
+  }).join('');
+}
+
 async function loadKualitas() {
   if (!S.isAdmin) { Swal.fire('Akses Ditolak','Harap login sebagai admin terlebih dahulu.','warning'); return; }
   try {
@@ -3218,20 +3272,31 @@ async function loadKualitas() {
     // ── Audit: kode_rup dipakai banyak paket & 1 paket pakai banyak kode_rup
     document.getElementById('kual-rup-banyak-n').textContent  = fmt(d.total_kode_rup_banyak_paket||0);
     document.getElementById('kual-real-banyak-n').textContent = fmt(d.total_realisasi_banyak_rup||0);
-    fillTbl('#t-rup-banyak-paket', d.kode_rup_banyak_paket, [
-      r=>`<a href="#sandingan" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${r.kode_rup}';applySand();},50)" style="color:#2563EB;font-weight:600">${r.kode_rup}</a>`,
-      r=>r.nama_paket_rup||'—',
-      r=>r.nama_satker||'—',
-      r=>`<span style="text-align:center;display:block;font-weight:700">${r.jumlah_paket}</span>`,
-      r=>r.daftar_paket.map(x=>`<div style="white-space:nowrap">${x.kode_paket} <span style="color:#94A3B8">(${x.status_paket||'—'}, ${IDRf(x.nilai_kontrak)})</span></div>`).join(''),
-    ]);
-    fillTbl('#t-real-banyak-rup', d.realisasi_banyak_rup, [
-      r=>r.kode_paket,
-      r=>r.nama_paket_realisasi||'—',
-      r=>r.nama_satker||'—',
-      r=>`<span style="text-align:center;display:block;font-weight:700">${r.jumlah_rup}</span>`,
-      r=>r.daftar_kode_rup.map(kr=>`<div style="white-space:nowrap"><a href="#sandingan" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${kr}';applySand();},50)" style="color:#2563EB">${kr}</a></div>`).join(''),
-    ]);
+
+    renderAuditCards('t-rup-banyak-paket', d.kode_rup_banyak_paket, {
+      unit: 'paket',
+      count: r => r.jumlah_paket,
+      head: r => `<a href="#sandingan" class="audit-card-kode" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${r.kode_rup}';applySand();},50)">${r.kode_rup}</a>`,
+      nama: r => r.nama_paket_rup || '<span style="color:#CBD5E1">(nama paket tidak diketahui)</span>',
+      sub:  r => r.nama_satker || '—',
+      chips: r => r.daftar_paket.map(x => `
+        <div class="audit-chip">
+          <span class="audit-chip-kode">${x.kode_paket}</span>
+          <span class="audit-chip-meta">${x.status_paket ? `<span class="badge ${x.status_paket==='Selesai'?'b-green':x.status_paket==='Dibatalkan'?'b-red':'b-yellow'}" style="margin-right:6px">${x.status_paket}</span>` : ''}${IDRf(x.nilai_kontrak)}</span>
+        </div>`),
+    });
+
+    renderAuditCards('t-real-banyak-rup', d.realisasi_banyak_rup, {
+      unit: 'RUP',
+      count: r => r.jumlah_rup,
+      head: r => `<span class="audit-card-kode" style="color:#475569">${r.kode_paket}</span>`,
+      nama: r => r.nama_paket_realisasi || '<span style="color:#CBD5E1">(nama paket tidak diketahui)</span>',
+      sub:  r => `${r.nama_satker || '—'} · ${IDRf(r.nilai_kontrak)}`,
+      chips: r => r.daftar_kode_rup.map(kr => `
+        <div class="audit-chip">
+          <a href="#sandingan" class="audit-chip-kode" style="color:#2563EB" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${kr}';applySand();},50)">${kr}</a>
+        </div>`),
+    });
 
     // Tabel Unmatched Realisasi — dengan kolom Metode, Jenis, Kode Paket + tombol Set Pagu
     const umReal = d.unmatched_realisasi||[];
