@@ -190,7 +190,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard.purple::before{--accent:#7C3AED}
 .scard-label{font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .scard-value{
-  font-size:clamp(18px,2vw,28px);font-weight:800;color:#0F1C2E;
+  font-size:clamp(14px,1.3vw,18px);font-weight:800;color:#0F1C2E;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
   word-break:normal;overflow-wrap:break-word;line-height:1.25;
 }
@@ -361,7 +361,7 @@ tr.row-override{
 .sand-scard.run   {border-top-color:#CA8A04}
 .sand-scard.wait  {border-top-color:#94A3B8}
 .sand-scard.cancel{border-top-color:#DC2626}
-.sand-scard-val{font-size:22px;font-weight:800;color:#0F1C2E;margin-top:2px}
+.sand-scard-val{font-size:16px;font-weight:800;color:#0F1C2E;margin-top:2px}
 .sand-scard-pct{font-size:12.5px;color:#94A3B8;margin-top:1px}
 .sand-scard-lbl{font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.04em}
 
@@ -380,9 +380,35 @@ tr.row-override{
 /* Versi padat — dipakai tabel Sandingan RUP supaya kolomnya muat lebih rapat
    dan mengurangi kebutuhan scroll horizontal di layar standar. */
 table.dt.tbl-compact th,
-table.dt.tbl-compact td{padding:7px 8px;font-size:11.5px}
+table.dt.tbl-compact td{padding:5px 6px;font-size:11px;line-height:1.35}
 table.dt.tbl-compact th.col-sep,
 table.dt.tbl-compact td.col-sep{padding:0!important}
+
+/* table-layout:fixed + lebar kolom dalam % — total kolom selalu 100% dari
+   lebar container tbl-scroll, jadi seluruh kolom tampil tanpa perlu scroll
+   horizontal di layar standar (bukan andalkan min-width + overflow-x). Isi
+   sel yang panjang (nama paket, satker, penyedia) di-wrap, bukan dipotong. */
+table.dt.tbl-compact{table-layout:fixed;width:100%}
+table.dt.tbl-compact th{white-space:normal;line-height:1.3}
+table.dt.tbl-compact th,
+table.dt.tbl-compact td{overflow-wrap:break-word;word-break:break-word}
+table.dt.tbl-compact .col-rupno  {width:2.5%;min-width:26px}
+table.dt.tbl-compact .col-satker {width:12%;min-width:0}
+table.dt.tbl-compact .col-paket  {width:19%;min-width:0;max-width:none}
+table.dt.tbl-compact .col-koderup{width:6.5%;min-width:0;font-size:10px}
+table.dt.tbl-compact .col-metode {width:8%;min-width:0}
+table.dt.tbl-compact .col-jenis  {width:7.5%;min-width:0}
+table.dt.tbl-compact .col-pagu   {width:8.5%;min-width:0}
+table.dt.tbl-compact .col-sep    {width:3px!important;max-width:3px}
+table.dt.tbl-compact .col-reals  {width:7%;min-width:0}
+table.dt.tbl-compact .col-penyedia{width:9%;min-width:0;max-width:none}
+table.dt.tbl-compact .col-kontrak{width:8.5%;min-width:0}
+table.dt.tbl-compact .col-efi    {width:8%;min-width:0}
+/* Fixed layout bisa bikin badge/monospace kepotong di kolom sempit — pastikan
+   tetap wrap & terbaca, bukan overflow diam-diam */
+table.dt.tbl-compact .badge{white-space:normal;display:inline-block}
+table.dt.tbl-compact .mono{overflow-wrap:break-word}
+table.dt.tbl-compact .col-koderup{white-space:normal;word-break:break-all}
 
 /* Divider kolom pemisah RUP vs Realisasi — garis tebal saja, tanpa teks
    (sebelumnya blok teks "↓ REALISASI" yang makan lebar kolom) */
@@ -953,17 +979,17 @@ thead .col-sep-h{
     <div class="summary-grid-3" style="margin-top:10px">
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
+        <div class="scard-value" style="font-size:16px" id="efi-pagu-f">—</div>
         <div class="scard-sub" id="efi-filter-desc">Belum ada filter aktif</div>
       </div>
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Kontrak (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:20px" id="efi-kontrak-f">—</div>
+        <div class="scard-value" style="font-size:16px" id="efi-kontrak-f">—</div>
         <div class="scard-sub" id="efi-efi-f-label">—</div>
       </div>
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Jumlah Paket (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:20px" id="efi-paket-f">—</div>
+        <div class="scard-value" style="font-size:16px" id="efi-paket-f">—</div>
         <div class="scard-sub" id="efi-pct-f">—</div>
       </div>
     </div>
@@ -1527,7 +1553,7 @@ thead .col-sep-h{
               <th class="col-sep col-sep-h" title="Kolom Realisasi"></th>
               <!-- Kolom Realisasi -->
               <th class="col-reals sand-th-sort" onclick="sortSandBy('status')" title="Urutkan berdasarkan Status">Status <span id="sand-sort-status"></span></th>
-              <th class="sand-th-sort" style="min-width:110px" onclick="sortSandBy('penyedia')" title="Urutkan berdasarkan Penyedia">Penyedia <span id="sand-sort-penyedia"></span></th>
+              <th class="col-penyedia sand-th-sort" style="min-width:110px" onclick="sortSandBy('penyedia')" title="Urutkan berdasarkan Penyedia">Penyedia <span id="sand-sort-penyedia"></span></th>
               <th class="col-kontrak sand-th-sort" onclick="sortSandBy('kontrak')" title="Urutkan berdasarkan Nilai Kontrak">Nilai Kontrak (Rp) <span id="sand-sort-kontrak"></span></th>
               <th class="col-efi sand-th-sort" onclick="sortSandBy('efisiensi')" title="Urutkan berdasarkan Efisiensi">Efisiensi (Rp) <span id="sand-sort-efisiensi"></span></th>
             </tr>
@@ -5461,7 +5487,7 @@ async function loadSandingan(page=1) {
         <td class="col-sep" style="background:#1E3A5F!important;border:none"></td>
         <!-- Kolom Realisasi -->
         <td class="col-reals">${sandStatusBadge(r)}</td>
-        <td style="font-size:11px;min-width:110px;max-width:220px">
+        <td class="col-penyedia" style="font-size:11px">
           ${r.is_realisasi_gabungan
             ? `<details style="cursor:pointer">
                  <summary style="color:#3730A3;font-weight:600;list-style:none" title="Klik untuk lihat rincian ${r.realisasi_list.length} kontrak">▸ ${r.realisasi_list.length} penyedia</summary>
