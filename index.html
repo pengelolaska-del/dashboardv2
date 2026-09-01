@@ -1689,6 +1689,10 @@ thead .col-sep-h{
   <!-- ===================== KUALITAS ===================== -->
   <section id="sec-kualitas" class="section">
     <h1 class="page-title">Kualitas Data</h1>
+    <p style="font-size:13px;color:#64748B;margin:-6px 0 16px;max-width:640px">
+      Pantau tingkat kecocokan (matching) antara data RUP dan Realisasi, telusuri paket yang belum
+      ketemu pasangannya, dan rapikan relasi kode RUP ↔ kode paket.
+    </p>
     <div class="summary-grid-3" id="kual-kpi"></div>
 
     <!-- Sub-menu Kualitas Data — tiap bagian dipisah tab supaya panel bisa
@@ -1702,54 +1706,63 @@ thead .col-sep-h{
 
     <!-- ── Tab: Belum Match ─────────────────────────────────────────── -->
     <div class="kual-panel" id="kual-panel-unmatched">
-      <div class="grid-2-resp" style="margin-bottom:20px">
+      <div class="grid-2-resp" style="margin-bottom:20px;align-items:start">
         <!-- Unmatched RUP -->
-        <div>
-          <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
-            Unmatched RUP
-            <span style="font-weight:400;color:#94A3B8">(tidak ada pasangan realisasi)</span>
-          </p>
-          <div class="grid-3-resp-sm">
-            <div class="fld">
-              <label>Metode Pengadaan</label>
-              <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+        <div class="tbl-wrap">
+          <div class="tbl-topbar" style="flex-direction:column;align-items:stretch;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="tbl-topbar-info" style="font-weight:700;color:#1A2332">
+                📋 Unmatched RUP
+                <span style="font-weight:400;color:#94A3B8;font-size:12px">— tidak ada pasangan realisasi</span>
+              </span>
             </div>
-            <div class="fld">
-              <label>Jenis Pengadaan</label>
-              <select id="kual-rup-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+            <div class="grid-3-resp-sm" style="margin-bottom:0">
+              <div class="fld">
+                <label>Metode Pengadaan</label>
+                <select id="kual-rup-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+              </div>
+              <div class="fld">
+                <label>Jenis Pengadaan</label>
+                <select id="kual-rup-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+              </div>
+              <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()" title="Reset filter">↺</button>
             </div>
-            <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()">↺</button>
           </div>
-          <div class="tbl-wrap" style="max-height:280px;overflow:auto">
+          <div class="tbl-scroll" style="max-height:320px;overflow-y:auto">
             <table class="dt" id="t-um-rup">
-              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th></tr></thead>
+              <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th><th>Status</th><th class="text-center">Aksi</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
 
+
         <!-- Unmatched Realisasi + tombol Set Pagu -->
-        <div>
-          <p style="font-size:12px;font-weight:700;color:#1A2332;margin-bottom:8px">
-            Unmatched Realisasi
-            <span style="font-weight:400;color:#94A3B8">(tidak ada kode RUP — input pagu manual)</span>
-          </p>
-          <div class="grid-4-resp-sm">
-            <div class="fld">
-              <label>Sumber Transaksi</label>
-              <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
+        <div class="tbl-wrap">
+          <div class="tbl-topbar" style="flex-direction:column;align-items:stretch;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="tbl-topbar-info" style="font-weight:700;color:#1A2332">
+                🧾 Unmatched Realisasi
+                <span style="font-weight:400;color:#94A3B8;font-size:12px">— tidak ada kode RUP, input pagu manual</span>
+              </span>
             </div>
-            <div class="fld">
-              <label>Metode Pengadaan</label>
-              <select id="kual-real-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+            <div class="grid-4-resp-sm" style="margin-bottom:0">
+              <div class="fld">
+                <label>Sumber Transaksi</label>
+                <select id="kual-real-transaksi" onchange="applyKualitas()"><option value="">Semua</option></select>
+              </div>
+              <div class="fld">
+                <label>Metode Pengadaan</label>
+                <select id="kual-real-metode" onchange="applyKualitas()"><option value="">Semua</option></select>
+              </div>
+              <div class="fld">
+                <label>Jenis Pengadaan</label>
+                <select id="kual-real-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
+              </div>
+              <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()" title="Reset filter">↺</button>
             </div>
-            <div class="fld">
-              <label>Jenis Pengadaan</label>
-              <select id="kual-real-jenis" onchange="applyKualitas()"><option value="">Semua</option></select>
-            </div>
-            <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()">↺</button>
           </div>
-          <div class="tbl-wrap" style="max-height:280px;overflow:auto">
+          <div class="tbl-scroll" style="max-height:320px;overflow-y:auto">
             <table class="dt" id="t-um-real">
               <thead>
                 <tr>
@@ -3268,10 +3281,10 @@ async function loadKualitas() {
 
     // KPI cards
     document.getElementById('kual-kpi').innerHTML = [
-      {lbl:'Matching Rate',    val:pct(d.matching_rate)},
-      {lbl:'Total Realisasi',  val:fmt(d.total_realisasi)},
-      {lbl:'Total Matched',    val:fmt(d.total_matched)},
-    ].map(c=>`<div class="scard"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div></div>`).join('');
+      {lbl:'Matching Rate',   val:pct(d.matching_rate), cls:(d.matching_rate>=80?'green':d.matching_rate>=50?'yellow':'red'), sub:'Persentase paket RUP & Realisasi yang berhasil dicocokkan otomatis'},
+      {lbl:'Total Realisasi', val:fmt(d.total_realisasi), cls:'', sub:'Jumlah transaksi realisasi periode ini'},
+      {lbl:'Total Matched',   val:fmt(d.total_matched), cls:'purple', sub:'Sudah terhubung ke paket RUP-nya'},
+    ].map(c=>`<div class="scard ${c.cls}"><div class="scard-label">${c.lbl}</div><div class="scard-value" style="font-size:22px">${c.val}</div><div class="scard-sub">${c.sub}</div></div>`).join('');
 
     // Isi dropdown filter dari enum yang dikirim backend (hanya sekali per periode)
     if (d.enums) {
@@ -3294,6 +3307,14 @@ async function loadKualitas() {
       r=>r.metode_pengadaan_rup||'—',
       r=>r.jenis_pengadaan_rup||'—',
       r=>`<span style="text-align:right;display:block">${IDRf(r.pagu_rup)}</span>`,
+      r=> r.is_manual_status
+            ? (r.override_type==='Dibatalkan'
+                ? '<span class="sand-status sand-dibatalkan">❌ Dibatalkan</span>'
+                : '<span class="sand-override-tag" style="position:static">🖊️ Manual</span>')
+            : '<span style="color:#CBD5E1">—</span>',
+      r=>`<button class="btn" style="font-size:11px;padding:5px 9px"
+            title="Tandai paket ini Dibatalkan (RUP tidak jadi/tidak dipakai) atau sandingkan manual ke realisasi"
+            onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")},"kualitas")'>✎ Ubah Status</button>`,
     ]);
 
     // ── Audit: kode_rup dipakai banyak paket & 1 paket pakai banyak kode_rup
@@ -3727,9 +3748,11 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
-// STATUS OVERRIDE (Sandingan RUP — tandai Dibatalkan / Input Manual)
+// STATUS OVERRIDE (Sandingan RUP & Kualitas Data — tandai Dibatalkan / Input Manual)
 // ============================================================
-function openStatusOverrideModal(row) {
+let SO_CONTEXT = 'sandingan'; // 'sandingan' | 'kualitas' — dipakai untuk tahu tabel mana yang harus di-refresh setelah simpan/hapus
+function openStatusOverrideModal(row, context) {
+  SO_CONTEXT = context || 'sandingan';
   document.getElementById('so-kode-rup').value = row.kode_rup;
   document.getElementById('so-paket-label').textContent =
     `${row.nama_satker||''} — ${(row.nama_paket_rup||'').slice(0,70)}`;
@@ -3884,7 +3907,7 @@ async function saveStatusOverride() {
     if (res.status !== 'success') throw new Error(res.message);
     Swal.fire({icon:'success', title:'✅ Tersimpan', text:res.message, timer:1500, showConfirmButton:false});
     closeStatusOverrideModal();
-    await loadSandingan(SAND.page);
+    if (SO_CONTEXT === 'kualitas') await loadKualitas(); else await loadSandingan(SAND.page);
   } catch(e) {
     Swal.fire('❌ Gagal', e.message, 'error');
   } finally {
@@ -3906,7 +3929,7 @@ async function removeStatusOverride() {
     if (res.status !== 'success') throw new Error(res.message);
     Swal.fire({icon:'success', title:'Dihapus', timer:1200, showConfirmButton:false});
     closeStatusOverrideModal();
-    await loadSandingan(SAND.page);
+    if (SO_CONTEXT === 'kualitas') await loadKualitas(); else await loadSandingan(SAND.page);
   } catch(e) { Swal.fire('❌ Gagal', e.message, 'error'); }
 }
 
@@ -4972,7 +4995,7 @@ function sandStatusBadge(r) {
   // di-override sebelumnya (supaya tetap bisa diedit/dihapus).
   if (S.isAdmin && (!r.ada_realisasi || r.is_manual_status)) {
     badge += `<button type="button" class="btn-edit-status" title="Ubah status manual"
-      onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")})'>✎</button>`;
+      onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")},"sandingan")'>✎</button>`;
   }
   return badge;
 }
