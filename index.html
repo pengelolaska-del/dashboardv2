@@ -176,6 +176,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .seg-tabs{display:flex;background:#F1F5F9;border-radius:8px;padding:3px;gap:2px}
 .seg-tab{border:none;background:none;font-size:11.5px;font-weight:600;color:#64748B;padding:5px 12px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s;font-family:inherit}
 .seg-tab.active{background:#fff;color:#1E3A5F;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg-tab-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:#E2E8F0;color:#475569;font-size:10.5px;font-weight:700}
+.seg-tab.active .seg-tab-badge{background:#DBEAFE;color:#1D4ED8}
 .scard{
   background:#fff;border-radius:12px;padding:18px 22px;
   border:1px solid #E5E9F0;position:relative;overflow:hidden;
@@ -1706,14 +1708,26 @@ thead .col-sep-h{
 
     <!-- ── Tab: Belum Match ─────────────────────────────────────────── -->
     <div class="kual-panel" id="kual-panel-unmatched">
-      <div class="grid-2-resp" style="margin-bottom:20px;align-items:start">
-        <!-- Unmatched RUP -->
+      <!-- Sub-tab: RUP vs Realisasi — dipisah per-panel (bukan grid 2 kolom)
+           supaya tiap tabel dapat lebar penuh; kolom Aksi/Kontrak dsb jadi
+           tidak kepotong seperti sebelumnya saat berdampingan. -->
+      <div class="seg-tabs" id="kual-um-subtabs" style="margin-bottom:14px;display:inline-flex">
+        <button class="seg-tab active" data-subtab="rup" onclick="switchUnmatchedSubTab('rup')">
+          📋 Unmatched RUP <span class="seg-tab-badge" id="um-rup-count"></span>
+        </button>
+        <button class="seg-tab" data-subtab="real" onclick="switchUnmatchedSubTab('real')">
+          🧾 Unmatched Realisasi <span class="seg-tab-badge" id="um-real-count"></span>
+        </button>
+      </div>
+
+      <!-- Unmatched RUP -->
+      <div class="kual-um-subpanel" id="kual-um-rup" style="margin-bottom:20px">
         <div class="tbl-wrap">
           <div class="tbl-topbar" style="flex-direction:column;align-items:stretch;gap:8px">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span class="tbl-topbar-info" style="font-weight:700;color:#1A2332">
                 📋 Unmatched RUP
-                <span style="font-weight:400;color:#94A3B8;font-size:12px">— tidak ada pasangan realisasi</span>
+                <span style="font-weight:400;color:#94A3B8;font-size:12px">— paket RUP yang belum ketemu pasangan realisasinya</span>
               </span>
             </div>
             <div class="grid-3-resp-sm" style="margin-bottom:0">
@@ -1728,22 +1742,23 @@ thead .col-sep-h{
               <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasRup()" title="Reset filter">↺</button>
             </div>
           </div>
-          <div class="tbl-scroll" style="max-height:320px;overflow-y:auto">
+          <div class="tbl-scroll" style="max-height:480px;overflow-y:auto">
             <table class="dt" id="t-um-rup">
               <thead><tr><th>Satker</th><th>Nama Paket</th><th>Metode</th><th>Jenis</th><th class="text-right">Pagu</th><th>Status</th><th class="text-center">Aksi</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
+      </div>
 
-
-        <!-- Unmatched Realisasi + tombol Set Pagu -->
+      <!-- Unmatched Realisasi + tombol Set Pagu -->
+      <div class="kual-um-subpanel" id="kual-um-real" style="display:none">
         <div class="tbl-wrap">
           <div class="tbl-topbar" style="flex-direction:column;align-items:stretch;gap:8px">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span class="tbl-topbar-info" style="font-weight:700;color:#1A2332">
                 🧾 Unmatched Realisasi
-                <span style="font-weight:400;color:#94A3B8;font-size:12px">— tidak ada kode RUP, input pagu manual</span>
+                <span style="font-weight:400;color:#94A3B8;font-size:12px">— transaksi realisasi tanpa kode RUP, input pagu manual</span>
               </span>
             </div>
             <div class="grid-4-resp-sm" style="margin-bottom:0">
@@ -1762,7 +1777,7 @@ thead .col-sep-h{
               <button class="btn" style="align-self:end;font-size:11px;padding:7px 10px" onclick="resetKualitasReal()" title="Reset filter">↺</button>
             </div>
           </div>
-          <div class="tbl-scroll" style="max-height:320px;overflow-y:auto">
+          <div class="tbl-scroll" style="max-height:480px;overflow-y:auto">
             <table class="dt" id="t-um-real">
               <thead>
                 <tr>
@@ -3225,6 +3240,15 @@ function switchKualTab(tab) {
   document.querySelectorAll('.kual-panel').forEach(p => { p.style.display = (p.id === 'kual-panel-'+tab) ? '' : 'none'; });
 }
 
+// Toggle antara sub-panel "Unmatched RUP" dan "Unmatched Realisasi" di dalam
+// tab "Belum Match" — dipisah biar tiap tabel dapat lebar penuh, tidak
+// berdesakan berdampingan seperti sebelumnya.
+function switchUnmatchedSubTab(sub) {
+  document.querySelectorAll('#kual-um-subtabs .seg-tab').forEach(b => b.classList.toggle('active', b.dataset.subtab === sub));
+  document.getElementById('kual-um-rup').style.display  = (sub === 'rup')  ? '' : 'none';
+  document.getElementById('kual-um-real').style.display = (sub === 'real') ? '' : 'none';
+}
+
 function toggleAuditChips(btn) {
   const chips = btn.nextElementSibling;
   const open  = chips.classList.toggle('open');
@@ -3316,6 +3340,8 @@ async function loadKualitas() {
             title="Tandai paket ini Dibatalkan (RUP tidak jadi/tidak dipakai) atau sandingkan manual ke realisasi"
             onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")},"kualitas")'>✎ Ubah Status</button>`,
     ]);
+    document.getElementById('um-rup-count').textContent  = fmt(d.total_unmatched_rup||0);
+    document.getElementById('um-real-count').textContent = fmt(d.total_unmatched_realisasi||0);
 
     // ── Audit: kode_rup dipakai banyak paket & 1 paket pakai banyak kode_rup
     document.getElementById('kual-rup-banyak-n').textContent  = fmt(d.total_kode_rup_banyak_paket||0);
