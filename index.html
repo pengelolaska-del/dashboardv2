@@ -90,7 +90,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 /* ============================================================
    FILTER PANEL
    ============================================================ */
-.filter-panel{background:#fff;border-radius:12px;border:1px solid #E5E9F0;margin-bottom:16px;overflow:hidden}
+.filter-panel{background:#fff;border-radius:12px;border:1px solid #E5E9F0;margin-bottom:12px;overflow:hidden}
 .filter-header{
   display:flex;justify-content:space-between;align-items:center;
   padding:13px 18px;cursor:pointer;user-select:none;
@@ -100,7 +100,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .filter-sub{font-size:12.5px;color:#94A3B8;margin-top:1px}
 .filter-chevron{transition:transform .22s;color:#94A3B8;flex-shrink:0}
 .filter-chevron.open{transform:rotate(180deg)}
-.filter-body{padding:14px 18px 18px;border-top:1px solid #F1F5F9}
+.filter-body{padding:12px 16px 14px;border-top:1px solid #F1F5F9}
 .filter-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .filter-row2{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;margin-top:10px;align-items:end}
 .filter-row3{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-top:10px;align-items:end}
@@ -157,8 +157,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
    SUMMARY CARDS
    ============================================================ */
 .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
-.summary-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
-.summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.summary-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.summary-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
 .chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 /* Utility grid responsif — dipakai sebagai pengganti inline
@@ -179,7 +179,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .seg-tab-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:#E2E8F0;color:#475569;font-size:10.5px;font-weight:700}
 .seg-tab.active .seg-tab-badge{background:#DBEAFE;color:#1D4ED8}
 .scard{
-  background:#fff;border-radius:12px;padding:18px 22px;
+  background:#fff;border-radius:12px;padding:14px 17px;
   border:1px solid #E5E9F0;position:relative;overflow:hidden;
   min-width:0; /* cegah kartu meluber di grid saat angka pagu ditampilkan lengkap */
 }
@@ -190,7 +190,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard.purple::before{--accent:#7C3AED}
 .scard-label{font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .scard-value{
-  font-size:clamp(14px,1.3vw,18px);font-weight:800;color:#0F1C2E;
+  font-size:clamp(15px,1.5vw,22px);font-weight:800;color:#0F1C2E;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
   word-break:normal;overflow-wrap:break-word;line-height:1.25;
 }
@@ -206,10 +206,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 }
 .tbl-topbar-info{font-size:13.5px;color:#64748B}
 .tbl-scroll{overflow-x:auto}
-table.dt{width:100%;border-collapse:collapse;font-size:14px}
+table.dt{width:100%;border-collapse:collapse;font-size:15.5px}
 table.dt th{
-  background:#0F1C2E;color:#94A3B8;padding:9px 13px;text-align:left;
-  font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  background:#0F1C2E;color:#94A3B8;padding:7px 11px;text-align:left;
+  font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
   white-space:nowrap;position:sticky;top:0;
 }
 table.dt th:first-child{border-radius:0}
@@ -226,7 +226,7 @@ tr[data-satker-color]{
 tr[data-satker-color] td.col-satker{
   background:color-mix(in srgb, var(--satker-color, #94A3B8) 7%, transparent);
 }
-table.dt td{padding:9px 13px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
+table.dt td{padding:7px 11px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tr:hover td{background:#FAFBFF}
 .tbl-pagination{
@@ -354,14 +354,14 @@ tr.row-override{
 @media(max-width:640px) {.sand-summary{grid-template-columns:repeat(2,1fr)}}
 .sand-scard{
   background:#fff;border:1px solid #E5E9F0;border-radius:10px;
-  padding:11px 14px;border-top:3px solid transparent
+  padding:10px 13px;border-top:3px solid transparent
 }
 .sand-scard.all   {border-top-color:#64748B}
 .sand-scard.done  {border-top-color:#16A34A}
 .sand-scard.run   {border-top-color:#CA8A04}
 .sand-scard.wait  {border-top-color:#94A3B8}
 .sand-scard.cancel{border-top-color:#DC2626}
-.sand-scard-val{font-size:16px;font-weight:800;color:#0F1C2E;margin-top:2px}
+.sand-scard-val{font-size:18px;font-weight:800;color:#0F1C2E;margin-top:2px}
 .sand-scard-pct{font-size:12.5px;color:#94A3B8;margin-top:1px}
 .sand-scard-lbl{font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.04em}
 
@@ -380,35 +380,9 @@ tr.row-override{
 /* Versi padat — dipakai tabel Sandingan RUP supaya kolomnya muat lebih rapat
    dan mengurangi kebutuhan scroll horizontal di layar standar. */
 table.dt.tbl-compact th,
-table.dt.tbl-compact td{padding:5px 6px;font-size:11px;line-height:1.35}
+table.dt.tbl-compact td{padding:7px 8px;font-size:11.5px}
 table.dt.tbl-compact th.col-sep,
 table.dt.tbl-compact td.col-sep{padding:0!important}
-
-/* table-layout:fixed + lebar kolom dalam % — total kolom selalu 100% dari
-   lebar container tbl-scroll, jadi seluruh kolom tampil tanpa perlu scroll
-   horizontal di layar standar (bukan andalkan min-width + overflow-x). Isi
-   sel yang panjang (nama paket, satker, penyedia) di-wrap, bukan dipotong. */
-table.dt.tbl-compact{table-layout:fixed;width:100%}
-table.dt.tbl-compact th{white-space:normal;line-height:1.3}
-table.dt.tbl-compact th,
-table.dt.tbl-compact td{overflow-wrap:break-word;word-break:break-word}
-table.dt.tbl-compact .col-rupno  {width:2.5%;min-width:26px}
-table.dt.tbl-compact .col-satker {width:12%;min-width:0}
-table.dt.tbl-compact .col-paket  {width:19%;min-width:0;max-width:none}
-table.dt.tbl-compact .col-koderup{width:6.5%;min-width:0;font-size:10px}
-table.dt.tbl-compact .col-metode {width:8%;min-width:0}
-table.dt.tbl-compact .col-jenis  {width:7.5%;min-width:0}
-table.dt.tbl-compact .col-pagu   {width:8.5%;min-width:0}
-table.dt.tbl-compact .col-sep    {width:3px!important;max-width:3px}
-table.dt.tbl-compact .col-reals  {width:7%;min-width:0}
-table.dt.tbl-compact .col-penyedia{width:9%;min-width:0;max-width:none}
-table.dt.tbl-compact .col-kontrak{width:8.5%;min-width:0}
-table.dt.tbl-compact .col-efi    {width:8%;min-width:0}
-/* Fixed layout bisa bikin badge/monospace kepotong di kolom sempit — pastikan
-   tetap wrap & terbaca, bukan overflow diam-diam */
-table.dt.tbl-compact .badge{white-space:normal;display:inline-block}
-table.dt.tbl-compact .mono{overflow-wrap:break-word}
-table.dt.tbl-compact .col-koderup{white-space:normal;word-break:break-all}
 
 /* Divider kolom pemisah RUP vs Realisasi — garis tebal saja, tanpa teks
    (sebelumnya blok teks "↓ REALISASI" yang makan lebar kolom) */
@@ -979,17 +953,17 @@ thead .col-sep-h{
     <div class="summary-grid-3" style="margin-top:10px">
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Pagu (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:16px" id="efi-pagu-f">—</div>
+        <div class="scard-value" style="font-size:20px" id="efi-pagu-f">—</div>
         <div class="scard-sub" id="efi-filter-desc">Belum ada filter aktif</div>
       </div>
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Kontrak (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:16px" id="efi-kontrak-f">—</div>
+        <div class="scard-value" style="font-size:20px" id="efi-kontrak-f">—</div>
         <div class="scard-sub" id="efi-efi-f-label">—</div>
       </div>
       <div class="scard" style="border-top:3px solid #0EA5E9">
         <div class="scard-label" style="color:#0369A1">Jumlah Paket (Hasil Filter)</div>
-        <div class="scard-value" style="font-size:16px" id="efi-paket-f">—</div>
+        <div class="scard-value" style="font-size:20px" id="efi-paket-f">—</div>
         <div class="scard-sub" id="efi-pct-f">—</div>
       </div>
     </div>
@@ -1209,20 +1183,6 @@ thead .col-sep-h{
           <thead><tr><th>No</th><th>Cara Pengadaan</th><th class="text-right">Jumlah Paket</th><th class="text-right">Nilai (Rp)</th></tr></thead>
           <tbody id="rk-cara-tbody"><tr><td colspan="4"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- b.0) Rincian per Jenis Pengadaan — pivot langsung dari Rencana RUP -->
-    <div class="tbl-wrap" style="margin-top:14px">
-      <div class="tbl-topbar"><span class="tbl-topbar-info">Rincian per Jenis Pengadaan (Sumber: Rencana RUP)</span></div>
-      <div class="tbl-scroll">
-        <table class="tbl">
-          <thead><tr><th>No</th><th>Jenis Pengadaan</th><th class="text-right">Jumlah Paket</th><th class="text-right">Nilai (Rp.)</th></tr></thead>
-          <tbody id="rk-jenis-rup-tbody"><tr><td colspan="4"><div class="empty-state"><div class="spin"></div></div></td></tr></tbody>
-        </table>
-      </div>
-      <div style="padding:8px 14px;font-size:11px;color:#94A3B8;border-top:1px solid #F1F5F9">
-        Dihitung langsung dari data <b>Rencana RUP</b> (menu "Rencana (RUP)"), belum disandingkan ke Realisasi — angkanya bisa berbeda dari tabel "Rincian Anggaran sesuai Jenis Pengadaan" di bawah, yang sudah melalui proses sandingan/pencocokan ke Realisasi.
       </div>
     </div>
 
@@ -1553,7 +1513,7 @@ thead .col-sep-h{
               <th class="col-sep col-sep-h" title="Kolom Realisasi"></th>
               <!-- Kolom Realisasi -->
               <th class="col-reals sand-th-sort" onclick="sortSandBy('status')" title="Urutkan berdasarkan Status">Status <span id="sand-sort-status"></span></th>
-              <th class="col-penyedia sand-th-sort" style="min-width:110px" onclick="sortSandBy('penyedia')" title="Urutkan berdasarkan Penyedia">Penyedia <span id="sand-sort-penyedia"></span></th>
+              <th class="sand-th-sort" style="min-width:110px" onclick="sortSandBy('penyedia')" title="Urutkan berdasarkan Penyedia">Penyedia <span id="sand-sort-penyedia"></span></th>
               <th class="col-kontrak sand-th-sort" onclick="sortSandBy('kontrak')" title="Urutkan berdasarkan Nilai Kontrak">Nilai Kontrak (Rp) <span id="sand-sort-kontrak"></span></th>
               <th class="col-efi sand-th-sort" onclick="sortSandBy('efisiensi')" title="Urutkan berdasarkan Efisiensi">Efisiensi (Rp) <span id="sand-sort-efisiensi"></span></th>
             </tr>
@@ -1748,6 +1708,39 @@ thead .col-sep-h{
 
     <!-- ── Tab: Belum Match ─────────────────────────────────────────── -->
     <div class="kual-panel" id="kual-panel-unmatched">
+      <!-- Filter Satker — berlaku sekaligus utk kedua sub-tab di bawah,
+           dipisah dari filter Metode/Jenis per-panel krn kolom ini sama
+           persis maknanya di kedua sisi (RUP maupun Realisasi). -->
+      <!-- Filter Satker — berlaku sekaligus utk kedua sub-tab di bawah,
+           dipisah dari filter Metode/Jenis per-panel krn kolom ini sama
+           persis maknanya di kedua sisi (RUP maupun Realisasi). Pola markup
+           (.filter-panel/.filter-grid/.fld) dan style disamakan persis
+           dengan menu Sandingan RUP dkk. `overflow:visible` inline
+           menimpa default `.filter-panel{overflow:hidden}` — di sini
+           perlu karena panel ini cuma 1 field & pendek, jadi dropdown
+           combo (maks 230px) bisa kepotong kalau tidak di-override
+           (beda dgn Sandingan RUP yg panelnya sudah tinggi dgn banyak field). -->
+      <div class="filter-panel" style="margin-bottom:14px;overflow:visible">
+        <div class="filter-body" style="border-top:none;overflow:visible">
+          <div class="filter-grid" style="overflow:visible">
+            <div class="fld" style="grid-column:span 2;max-width:420px">
+              <label>Satuan Kerja / OPD</label>
+              <div class="combo">
+                <input type="text" class="combo-search" id="kual-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                       onfocus="comboOpen('kual-satker')" oninput="comboFilter('kual-satker')" onblur="comboBlurClose('kual-satker')">
+                <input type="hidden" id="kual-satker">
+                <div class="combo-list hidden" id="kual-satker-list"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-ghost btn-icon" onclick="resetKualitasSatker()" title="Reset filter satker">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Sub-tab: RUP vs Realisasi — dipisah per-panel (bukan grid 2 kolom)
            supaya tiap tabel dapat lebar penuh; kolom Aksi/Kontrak dsb jadi
            tidak kepotong seperti sebelumnya saat berdampingan. -->
@@ -2514,6 +2507,7 @@ const COMBO_AUTO_APPLY = {
   'real-satker': () => applyReal(),
   'sand-satker': () => applySand(),
   'efi-satker':  () => applyEfi(),
+  'kual-satker': () => applyKualitas(),
 };
 function comboChoose(baseId, kode) {
   comboSetValue(baseId, kode);
@@ -3249,7 +3243,7 @@ function switchEfiOpdTab(tab) {
 let _manualPaguMap = {};
 
 // Filter state untuk Kualitas Data (di-cache supaya tidak hilang saat reload)
-let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'' };
+let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'', kode_satker:'' };
 
 function applyKualitas() {
   KUAL_F = {
@@ -3258,6 +3252,7 @@ function applyKualitas() {
     jenis_pengadaan:      v('kual-real-jenis'),
     metode_pengadaan_rup: v('kual-rup-metode'),
     jenis_pengadaan_rup:  v('kual-rup-jenis'),
+    kode_satker:          v('kual-satker'),
   };
   loadKualitas();
 }
@@ -3267,6 +3262,10 @@ function resetKualitasRup() {
 }
 function resetKualitasReal() {
   ['kual-real-transaksi','kual-real-metode','kual-real-jenis'].forEach(id => document.getElementById(id).value='');
+  applyKualitas();
+}
+function resetKualitasSatker() {
+  comboClear('kual-satker');
   applyKualitas();
 }
 
@@ -3357,6 +3356,7 @@ async function loadKualitas() {
       fillSelect('kual-real-transaksi',d.enums.sumber_transaksi,     KUAL_F.sumber_transaksi);
       fillSelect('kual-real-metode',   d.enums.metode_pengadaan,     KUAL_F.metode_pengadaan);
       fillSelect('kual-real-jenis',    d.enums.jenis_pengadaan,      KUAL_F.jenis_pengadaan);
+      fillSatker('kual-satker',        d.enums.satker,               KUAL_F.kode_satker);
     }
 
     // Tabel Unmatched RUP — sekarang dengan kolom Metode & Jenis
@@ -5487,7 +5487,7 @@ async function loadSandingan(page=1) {
         <td class="col-sep" style="background:#1E3A5F!important;border:none"></td>
         <!-- Kolom Realisasi -->
         <td class="col-reals">${sandStatusBadge(r)}</td>
-        <td class="col-penyedia" style="font-size:11px">
+        <td style="font-size:11px;min-width:110px;max-width:220px">
           ${r.is_realisasi_gabungan
             ? `<details style="cursor:pointer">
                  <summary style="color:#3730A3;font-weight:600;list-style:none" title="Klik untuk lihat rincian ${r.realisasi_list.length} kontrak">▸ ${r.realisasi_list.length} penyedia</summary>
@@ -5537,7 +5537,6 @@ async function loadRekap() {
   const tahun = v('g-tahun');
   const bulan = v('g-bulan');
   const cariCaraTbody   = document.getElementById('rk-cara-tbody');
-  const cariJenisRupTbody = document.getElementById('rk-jenis-rup-tbody');
   const cariJenisTbody  = document.getElementById('rk-jenis-tbody');
   const cariMetodeTbody = document.getElementById('rk-metode-tbody');
   const cariTransaksiTbody = document.getElementById('rk-transaksi-tbody');
@@ -5545,17 +5544,12 @@ async function loadRekap() {
   const tenderTbody     = document.getElementById('rk-tender-tbody');
 
   try {
-    const [res, resEfi, resRup] = await Promise.all([
+    const [res, resEfi] = await Promise.all([
       api({ action: 'laporanRekap', tahun, periode: bulan ? tahun + '-' + bulan : undefined }),
       // Data efisiensi (paket Selesai, exclude-aware) per Jenis/Metode/Sumber
       // Transaksi — sumber sama dengan tabel breakdown di menu Analisis, cuma
       // di sini digabung sbg kolom tambahan ke tabel yang sudah ada.
       api({ action: 'listEfisiensi', tahun, periode: bulan ? tahun + '-' + bulan : undefined }),
-      // Pivot mentah per Jenis Pengadaan langsung dari data Rencana RUP
-      // (jenis_summary sudah dihitung di handleListRUP, sebelum paginasi/
-      // sebelum disandingkan ke Realisasi) — per_page:1 karena baris
-      // `items`-nya tidak dipakai di sini, cuma jenis_summary.
-      api({ action: 'listRUP', tahun, periode: bulan ? tahun + '-' + bulan : undefined, page: 1, per_page: 1 }),
     ]);
     if (res.status !== 'success') throw new Error(res.message || 'Gagal memuat rekap laporan.');
     const d = res.data || {};
@@ -5592,23 +5586,6 @@ async function loadRekap() {
         <td colspan="2">Total</td>
         <td class="text-right mono">${fmt(cara.reduce((s,r)=>s+r.jumlah_paket,0))}</td>
         <td class="text-right mono">${IDRf(cara.reduce((s,r)=>s+r.nilai,0))}</td>
-      </tr>` : `<tr><td colspan="4"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
-
-    // ── b.0) Tabel Jenis Pengadaan — pivot mentah dari Rencana RUP ──
-    const jenisRup = (resRup && resRup.status === 'success')
-      ? [...(resRup.data?.jenis_summary || [])].sort((a, b) => b.total_pagu - a.total_pagu)
-      : [];
-    cariJenisRupTbody.innerHTML = jenisRup.length ? jenisRup.map((r, i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td style="font-weight:600;color:#1E3A5F">${r.jenis}</td>
-        <td class="text-right mono">${fmt(r.total)}</td>
-        <td class="text-right mono" style="font-weight:600">${IDRf(r.total_pagu)}</td>
-      </tr>`).join('') + `
-      <tr style="font-weight:700;background:#F8FAFC">
-        <td colspan="2">Total</td>
-        <td class="text-right mono">${fmt(jenisRup.reduce((s,r)=>s+r.total,0))}</td>
-        <td class="text-right mono">${IDRf(jenisRup.reduce((s,r)=>s+r.total_pagu,0))}</td>
       </tr>` : `<tr><td colspan="4"><div class="empty-state"><p>Tidak ada data.</p></div></td></tr>`;
 
     // ── b) Tabel Jenis Pengadaan ──
