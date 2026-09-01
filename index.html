@@ -190,7 +190,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 .scard.purple::before{--accent:#7C3AED}
 .scard-label{font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .scard-value{
-  font-size:clamp(18px,2vw,28px);font-weight:800;color:#0F1C2E;
+  font-size:clamp(15px,1.5vw,22px);font-weight:800;color:#0F1C2E;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
   word-break:normal;overflow-wrap:break-word;line-height:1.25;
 }
@@ -206,10 +206,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0F2F5;color:#1A2332;m
 }
 .tbl-topbar-info{font-size:13.5px;color:#64748B}
 .tbl-scroll{overflow-x:auto}
-table.dt{width:100%;border-collapse:collapse;font-size:14px}
+table.dt{width:100%;border-collapse:collapse;font-size:15.5px}
 table.dt th{
   background:#0F1C2E;color:#94A3B8;padding:7px 11px;text-align:left;
-  font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
   white-space:nowrap;position:sticky;top:0;
 }
 table.dt th:first-child{border-radius:0}
@@ -361,7 +361,7 @@ tr.row-override{
 .sand-scard.run   {border-top-color:#CA8A04}
 .sand-scard.wait  {border-top-color:#94A3B8}
 .sand-scard.cancel{border-top-color:#DC2626}
-.sand-scard-val{font-size:22px;font-weight:800;color:#0F1C2E;margin-top:2px}
+.sand-scard-val{font-size:18px;font-weight:800;color:#0F1C2E;margin-top:2px}
 .sand-scard-pct{font-size:12.5px;color:#94A3B8;margin-top:1px}
 .sand-scard-lbl{font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.04em}
 
@@ -5348,15 +5348,12 @@ async function loadSandingan(page=1) {
     document.getElementById('sand-kpi-belum-pct').textContent    = pct(st.belum_berproses || 0);
     document.getElementById('sand-kpi-batal-pct').textContent    = pct(st.dibatalkan || 0);
 
-    document.getElementById('sand-kpi-pagu-rp').textContent    = IDR(st.total_pagu    || 0);
-    document.getElementById('sand-kpi-pagu-rp').title           = IDRf(st.total_pagu    || 0);
-    document.getElementById('sand-kpi-kontrak-rp').textContent  = IDR(st.total_kontrak || 0);
-    document.getElementById('sand-kpi-kontrak-rp').title        = IDRf(st.total_kontrak || 0);
+    document.getElementById('sand-kpi-pagu-rp').textContent    = IDRf(st.total_pagu    || 0);
+    document.getElementById('sand-kpi-kontrak-rp').textContent  = IDRf(st.total_kontrak || 0);
 
     // Efisiensi resmi — hanya paket berstatus "Selesai" (nilai kontraknya sudah final)
     const efiSelesai = st.total_efisiensi_selesai || 0;
-    document.getElementById('sand-kpi-efi-rp').textContent  = IDR(efiSelesai);
-    document.getElementById('sand-kpi-efi-rp').title        = IDRf(efiSelesai);
+    document.getElementById('sand-kpi-efi-rp').textContent  = IDRf(efiSelesai);
     document.getElementById('sand-kpi-efi-pct').textContent =
       st.pagu_selesai > 0
         ? `Efisiensi ${st.persen_efisiensi_selesai.toFixed(2)}% dari pagu paket selesai`
@@ -5365,8 +5362,7 @@ async function loadSandingan(page=1) {
     // Efisiensi indikatif — paket "Sedang Berjalan", dikelompokkan terpisah
     // karena nilai kontraknya masih bisa berubah sebelum paket ditutup.
     const efiBerjalan = st.total_efisiensi_berjalan || 0;
-    document.getElementById('sand-kpi-efi-run-rp').textContent  = IDR(efiBerjalan);
-    document.getElementById('sand-kpi-efi-run-rp').title        = IDRf(efiBerjalan);
+    document.getElementById('sand-kpi-efi-run-rp').textContent  = IDRf(efiBerjalan);
     document.getElementById('sand-kpi-efi-run-pct').textContent =
       st.pagu_berjalan > 0
         ? `Indikatif ${st.persen_efisiensi_berjalan.toFixed(2)}% • belum final`
