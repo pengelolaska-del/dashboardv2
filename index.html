@@ -1708,6 +1708,26 @@ thead .col-sep-h{
 
     <!-- ── Tab: Belum Match ─────────────────────────────────────────── -->
     <div class="kual-panel" id="kual-panel-unmatched">
+      <!-- Filter Satker — berlaku sekaligus utk kedua sub-tab di bawah,
+           dipisah dari filter Metode/Jenis per-panel krn kolom ini sama
+           persis maknanya di kedua sisi (RUP maupun Realisasi). -->
+      <div class="tbl-wrap" style="margin-bottom:14px">
+        <div class="tbl-topbar" style="flex-direction:column;align-items:stretch;gap:8px">
+          <div style="display:flex;gap:8px;align-items:end">
+            <div class="fld" style="max-width:420px;flex:1">
+              <label>Satuan Kerja / OPD</label>
+              <div class="combo">
+                <input type="text" class="combo-search" id="kual-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+                       onfocus="comboOpen('kual-satker')" oninput="comboFilter('kual-satker')" onblur="comboBlurClose('kual-satker')">
+                <input type="hidden" id="kual-satker">
+                <div class="combo-list hidden" id="kual-satker-list"></div>
+              </div>
+            </div>
+            <button class="btn" style="font-size:11px;padding:7px 10px" onclick="resetKualitasSatker()" title="Reset filter satker">↺</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Sub-tab: RUP vs Realisasi — dipisah per-panel (bukan grid 2 kolom)
            supaya tiap tabel dapat lebar penuh; kolom Aksi/Kontrak dsb jadi
            tidak kepotong seperti sebelumnya saat berdampingan. -->
@@ -2474,6 +2494,7 @@ const COMBO_AUTO_APPLY = {
   'real-satker': () => applyReal(),
   'sand-satker': () => applySand(),
   'efi-satker':  () => applyEfi(),
+  'kual-satker': () => applyKualitas(),
 };
 function comboChoose(baseId, kode) {
   comboSetValue(baseId, kode);
@@ -3209,7 +3230,7 @@ function switchEfiOpdTab(tab) {
 let _manualPaguMap = {};
 
 // Filter state untuk Kualitas Data (di-cache supaya tidak hilang saat reload)
-let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'' };
+let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'', kode_satker:'' };
 
 function applyKualitas() {
   KUAL_F = {
@@ -3218,6 +3239,7 @@ function applyKualitas() {
     jenis_pengadaan:      v('kual-real-jenis'),
     metode_pengadaan_rup: v('kual-rup-metode'),
     jenis_pengadaan_rup:  v('kual-rup-jenis'),
+    kode_satker:          v('kual-satker'),
   };
   loadKualitas();
 }
@@ -3227,6 +3249,10 @@ function resetKualitasRup() {
 }
 function resetKualitasReal() {
   ['kual-real-transaksi','kual-real-metode','kual-real-jenis'].forEach(id => document.getElementById(id).value='');
+  applyKualitas();
+}
+function resetKualitasSatker() {
+  comboClear('kual-satker');
   applyKualitas();
 }
 
@@ -3317,6 +3343,7 @@ async function loadKualitas() {
       fillSelect('kual-real-transaksi',d.enums.sumber_transaksi,     KUAL_F.sumber_transaksi);
       fillSelect('kual-real-metode',   d.enums.metode_pengadaan,     KUAL_F.metode_pengadaan);
       fillSelect('kual-real-jenis',    d.enums.jenis_pengadaan,      KUAL_F.jenis_pengadaan);
+      fillSatker('kual-satker',        d.enums.satker,               KUAL_F.kode_satker);
     }
 
     // Tabel Unmatched RUP — sekarang dengan kolom Metode & Jenis
