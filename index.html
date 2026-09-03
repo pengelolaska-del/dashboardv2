@@ -229,6 +229,10 @@ tr[data-satker-color] td.col-satker{
 table.dt td{padding:9px 13px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tr:hover td{background:#FAFBFF}
+/* Tabel dgn banyak kolom (Rencana RUP & Realisasi) — jarak antar kolom
+   (padding horizontal) dikecilkan drpd default 13px→8px supaya semua
+   kolom lebih muat sebelum perlu discroll, TANPA mengubah ukuran font. */
+table.dt.dt-compact th,table.dt.dt-compact td{padding-left:8px;padding-right:8px}
 .tbl-pagination{
   display:flex;align-items:center;gap:8px;padding:10px 14px;
   border-top:1px solid #F1F5F9;background:#FAFBFC;
@@ -758,7 +762,7 @@ thead .col-sep-h{
         </div>
       </div>
       <div class="tbl-scroll">
-        <table class="dt">
+        <table class="dt dt-compact">
           <thead><tr>
             <th style="width:40px">No</th>
             <th style="min-width:160px">Nama Satuan Kerja</th>
@@ -874,7 +878,7 @@ thead .col-sep-h{
         </button>
       </div>
       <div class="tbl-scroll">
-        <table class="dt">
+        <table class="dt dt-compact">
           <thead><tr>
             <th style="width:40px">No</th>
             <th style="min-width:180px">Nama Satuan Kerja</th>
