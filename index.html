@@ -1681,6 +1681,39 @@ thead .col-sep-h{
         </div>
       </div>
 
+      <!-- Upload boxes: baris 2 -->
+      <div class="grid-2-resp">
+        <div class="upload-card">
+          <div class="upload-card-title">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:22px;height:22px;background:#FEF3C7;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#B45309">3</span>
+              Isi Pagu dari CSV LPSE
+            </div>
+            <span class="badge b-yellow">Opsional</span>
+          </div>
+          <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">
+            File export LPSE/Non-Tender (kolom wajib: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_pkt_dce</code>, <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">pagu</code>).
+            Dicocokkan ke kode_paket Realisasi yang <b>UNMATCHED</b> pada periode terpilih untuk isi Pagu Manual otomatis.
+          </p>
+          <div class="drop-zone" id="drop-pagu" onclick="document.getElementById('file-pagu').click()">
+            <div class="drop-zone-icon">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            </div>
+            <p id="lbl-pagu">Klik atau drag file CSV di sini</p>
+            <p style="font-size:11px;color:#CBD5E1;margin-top:3px">Maks. 10 MB</p>
+          </div>
+          <input type="file" id="file-pagu" accept=".csv" style="display:none"/>
+          <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:#64748B;cursor:pointer">
+            <input type="checkbox" id="chk-pagu-overwrite" style="cursor:pointer"/> Timpa pagu manual yang sudah pernah diisi
+          </label>
+          <div class="progress-wrap hidden" id="prog-pagu-wrap">
+            <div class="progress-label"><span id="prog-pagu-lbl">Mengunggah...</span><span id="prog-pagu-pct">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-pagu-fill" style="width:0%"></div></div>
+          </div>
+          <button id="btn-pagu" disabled onclick="uploadPaguLpse()" class="upload-btn upload-btn-rup">↑ Isi Pagu dari CSV</button>
+        </div>
+      </div>
+
       <!-- Riwayat Upload -->
       <div class="upload-card" style="margin-bottom:16px">
         <div class="upload-card-title">
@@ -4185,6 +4218,13 @@ setupDrop('drop-real','file-real','lbl-real','btn-real', f=>{
   document.getElementById('lbl-real').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
   const btn=document.getElementById('btn-real'); btn.disabled=false;
 });
+let paguFile=null;
+setupDrop('drop-pagu','file-pagu','lbl-pagu','btn-pagu', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv dan maks 10 MB','error');return;}
+  paguFile=f;
+  document.getElementById('lbl-pagu').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
+  const btn=document.getElementById('btn-pagu'); btn.disabled=false;
+});
 
 function parseCSV(text) {
   const norm = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
@@ -4267,6 +4307,44 @@ async function uploadReal() {
     document.getElementById('prog-real-wrap').classList.add('hidden'); btn.disabled=true;
     await init();
   } catch(e){ Swal.fire('❌ Upload Gagal',e.message,'error'); }
+  finally { btn.disabled=false; }
+}
+
+async function uploadPaguLpse() {
+  if(!paguFile)return;
+  const periode=v('up-tahun')+'-'+v('up-bulan');
+  const overwrite=document.getElementById('chk-pagu-overwrite').checked;
+  const btn=document.getElementById('btn-pagu'); btn.disabled=true;
+  try {
+    const rows=parseCSV(await paguFile.text());
+    if(!rows.length || !('kd_pkt_dce' in rows[0]) || !('pagu' in rows[0]))
+      throw new Error('Kolom "kd_pkt_dce" dan "pagu" wajib ada di CSV.');
+    const chunks=[]; for(let i=0;i<rows.length;i+=CHUNK_SIZE)chunks.push(rows.slice(i,i+CHUNK_SIZE));
+    const sid=(crypto.randomUUID?.())||('sid-'+Date.now());
+    document.getElementById('prog-pagu-wrap').classList.remove('hidden');
+    let processed=0, lastRes=null;
+    for(let ci=0;ci<chunks.length;ci++){
+      document.getElementById('prog-pagu-lbl').textContent = chunks.length>1?`Chunk ${ci+1}/${chunks.length}...`:'Memproses...';
+      const res=await api({action:'importPaguLpse', token:S.adminToken, periode, data:chunks[ci],
+        nama_file:paguFile.name, session_id:sid, chunk_index:ci, total_chunks:chunks.length,
+        total_records:rows.length, overwrite});
+      if(res.status!=='success') throw new Error(res.message);
+      lastRes=res; processed+=chunks[ci].length;
+      const pv=Math.round(processed/rows.length*100);
+      document.getElementById('prog-pagu-fill').style.width=pv+'%';
+      document.getElementById('prog-pagu-pct').textContent=pv+'%';
+    }
+    document.getElementById('prog-pagu-lbl').textContent='✅ Selesai';
+    const d=lastRes?.data||{};
+    Swal.fire('✅ Isi Pagu Selesai',
+      `Terisi: <b>${d.filled??0}</b> paket<br>` +
+      `Sudah ada pagu manual: <b>${d.skipped_exists??0}</b> · Tidak ketemu di CSV: <b>${d.skipped_no_match??0}</b><br>` +
+      `Total unmatched periode ini: <b>${d.total_unmatched??'—'}</b>`,
+      'success');
+    paguFile=null; document.getElementById('lbl-pagu').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-pagu-wrap').classList.add('hidden'); btn.disabled=true;
+    loadLog();
+  } catch(e){ Swal.fire('❌ Gagal',e.message,'error'); }
   finally { btn.disabled=false; }
 }
 
