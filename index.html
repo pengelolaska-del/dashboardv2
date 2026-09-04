@@ -1692,8 +1692,8 @@ thead .col-sep-h{
             <span class="badge b-yellow">Opsional</span>
           </div>
           <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">
-            File export LPSE/Non-Tender (kolom wajib: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_pkt_dce</code>, <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">pagu</code>).
-            Dicocokkan ke kode_paket Realisasi yang <b>UNMATCHED</b> pada periode terpilih untuk isi Pagu Manual otomatis.
+            File export LPSE/Non-Tender (kolom wajib: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_nontender</code>, <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">pagu</code>).
+            Dicocokkan ke kode_paket Realisasi (transaksi "Pencatatan Non Tender") yang <b>UNMATCHED</b> pada periode terpilih untuk isi Pagu Manual otomatis.
           </p>
           <div class="drop-zone" id="drop-pagu" onclick="document.getElementById('file-pagu').click()">
             <div class="drop-zone-icon">
@@ -4317,8 +4317,8 @@ async function uploadPaguLpse() {
   const btn=document.getElementById('btn-pagu'); btn.disabled=true;
   try {
     const rows=parseCSV(await paguFile.text());
-    if(!rows.length || !('kd_pkt_dce' in rows[0]) || !('pagu' in rows[0]))
-      throw new Error('Kolom "kd_pkt_dce" dan "pagu" wajib ada di CSV.');
+    if(!rows.length || !('kd_nontender' in rows[0]) || !('pagu' in rows[0]))
+      throw new Error('Kolom "kd_nontender" dan "pagu" wajib ada di CSV.');
     const chunks=[]; for(let i=0;i<rows.length;i+=CHUNK_SIZE)chunks.push(rows.slice(i,i+CHUNK_SIZE));
     const sid=(crypto.randomUUID?.())||('sid-'+Date.now());
     document.getElementById('prog-pagu-wrap').classList.remove('hidden');
