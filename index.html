@@ -3966,6 +3966,70 @@ async function confirmMatchRup(kode_rup) {
   }
 }
 
+// ── "✂ Split Kontrak" — memisahkan 1 kontrak dari grup "kode RUP dipakai
+// banyak kontrak" supaya py Pagu sendiri (dari data CSV LPSE yg pernah
+// diupload, atau diisi manual). Lihat handleSplitKontrakGabungan (Code.gs).
+async function splitKontrakGabungan(periode, kode_paket, kode_rup) {
+  const conf = await Swal.fire({
+    title: 'Pisahkan kontrak ini?',
+    html: `Kontrak <b>${escJs(kode_paket)}</b> akan dipisah dari grup gabungan kode RUP <b>${escJs(kode_rup)}</b> dan ditampilkan sbg baris sendiri — Pagu-nya diambil dari data CSV LPSE yang pernah diupload (kalau belum ketemu, Pagu jadi 0 dan bisa diisi manual).`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Pisahkan', cancelButtonText: 'Batal',
+    confirmButtonColor: '#1E3A5F',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({ action:'splitKontrakGabungan', token: S.adminToken, periode, kode_paket, kode_rup });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memisahkan kontrak.');
+    Swal.fire('✅ Berhasil', res.message, 'success');
+    await loadSandingan(SAND.page || 1);
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  }
+}
+
+// Batalkan pemisahan — kontrak digabung kembali ke grup kode_rup asalnya.
+async function unsplitKontrak(kode_paket) {
+  const conf = await Swal.fire({
+    title: 'Gabung kembali kontrak ini?',
+    html: `Kontrak <b>${escJs(kode_paket)}</b> akan digabung kembali ke grup kode RUP asalnya — Pagu terpisahnya akan hilang.`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Gabung Kembali', cancelButtonText: 'Batal',
+    confirmButtonColor: '#1E3A5F',
+  });
+  if (!conf.isConfirmed) return;
+  try {
+    const res = await api({ action:'unsplitKontrakGabungan', token: S.adminToken, kode_paket });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal menggabungkan kembali.');
+    Swal.fire('✅ Berhasil', res.message, 'success');
+    await loadSandingan(SAND.page || 1);
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  }
+}
+
+// Koreksi manual Pagu kontrak yang sudah dipisah (dipakai terutama saat
+// data LPSE-nya belum ketemu / pagu masih 0).
+async function editSplitPagu(kode_paket, currentPagu) {
+  const { value: pagu, isConfirmed } = await Swal.fire({
+    title: 'Edit Pagu Kontrak',
+    html: `Kode paket: <b>${escJs(kode_paket)}</b>`,
+    input: 'number',
+    inputValue: currentPagu || '',
+    inputAttributes: { min: 0, step: 1 },
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+    confirmButtonColor: '#1E3A5F',
+    inputValidator: (v) => (v === '' || v === null || Number(v) < 0) ? 'Pagu wajib diisi angka ≥ 0' : undefined,
+  });
+  if (!isConfirmed) return;
+  try {
+    const res = await api({ action:'updateSplitKontrakPagu', token: S.adminToken, kode_paket, pagu: Number(pagu) });
+    if (res.status !== 'success') throw new Error(res.message || 'Gagal memperbarui pagu.');
+    Swal.fire('✅ Berhasil', res.message, 'success');
+    await loadSandingan(SAND.page || 1);
+  } catch(e) {
+    Swal.fire('❌ Gagal', e.message, 'error');
+  }
+}
+
 async function deletePagu(kode_paket) {
   const conf = await Swal.fire({
     title:'Hapus pagu manual?',
@@ -5853,7 +5917,7 @@ async function loadSandingan(page=1) {
       const hasReal    = !!r.ada_realisasi;
       const isSelesai  = r.status_realisasi === 'Selesai';
       const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
-      const paguDiketahui = !r.is_unmatched || (r.pagu||0) > 0; // punya pagu asli, atau sudah diisi manual
+      const paguDiketahui = r.is_split_kontrak ? (Number(r.pagu)||0) > 0 : (!r.is_unmatched || (r.pagu||0) > 0); // punya pagu asli, sudah diisi manual, atau (khusus split) sudah ketemu di data LPSE
       // Efisiensi murni HANYA dihitung utk paket berstatus "Selesai" (pagu &
       // nilai kontraknya sudah final). Paket "Sedang Berjalan" pagunya masih
       // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
@@ -5888,6 +5952,7 @@ async function loadSandingan(page=1) {
         <td class="col-paket" style="font-size:11.5px">
           ${r.is_unmatched ? `<span title="Paket ini sudah ada transaksi/realisasinya, tapi gagal dicocokkan (match) ke paket RUP manapun.${paguDiketahui ? ' Pagu sudah diisi manual oleh admin.' : ' Pagu RUP-nya jadi tidak diketahui & tidak ikut dihitung ke Efisiensi sampai diisi manual.'}" style="display:inline-block;font-size:9.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FED7AA;border-radius:99px;padding:1px 7px;margin-bottom:3px">⚠ Belum Match ke RUP</span><br>` : ''}
           ${r.is_realisasi_gabungan ? `<span title="1 kode RUP ini dipakai oleh ${r.realisasi_list.length} realisasi/kontrak terpisah — Pagu RUP dihitung sekali, Nilai Kontrak = jumlah semuanya. Lihat rincian di kolom Penyedia." style="display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px;margin-bottom:3px">🔗 ${r.realisasi_list.length} Kontrak</span><br>` : ''}
+          ${r.is_split_kontrak ? `<span title="Kontrak ini dulunya bagian dari grup 'kode RUP dipakai banyak kontrak' — sudah dipisah admin, Pagu-nya independen (sumber: ${r.pagu_split_sumber||'—'})." style="display:inline-block;font-size:9.5px;font-weight:700;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;border-radius:99px;padding:1px 7px;margin-bottom:3px">✂ Split · Pagu ${r.pagu_split_sumber||'—'}</span><br>` : ''}
           ${isGrupGabungan
             ? `<details style="margin-bottom:4px">
                  <summary style="cursor:pointer;list-style:none;display:inline-block;font-size:9.5px;font-weight:700;color:#3730A3;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:99px;padding:1px 7px" title="Baris ini gabungan dari ${groupMembers.length+1} kode RUP yang tercatat sebagai 1 realisasi/kontrak. Pagu, Nilai Kontrak & Efisiensi yang tampil sudah mewakili SELURUH anggota grup. Klik untuk lihat rincian paket RUP lainnya.">🧩 Gabungan ${groupMembers.length+1} Paket RUP ▾</summary>
@@ -5918,12 +5983,28 @@ async function loadSandingan(page=1) {
           ${paguDiketahui
             ? IDRf(paguTampil) + (r.is_manual_pagu ? manualPaguMark() : (isBerjalan ? hpsPaguMark() : ''))
               + (isGrupGabungan ? `<div style="font-size:9px;color:#6366F1;font-weight:600;margin-top:1px">Gabungan ${groupMembers.length+1} paket</div>` : '')
-            : `<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>`}
+            : (r.is_split_kontrak
+                ? `<span style="color:#92400E;font-style:italic" title="Kontrak ini sudah dipisah, tapi Pagu-nya belum ketemu di data CSV LPSE yang pernah diupload — isi manual lewat tombol Edit Pagu di bawah">— (blm ketemu di LPSE)</span>`
+                : `<span style="color:#94A3B8;font-style:italic" title="Pagu RUP tidak diketahui — paket ini belum match ke RUP manapun">— (tdk diketahui)</span>`)}
           ${r.is_unmatched && S.isAdmin
             ? `<button type="button" onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket, nama_paket:r.nama_paket_realisasi||"", nama_satker:r.nama_satker||"", pagu_manual:r.is_manual_pagu?r.pagu:""}).replace(/'/g,"&#39;")})'
                 style="display:block;margin-top:3px;font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:${r.is_manual_pagu?'#DCFCE7':'#EFF6FF'};color:${r.is_manual_pagu?'#16A34A':'#2563EB'}">
                 ${r.is_manual_pagu ? '✏ Edit Pagu' : '+ Set Pagu'}
               </button>`
+            : ''}
+          ${r.is_split_kontrak && S.isAdmin
+            ? `<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">
+                 <button type="button" title="Koreksi Pagu kontrak ini secara manual"
+                   onclick="editSplitPagu('${escJs(r.kode_paket)}', ${Number(r.pagu)||0})"
+                   style="font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#FEF3C7;color:#92400E">
+                   ✏ Edit Pagu
+                 </button>
+                 <button type="button" title="Batalkan pemisahan — gabung kembali ke grup kode RUP asalnya"
+                   onclick="unsplitKontrak('${escJs(r.kode_paket)}')"
+                   style="font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#F1F5F9;color:#475569">
+                   ↩ Gabung Kembali
+                 </button>
+               </div>`
             : ''}
         </td>
         <!-- Pemisah: garis tebal tipis saja -->
@@ -5941,16 +6022,23 @@ async function loadSandingan(page=1) {
                        <div style="color:#64748B">${sandStatusBadge({status_realisasi:x.status_realisasi, ada_realisasi:true})} · <span class="mono" style="color:#15803D;font-weight:600">${IDRf(x.nilai_kontrak||0)}</span></div>
                        <div style="color:#94A3B8;font-family:monospace;font-size:9.5px;margin-top:1px">${x.kode_paket||''}</div>
                        ${S.isAdmin && x.periode
-                         ? `<button type="button" title="Tautkan ulang kontrak ini ke kode RUP yang benar (memisahkannya dari kode RUP saat ini)"
-                              onclick='openRupPickerModal(${JSON.stringify({
-                                periode: x.periode, kode_paket: x.kode_paket,
-                                kode_satker: x.kode_satker || r.kode_satker, nama_satker: x.nama_satker || r.nama_satker,
-                                nama_paket: x.nama_paket_realisasi || r.nama_paket_realisasi || r.nama_paket_rup || '',
-                                refreshView: 'sandingan',
-                              }).replace(/'/g,"&#39;")})'
-                              style="margin-top:3px;font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#EEF2FF;color:#3730A3">
-                              ✎ Edit Relasi
-                            </button>`
+                         ? `<div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">
+                              <button type="button" title="Tautkan ulang kontrak ini ke kode RUP yang benar (memisahkannya dari kode RUP saat ini)"
+                                onclick='openRupPickerModal(${JSON.stringify({
+                                  periode: x.periode, kode_paket: x.kode_paket,
+                                  kode_satker: x.kode_satker || r.kode_satker, nama_satker: x.nama_satker || r.nama_satker,
+                                  nama_paket: x.nama_paket_realisasi || r.nama_paket_realisasi || r.nama_paket_rup || '',
+                                  refreshView: 'sandingan',
+                                }).replace(/'/g,"&#39;")})'
+                                style="font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#EEF2FF;color:#3730A3">
+                                ✎ Edit Relasi
+                              </button>
+                              <button type="button" title="Pisahkan kontrak ini dari grup — jadi baris sendiri dgn Pagu dari data CSV LPSE yang pernah diupload"
+                                onclick="splitKontrakGabungan('${escJs(x.periode)}','${escJs(x.kode_paket)}','${escJs(r.kode_rup)}')"
+                                style="font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#FEF3C7;color:#92400E">
+                                ✂ Pisahkan
+                              </button>
+                            </div>`
                          : ''}
                      </div>`).join('')}
                  </div>
