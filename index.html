@@ -1424,6 +1424,19 @@ thead .col-sep-h{
             <input id="sand-search" type="text" placeholder="Ketik nama paket atau kode RUP..." onkeydown="if(event.key==='Enter')applySand()"/>
           </div>
         </div>
+        <!-- Filter kasus "1 kode RUP dipakai banyak kontrak" — dikombinasikan
+             dgn Metode Pengadaan di atas (mis. pilih "Pengadaan Langsung")
+             utk cari kasus itu khusus di metode tsb, lalu dikoreksi lewat
+             tombol "✎ Edit" di kolom Penyedia tabel bawah. -->
+        <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#3730A3;cursor:pointer;width:fit-content">
+            <input type="checkbox" id="sand-hanya-gabungan" onchange="applySand()" style="cursor:pointer"/>
+            🔗 Hanya kode RUP dipakai banyak kontrak <span id="sand-gabungan-count" class="seg-tab-badge" style="margin-left:2px"></span>
+          </label>
+          <button type="button" class="btn" style="font-size:11px;padding:5px 10px"
+            title="Filter cepat: kasus kode RUP dipakai banyak kontrak khusus metode Pengadaan Langsung"
+            onclick="filterSandGabungan('Pengadaan Langsung')">⚡ Cek di Pengadaan Langsung</button>
+        </div>
         <div id="sand-transaksi-belum-warn" style="display:none;margin-top:10px;padding:9px 12px;font-size:11.5px;color:#9A3412;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px">
           ⚠️ Kombinasi filter <b>Sumber Transaksi</b> + <b>Status Belum Berproses</b> akan selalu kosong — paket yang belum ada realisasinya memang belum punya Sumber Transaksi apapun.
           Kalau maksudnya mencari paket dengan <b>metode rencana</b> tertentu (mis. Pengadaan Langsung) yang belum dilaksanakan, gunakan filter <b>Metode Pengadaan</b> di atas, bukan Sumber Transaksi.
@@ -1817,7 +1830,7 @@ thead .col-sep-h{
     <div class="seg-tabs" id="kual-tabs" style="margin-bottom:16px;display:inline-flex">
       <button class="seg-tab active" data-tab="unmatched" onclick="switchKualTab('unmatched')">⚠️ Belum Match</button>
       <button class="seg-tab" data-tab="relasi" onclick="switchKualTab('relasi')">🔗 Relasi Kode RUP</button>
-      <button class="seg-tab" data-tab="lpseaudit" onclick="switchKualTab('lpseaudit')">🧾 Audit vs LPSE</button>
+      <button class="seg-tab" data-tab="lpseaudit" onclick="switchKualTab('lpseaudit')" style="display:none" title="Disembunyikan — fitur audit vs LPSE sudah tersedia di menu Upload Data">🧾 Audit vs LPSE</button>
       <button class="seg-tab" data-tab="manual" onclick="switchKualTab('manual')">📌 Data Manual</button>
     </div>
 
@@ -3936,10 +3949,18 @@ async function confirmMatchRup(kode_rup) {
     if (res.status !== 'success') throw new Error(res.message || 'Gagal menautkan paket.');
     Swal.fire('✅ Berhasil', 'Paket berhasil ditautkan ke RUP.', 'success');
     closeRupPickerModal();
-    await refreshUnmatchedGroupList();
-    const active = document.querySelector('.nav-link.active')?.dataset.s;
-    if (active === 'efisiensi' && typeof loadEfisiensi === 'function') loadEfisiensi();
-    else if (active === 'kualitas' && typeof loadKualitas === 'function') loadKualitas();
+    // ctx.refreshView diisi eksplisit oleh pemanggil (mis. tombol "✎ Edit
+    // Relasi" di Sandingan RUP) supaya tabel yang benar yang direfresh —
+    // fallback ke deteksi section aktif seperti sebelumnya kalau tidak diisi.
+    if (ctx.refreshView === 'sandingan' && typeof loadSandingan === 'function') {
+      await loadSandingan(SAND.page || 1);
+    } else {
+      await refreshUnmatchedGroupList();
+      const active = document.querySelector('.nav-link.active')?.dataset.s;
+      if (active === 'efisiensi' && typeof loadEfisiensi === 'function') loadEfisiensi();
+      else if (active === 'kualitas' && typeof loadKualitas === 'function') loadKualitas();
+      else if (active === 'sandingan' && typeof loadSandingan === 'function') loadSandingan(SAND.page || 1);
+    }
   } catch(e) {
     Swal.fire('❌ Gagal', e.message, 'error');
   }
@@ -5494,6 +5515,7 @@ function resetSand()  {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('sand-search').value = '';
+  document.getElementById('sand-hanya-gabungan').checked = false;
   warnSandTransaksiBelum();
   SAND_RINCIAN_SATKER = null;
   const rincianWrap = document.getElementById('sand-vt-rincian-wrap');
@@ -5520,6 +5542,7 @@ function readSandFilter() {
     sumber_dana:      v('sand-sumber'),
     sumber_transaksi: v('sand-transaksi'),
     search:           v('sand-search'),
+    hanya_gabungan:   document.getElementById('sand-hanya-gabungan')?.checked || false,
   };
 }
 
@@ -5672,6 +5695,7 @@ async function gotoSandingan(f = {}) {
   document.getElementById('sand-jenis').value     = f.jenis     || '';
   document.getElementById('sand-status').value    = f.status    || '';
   document.getElementById('sand-transaksi').value = f.transaksi || '';
+  document.getElementById('sand-hanya-gabungan').checked = !!f.hanya_gabungan;
   warnSandTransaksiBelum();
   applySand();
   document.getElementById('sec-sandingan').scrollIntoView({ behavior:'smooth' });
@@ -5679,6 +5703,9 @@ async function gotoSandingan(f = {}) {
 const filterSandByJenis     = (jenisPengadaan, statusPaket) => gotoSandingan({ jenis: jenisPengadaan, status: statusPaket });
 const filterSandByMetode    = (metode, statusPaket)         => gotoSandingan({ metode, status: statusPaket });
 const filterSandByTransaksi = (transaksi, statusPaket)      => gotoSandingan({ transaksi, status: statusPaket });
+// Shortcut "cari kasus 1 kode RUP dipakai banyak kontrak" utk metode
+// tertentu — dipakai tombol cepat di panel filter Sandingan RUP.
+const filterSandGabungan     = (metode) => gotoSandingan({ metode, hanya_gabungan: true });
 
 function escJs(s) { return String(s||'').replace(/'/g, "\\'"); }
 
@@ -5711,6 +5738,7 @@ async function loadSandingan(page=1) {
       sumber_dana:      f.sumber_dana      || undefined,
       sumber_transaksi: f.sumber_transaksi || undefined,
       search:           f.search           || undefined,
+      hanya_gabungan:   f.hanya_gabungan    || undefined,
       sort_by:          SAND.sort.by       || undefined,
       sort_dir:         SAND.sort.dir      || undefined,
       page,
@@ -5744,6 +5772,12 @@ async function loadSandingan(page=1) {
     document.getElementById('sand-kpi-berjalan').textContent= fmt(st.sedang_berjalan || 0);
     document.getElementById('sand-kpi-belum').textContent   = fmt(st.belum_berproses || 0);
     document.getElementById('sand-kpi-batal').textContent   = fmt(st.dibatalkan || 0);
+
+    // Badge jumlah kasus "🔗 kode RUP dipakai banyak kontrak" di hasil filter
+    // saat ini — dihitung backend SEBELUM checkbox hanya_gabungan diterapkan,
+    // supaya tetap kelihatan berapa kasus yang ada walau checkbox belum dicentang.
+    const gabunganBadge = document.getElementById('sand-gabungan-count');
+    if (gabunganBadge) gabunganBadge.textContent = st.total_gabungan ? fmt(st.total_gabungan) : '';
 
     // ── Jumlah TRANSAKSI (bukan paket RUP) — supaya angka di kartu ini bisa
     // direkonsiliasi langsung ke menu Realisasi (yg menghitung per-transaksi).
@@ -5905,6 +5939,19 @@ async function loadSandingan(page=1) {
                      <div style="margin-bottom:5px;padding-bottom:5px;border-bottom:1px dashed #E2E8F0;font-size:10.5px">
                        <div style="font-weight:600;color:#1E293B">${String(x.nama_penyedia||'—').slice(0,40)}</div>
                        <div style="color:#64748B">${sandStatusBadge({status_realisasi:x.status_realisasi, ada_realisasi:true})} · <span class="mono" style="color:#15803D;font-weight:600">${IDRf(x.nilai_kontrak||0)}</span></div>
+                       <div style="color:#94A3B8;font-family:monospace;font-size:9.5px;margin-top:1px">${x.kode_paket||''}</div>
+                       ${S.isAdmin && x.periode
+                         ? `<button type="button" title="Tautkan ulang kontrak ini ke kode RUP yang benar (memisahkannya dari kode RUP saat ini)"
+                              onclick='openRupPickerModal(${JSON.stringify({
+                                periode: x.periode, kode_paket: x.kode_paket,
+                                kode_satker: x.kode_satker || r.kode_satker, nama_satker: x.nama_satker || r.nama_satker,
+                                nama_paket: x.nama_paket_realisasi || r.nama_paket_realisasi || r.nama_paket_rup || '',
+                                refreshView: 'sandingan',
+                              }).replace(/'/g,"&#39;")})'
+                              style="margin-top:3px;font-size:9.5px;padding:1px 7px;border-radius:5px;cursor:pointer;font-weight:600;border:none;background:#EEF2FF;color:#3730A3">
+                              ✎ Edit Relasi
+                            </button>`
+                         : ''}
                      </div>`).join('')}
                  </div>
                </details>`
