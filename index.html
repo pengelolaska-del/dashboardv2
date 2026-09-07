@@ -1693,7 +1693,7 @@ thead .col-sep-h{
           </div>
           <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">
             File export LPSE Tender (kolom wajib: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_tender</code>) atau Non-Tender (<code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_nontender</code>), plus <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">pagu</code>. Bisa upload salah satu jenis, form yang sama.
-            Dicocokkan ke kode_paket Realisasi yang <b>UNMATCHED</b> pada periode terpilih untuk isi Pagu Manual otomatis.
+            Dicocokkan ke kode_paket Realisasi yang <b>UNMATCHED</b> pada periode terpilih untuk isi Pagu Manual otomatis. Kalau CSV juga punya <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_rup</code>, kolom kode_rup Realisasi yang masih kosong ikut diisi &amp; matching di-refresh otomatis.
           </p>
           <div class="drop-zone" id="drop-pagu" onclick="document.getElementById('file-pagu').click()">
             <div class="drop-zone-icon">
@@ -4354,6 +4354,7 @@ async function uploadPaguLpse() {
       `Terisi: <b>${d.filled??0}</b> paket<br>` +
       `Sudah ada pagu manual: <b>${d.skipped_exists??0}</b> · Tidak ketemu di CSV: <b>${d.skipped_no_match??0}</b><br>` +
       `Total unmatched: <b>${d.total_unmatched??'—'}</b>` +
+      (d.kode_rup_filled ? `<br>🔗 Kode RUP terisi otomatis: <b>${d.kode_rup_filled}</b> baris — matching sudah di-refresh, cek ulang status match-nya.` : '') +
       (rincianPeriode ? `<hr style="margin:8px 0"><table style="margin:0 auto;font-size:12.5px">${rincianPeriode}</table>` : ''),
       'success');
     paguFile=null; document.getElementById('lbl-pagu').textContent='Klik atau drag file CSV di sini';
