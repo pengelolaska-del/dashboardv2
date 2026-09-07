@@ -1817,6 +1817,7 @@ thead .col-sep-h{
     <div class="seg-tabs" id="kual-tabs" style="margin-bottom:16px;display:inline-flex">
       <button class="seg-tab active" data-tab="unmatched" onclick="switchKualTab('unmatched')">⚠️ Belum Match</button>
       <button class="seg-tab" data-tab="relasi" onclick="switchKualTab('relasi')">🔗 Relasi Kode RUP</button>
+      <button class="seg-tab" data-tab="lpseaudit" onclick="switchKualTab('lpseaudit')">🧾 Audit vs LPSE</button>
       <button class="seg-tab" data-tab="manual" onclick="switchKualTab('manual')">📌 Data Manual</button>
     </div>
 
@@ -1975,6 +1976,68 @@ thead .col-sep-h{
                 <th class="text-right">Realisasi Banyak RUP</th>
                 <th class="text-right">Total Kasus</th>
                 <th class="text-center" style="width:110px">Aksi</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab: Audit Gabungan vs LPSE ──────────────────────────────────
+         Tool terpisah (bukan otomatis di tabel Sandingan RUP): admin upload
+         CSV export LPSE (Tender/Non-Tender), lalu tiap kode RUP yang dipakai
+         >1 realisasi/kontrak (lihat tab "Relasi Kode RUP") disandingkan ke
+         kode_paket LPSE-nya masing² — hasilnya laporan cocok/tidak, BUKAN
+         perubahan data otomatis. -->
+    <div class="kual-panel" id="kual-panel-lpseaudit" style="display:none">
+      <p style="font-size:12px;color:#64748B;margin:-2px 0 14px;max-width:680px">
+        Upload CSV export LPSE (Tender atau Non-Tender) untuk menyandingkan tiap
+        <b>kode paket</b> dari kasus "🔗 Kode RUP Dipakai Banyak Paket" ke data LPSE aslinya.
+        Ini laporan pembanding saja — tidak mengubah data Sandingan/Realisasi manapun.
+      </p>
+
+      <div class="upload-card" style="max-width:640px;margin-bottom:20px">
+        <div class="upload-card-title">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:22px;height:22px;background:#EEF2FF;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#3730A3">🧾</span>
+            CSV Export LPSE
+          </div>
+        </div>
+        <p style="font-size:11px;color:#94A3B8;margin-bottom:10px">
+          Kolom wajib: <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_nontender</code> atau
+          <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_tender</code>, plus
+          <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">kd_rup</code>. Kolom
+          <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">nama_penyedia</code>,
+          <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">nilai_kontrak</code>,
+          <code style="background:#F1F5F9;padding:1px 5px;border-radius:4px">mtd_pemilihan</code> opsional tapi dipakai kalau ada.
+        </p>
+        <div class="drop-zone" id="drop-audit-lpse" onclick="document.getElementById('file-audit-lpse').click()">
+          <div class="drop-zone-icon">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          </div>
+          <p id="lbl-audit-lpse">Klik atau drag file CSV di sini</p>
+          <p style="font-size:11px;color:#CBD5E1;margin-top:3px">Maks. 10 MB</p>
+        </div>
+        <input type="file" id="file-audit-lpse" accept=".csv" style="display:none"/>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:#64748B;cursor:pointer">
+          <input type="checkbox" id="chk-audit-lpse-alltahun" style="cursor:pointer"/> Audit <b>semua periode di tahun</b> yang lagi dipilih (bukan cuma bulan aktif)
+        </label>
+        <div class="progress-wrap hidden" id="prog-audit-lpse-wrap">
+          <div class="progress-label"><span id="prog-audit-lpse-lbl">Mengunggah...</span><span id="prog-audit-lpse-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-audit-lpse-fill" style="width:0%"></div></div>
+        </div>
+        <button id="btn-audit-lpse" disabled onclick="runAuditGabunganLpse()" class="upload-btn upload-btn-rup">▶ Jalankan Audit</button>
+      </div>
+
+      <div id="audit-lpse-result" class="hidden">
+        <div class="summary-grid-3" id="audit-lpse-kpi" style="margin-bottom:16px"></div>
+        <div class="tbl-wrap">
+          <div class="tbl-scroll" style="max-height:560px;overflow-y:auto">
+            <table class="dt" id="t-audit-lpse">
+              <thead><tr>
+                <th style="width:36px">No</th><th>Kode RUP</th><th>Nama Paket RUP</th><th>Satker</th>
+                <th class="text-center">Status</th><th class="text-right">Jml Kontrak</th><th style="min-width:260px">Rincian per Kontrak</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -4236,6 +4299,13 @@ setupDrop('drop-pagu','file-pagu','lbl-pagu','btn-pagu', f=>{
   document.getElementById('lbl-pagu').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
   const btn=document.getElementById('btn-pagu'); btn.disabled=false;
 });
+let auditLpseFile=null;
+setupDrop('drop-audit-lpse','file-audit-lpse','lbl-audit-lpse','btn-audit-lpse', f=>{
+  if(!f.name.endsWith('.csv')||f.size>10*1024*1024){Swal.fire('Error','File harus .csv dan maks 10 MB','error');return;}
+  auditLpseFile=f;
+  document.getElementById('lbl-audit-lpse').innerHTML=`<span class="file-name">✅ ${f.name}</span>`;
+  const btn=document.getElementById('btn-audit-lpse'); btn.disabled=false;
+});
 
 function parseCSV(text) {
   const norm = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
@@ -4362,6 +4432,96 @@ async function uploadPaguLpse() {
     loadLog();
   } catch(e){ Swal.fire('❌ Gagal',e.message,'error'); }
   finally { btn.disabled=false; }
+}
+
+// ============================================================
+// TOOL: Audit Gabungan vs LPSE (Kualitas Data > tab "Audit vs LPSE")
+// Upload CSV LPSE lalu sandingkan tiap kontrak dari kasus "1 kode RUP
+// dipakai banyak paket" ke kode_paket LPSE-nya — laporan pembanding saja,
+// tidak menulis balik ke data manapun. Lihat handleAuditGabunganLpse (code.gs).
+// ============================================================
+async function runAuditGabunganLpse() {
+  if(!auditLpseFile) return;
+  const allTahun = document.getElementById('chk-audit-lpse-alltahun').checked;
+  const periode  = getPeriode();
+  const tahun    = periode.split('-')[0];
+  const btn = document.getElementById('btn-audit-lpse'); btn.disabled = true;
+  try {
+    const rows = parseCSV(await auditLpseFile.text());
+    if(!rows.length || (!('kd_nontender' in rows[0]) && !('kd_tender' in rows[0])) || !('kd_rup' in rows[0]))
+      throw new Error('Kolom "kd_nontender" atau "kd_tender", plus "kd_rup", wajib ada di CSV.');
+    const chunks=[]; for(let i=0;i<rows.length;i+=CHUNK_SIZE) chunks.push(rows.slice(i,i+CHUNK_SIZE));
+    const sid=(crypto.randomUUID?.())||('sid-'+Date.now());
+    document.getElementById('prog-audit-lpse-wrap').classList.remove('hidden');
+    let processed=0, lastRes=null;
+    for(let ci=0; ci<chunks.length; ci++){
+      document.getElementById('prog-audit-lpse-lbl').textContent = chunks.length>1?`Chunk ${ci+1}/${chunks.length}...`:'Memproses...';
+      const res = await api({action:'auditGabunganLpse', token:S.adminToken,
+        periode: allTahun?null:periode, tahun: allTahun?tahun:null,
+        data:chunks[ci], nama_file:auditLpseFile.name, session_id:sid,
+        chunk_index:ci, total_chunks:chunks.length, total_records:rows.length});
+      if(res.status!=='success') throw new Error(res.message);
+      lastRes=res; processed+=chunks[ci].length;
+      const pv=Math.round(processed/rows.length*100);
+      document.getElementById('prog-audit-lpse-fill').style.width=pv+'%';
+      document.getElementById('prog-audit-lpse-pct').textContent=pv+'%';
+    }
+    document.getElementById('prog-audit-lpse-lbl').textContent='✅ Selesai';
+    renderAuditLpseReport(lastRes.data);
+    auditLpseFile=null; document.getElementById('lbl-audit-lpse').textContent='Klik atau drag file CSV di sini';
+    document.getElementById('prog-audit-lpse-wrap').classList.add('hidden'); btn.disabled=true;
+  } catch(e){ Swal.fire('❌ Audit Gagal', e.message, 'error'); }
+  finally { btn.disabled=false; }
+}
+
+const AUDIT_LPSE_VERDICT = {
+  cocok:           {icon:'✅', label:'Cocok',            cls:'b-green'},
+  kode_rup_beda:   {icon:'❌', label:'Kode RUP Beda',    cls:'b-red'},
+  tidak_ditemukan: {icon:'⚠️', label:'Tidak Ditemukan', cls:'b-yellow'},
+};
+
+function renderAuditLpseReport(data) {
+  const { ringkasan, hasil } = data || {};
+  document.getElementById('audit-lpse-result').classList.remove('hidden');
+
+  document.getElementById('audit-lpse-kpi').innerHTML = `
+    <div class="scard"><div class="scard-label">Grup Kode RUP Diperiksa</div><div class="scard-value">${fmt(ringkasan.total_grup)}</div></div>
+    <div class="scard"><div class="scard-label" style="color:#EF4444">Perlu Ditinjau</div><div class="scard-value" style="color:#EF4444">${fmt(ringkasan.grup_perlu_dicek)}</div></div>
+    <div class="scard"><div class="scard-label" style="color:#16A34A">Aman (Semua Cocok)</div><div class="scard-value" style="color:#16A34A">${fmt(ringkasan.grup_aman)}</div></div>
+  `;
+
+  const tbody = document.querySelector('#t-audit-lpse tbody');
+  if (!hasil.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Tidak ada kode RUP dgn >1 kontrak pada periode ini.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = hasil.map((h, i) => {
+    const rincian = h.kontrak.map(k => {
+      const v = AUDIT_LPSE_VERDICT[k.verdict];
+      const detailLpse = k.lpse
+        ? `LPSE: ${k.lpse.nama_penyedia||'—'} · ${IDRf(k.lpse.nilai_kontrak)}${k.lpse.kd_rup!==h.kode_rup?` · kd_rup LPSE: <b>${k.lpse.kd_rup}</b>`:''}`
+        : 'Tidak ada di CSV LPSE yang diupload';
+      return `
+        <div style="padding:6px 0;border-bottom:1px dashed #E2E8F0">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+            <span class="mono" style="font-size:11px">${k.kode_paket}</span>
+            <span class="badge ${v.cls}" style="font-size:10px">${v.icon} ${v.label}</span>
+          </div>
+          <div style="font-size:11px;color:#64748B;margin-top:2px">App: ${IDRf(k.nilai_kontrak_app)} · ${k.status_paket_app||'—'}</div>
+          <div style="font-size:11px;color:#94A3B8">${detailLpse}</div>
+        </div>`;
+    }).join('');
+    return `
+      <tr>
+        <td>${i+1}</td>
+        <td><a href="#sandingan" class="audit-card-kode" onclick="setTimeout(()=>{document.getElementById('sand-search').value='${h.kode_rup}';applySand();},50)">${h.kode_rup}</a></td>
+        <td>${h.nama_paket_rup || '<span style="color:#CBD5E1">(tidak diketahui)</span>'}</td>
+        <td>${h.nama_satker || '—'}</td>
+        <td class="text-center">${h.status_grup==='aman' ? '<span class="badge b-green">✅ Aman</span>' : '<span class="badge b-red">⚠ Perlu Dicek</span>'}</td>
+        <td class="text-right">${h.jumlah_paket}</td>
+        <td>${rincian}</td>
+      </tr>`;
+  }).join('');
 }
 
 async function verifyToken() {
