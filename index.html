@@ -1706,6 +1706,9 @@ thead .col-sep-h{
           <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:#64748B;cursor:pointer">
             <input type="checkbox" id="chk-pagu-overwrite" style="cursor:pointer"/> Timpa pagu manual yang sudah pernah diisi
           </label>
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;color:#64748B;cursor:pointer">
+            <input type="checkbox" id="chk-pagu-allperiode" style="cursor:pointer"/> Sinkron ke <b>semua periode/bulan</b> sekaligus (bukan cuma periode yang lagi dipilih)
+          </label>
           <div class="progress-wrap hidden" id="prog-pagu-wrap">
             <div class="progress-label"><span id="prog-pagu-lbl">Mengunggah...</span><span id="prog-pagu-pct">0%</span></div>
             <div class="progress-bar"><div class="progress-fill" id="prog-pagu-fill" style="width:0%"></div></div>
@@ -2028,11 +2031,12 @@ thead .col-sep-h{
                 <th>Nama Paket</th>
                 <th>Nama Satker</th>
                 <th class="text-right">Pagu Manual</th>
+                <th>Sumber</th>
                 <th>Diperbarui</th>
                 <th class="text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody><tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
+            <tbody><tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual.</p></div></td></tr></tbody>
           </table>
           </div>
         </div>
@@ -3640,12 +3644,19 @@ async function loadKualitas() {
 }
 
 function renderManualPaguTable(list) {
+  // Baris hasil sinkron CSV LPSE ditandai updated_by = "Import LPSE (periode)"
+  // (lihat applyPaguLookupToPeriode di code.gs) — dibedakan dari input manual
+  // admin lewat badge supaya kelihatan mana yang otomatis vs manual.
+  const sumberBadge = by => (by||'').startsWith('Import LPSE')
+    ? `<span class="badge b-blue" title="${by}">↻ ${by}</span>`
+    : `<span class="badge b-gray">✍ Manual</span>`;
   document.querySelector('#t-manual-pagu tbody').innerHTML = list.length
     ? list.map(r => `<tr>
         <td style="font-size:11px;font-family:monospace;color:#2563EB">${r.kode_paket||'—'}</td>
         <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.nama_paket||''}">${r.nama_paket||'—'}</td>
         <td style="font-size:12px">${r.nama_satker||'—'}</td>
         <td style="font-size:12px;text-align:right;font-weight:700;color:#1E3A5F">${IDRf(r.pagu_manual)}</td>
+        <td style="font-size:11px">${sumberBadge(r.updated_by)}</td>
         <td style="font-size:11px;color:#94A3B8">${r.updated_at?new Date(r.updated_at).toLocaleString('id-ID'):'-'}</td>
         <td style="text-align:center">
           <button onclick='openPaguModal(${JSON.stringify({kode_paket:r.kode_paket,nama_paket:r.nama_paket,nama_satker:r.nama_satker,pagu_manual:r.pagu_manual})})'
@@ -3658,7 +3669,7 @@ function renderManualPaguTable(list) {
           </button>
         </td>
       </tr>`).join('')
-    : `<tr><td colspan="6"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual yang diinput.</p></div></td></tr>`;
+    : `<tr><td colspan="7"><div class="empty-state" style="padding:16px"><p>Belum ada pagu manual yang diinput.</p></div></td></tr>`;
 }
 
 // ── Modal Pagu Manual ──────────────────────────────────────
@@ -4312,7 +4323,8 @@ async function uploadReal() {
 
 async function uploadPaguLpse() {
   if(!paguFile)return;
-  const periode=v('up-tahun')+'-'+v('up-bulan');
+  const allPeriode=document.getElementById('chk-pagu-allperiode').checked;
+  const periode=allPeriode?null:(v('up-tahun')+'-'+v('up-bulan'));
   const overwrite=document.getElementById('chk-pagu-overwrite').checked;
   const btn=document.getElementById('btn-pagu'); btn.disabled=true;
   try {
@@ -4324,8 +4336,8 @@ async function uploadPaguLpse() {
     document.getElementById('prog-pagu-wrap').classList.remove('hidden');
     let processed=0, lastRes=null;
     for(let ci=0;ci<chunks.length;ci++){
-      document.getElementById('prog-pagu-lbl').textContent = chunks.length>1?`Chunk ${ci+1}/${chunks.length}...`:'Memproses...';
-      const res=await api({action:'importPaguLpse', token:S.adminToken, periode, data:chunks[ci],
+      document.getElementById('prog-pagu-lbl').textContent = allPeriode?`Sinkron semua periode... (chunk ${ci+1}/${chunks.length})`:(chunks.length>1?`Chunk ${ci+1}/${chunks.length}...`:'Memproses...');
+      const res=await api({action:'importPaguLpse', token:S.adminToken, periode, all_periode:allPeriode, data:chunks[ci],
         nama_file:paguFile.name, session_id:sid, chunk_index:ci, total_chunks:chunks.length,
         total_records:rows.length, overwrite});
       if(res.status!=='success') throw new Error(res.message);
@@ -4336,10 +4348,13 @@ async function uploadPaguLpse() {
     }
     document.getElementById('prog-pagu-lbl').textContent='✅ Selesai';
     const d=lastRes?.data||{};
-    Swal.fire('✅ Isi Pagu Selesai',
+    const rincianPeriode=(d.per_periode||[]).filter(x=>x.filled>0)
+      .map(x=>`<tr><td style="padding:2px 8px 2px 0">${x.periode}</td><td style="text-align:right;font-weight:700">${x.filled}</td></tr>`).join('');
+    Swal.fire('✅ '+(allPeriode?'Sinkron Semua Periode Selesai':'Isi Pagu Selesai'),
       `Terisi: <b>${d.filled??0}</b> paket<br>` +
       `Sudah ada pagu manual: <b>${d.skipped_exists??0}</b> · Tidak ketemu di CSV: <b>${d.skipped_no_match??0}</b><br>` +
-      `Total unmatched periode ini: <b>${d.total_unmatched??'—'}</b>`,
+      `Total unmatched: <b>${d.total_unmatched??'—'}</b>` +
+      (rincianPeriode ? `<hr style="margin:8px 0"><table style="margin:0 auto;font-size:12.5px">${rincianPeriode}</table>` : ''),
       'success');
     paguFile=null; document.getElementById('lbl-pagu').textContent='Klik atau drag file CSV di sini';
     document.getElementById('prog-pagu-wrap').classList.add('hidden'); btn.disabled=true;
