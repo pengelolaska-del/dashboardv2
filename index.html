@@ -5865,7 +5865,9 @@ async function loadSandingan(page=1) {
     document.getElementById('sand-kpi-berjalan-tx').textContent = fmt(st.transaksi_berjalan || 0);
     document.getElementById('sand-kpi-transaksi-total').textContent = fmt(st.transaksi_total || 0);
 
-    const pct = n => d.total > 0 ? (n/d.total*100).toFixed(1)+'%' : '—';
+    // Penyebut = total paket RUP murni, bukan d.total (yg ikut baris orphan)
+    const totalRup = st.total_paket_rup || 0;
+    const pct = n => totalRup > 0 ? (n/totalRup*100).toFixed(1)+'%' : '—';
     document.getElementById('sand-kpi-selesai-pct').textContent  = pct(st.selesai || 0);
     document.getElementById('sand-kpi-berjalan-pct').textContent = pct(st.sedang_berjalan || 0);
     document.getElementById('sand-kpi-belum-pct').textContent    = pct(st.belum_berproses || 0);
