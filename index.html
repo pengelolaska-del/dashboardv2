@@ -656,11 +656,12 @@ thead .col-sep-h{
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
             <div class="combo">
-              <input type="text" class="combo-search" id="rup-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+              <input type="text" class="combo-search" id="rup-satker-q" placeholder="Ketik untuk cari satuan kerja (bisa pilih lebih dari satu)..." autocomplete="off"
                      onfocus="comboOpen('rup-satker')" oninput="comboFilter('rup-satker')" onblur="comboBlurClose('rup-satker')">
               <input type="hidden" id="rup-satker">
               <div class="combo-list hidden" id="rup-satker-list"></div>
             </div>
+            <div class="combo-chips" id="rup-satker-chips"></div>
           </div>
           <div class="fld">
             <label>Cara Pengadaan</label>
@@ -826,11 +827,12 @@ thead .col-sep-h{
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
             <div class="combo">
-              <input type="text" class="combo-search" id="real-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+              <input type="text" class="combo-search" id="real-satker-q" placeholder="Ketik untuk cari satuan kerja (bisa pilih lebih dari satu)..." autocomplete="off"
                      onfocus="comboOpen('real-satker')" oninput="comboFilter('real-satker')" onblur="comboBlurClose('real-satker')">
               <input type="hidden" id="real-satker">
               <div class="combo-list hidden" id="real-satker-list"></div>
             </div>
+            <div class="combo-chips" id="real-satker-chips"></div>
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
@@ -946,11 +948,12 @@ thead .col-sep-h{
           <div class="fld" style="grid-column:span 2">
             <label>Satuan Kerja</label>
             <div class="combo">
-              <input type="text" class="combo-search" id="efi-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+              <input type="text" class="combo-search" id="efi-satker-q" placeholder="Ketik untuk cari satuan kerja (bisa pilih lebih dari satu)..." autocomplete="off"
                      onfocus="comboOpen('efi-satker')" oninput="comboFilter('efi-satker')" onblur="comboBlurClose('efi-satker')">
               <input type="hidden" id="efi-satker">
               <div class="combo-list hidden" id="efi-satker-list"></div>
             </div>
+            <div class="combo-chips" id="efi-satker-chips"></div>
           </div>
           <div class="fld">
             <label>Sumber Transaksi</label>
@@ -1834,11 +1837,12 @@ thead .col-sep-h{
           <div class="fld" style="grid-column:span 2;max-width:420px">
             <label>Satuan Kerja / OPD</label>
             <div class="combo">
-              <input type="text" class="combo-search" id="kual-satker-q" placeholder="Ketik untuk cari satuan kerja..." autocomplete="off"
+              <input type="text" class="combo-search" id="kual-satker-q" placeholder="Ketik untuk cari satuan kerja (bisa pilih lebih dari satu)..." autocomplete="off"
                      onfocus="comboOpen('kual-satker')" oninput="comboFilter('kual-satker')" onblur="comboBlurClose('kual-satker')">
               <input type="hidden" id="kual-satker">
               <div class="combo-list hidden" id="kual-satker-list"></div>
             </div>
+            <div class="combo-chips" id="kual-satker-chips"></div>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
@@ -2665,9 +2669,9 @@ function fillSelect(selId, opts, curVal, firstLabel='Semua') {
 const COMBO_DATA = {};   // { [baseId]: [{k, n}, ...] }
 const COMBO_HI   = {};
 // Combobox yang mendukung pilih BANYAK satker (hidden input berisi kode dipisah koma).
-const COMBO_MULTI   = { 'sand-satker': true };
+const COMBO_MULTI   = { 'rup-satker': true, 'real-satker': true, 'sand-satker': true, 'efi-satker': true, 'kual-satker': true };
 const COMBO_SEL     = {};   // { [baseId]: Set<kode> }
-const COMBO_APPLIED = {};   // nilai hidden terakhir yang sudah diterapkan ke data   // index item yang sedang di-highlight (untuk navigasi keyboard)
+const COMBO_APPLIED = {};   // nilai hidden terakhir yang sudah diterapkan ke data
 
 function comboEsc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2933,6 +2937,7 @@ function filterRupCara(cara) {
 }
 
 function applyRUP() {
+  COMBO_APPLIED['rup-satker'] = v('rup-satker');
   S.rupF = {
     satker: v('rup-satker'), cara: v('rup-cara'), metode: v('rup-metode'),
     jenis: v('rup-jenis'), sumber: v('rup-sumber'),
@@ -3019,6 +3024,7 @@ async function loadReal(page=1) {
 }
 
 function applyReal() {
+  COMBO_APPLIED['real-satker'] = v('real-satker');
   S.realF = {
     satker: v('real-satker'), transaksi: v('real-transaksi'), sumber: v('real-sumber'),
     metode: v('real-metode'), status: v('real-status'), jenis: v('real-jenis'),
@@ -3039,6 +3045,7 @@ function pageReal(d) { loadReal(S.realPage + d); }
 // EFISIENSI FILTER
 // ============================================================
 function applyEfi() {
+  COMBO_APPLIED['efi-satker'] = v('efi-satker');
   S.efiF = {
     satker:   v('efi-satker')    || undefined,
     transaksi:v('efi-transaksi') || undefined,
@@ -3567,6 +3574,7 @@ let _manualPaguMap = {};
 let KUAL_F = { sumber_transaksi:'', metode_pengadaan:'', jenis_pengadaan:'', metode_pengadaan_rup:'', jenis_pengadaan_rup:'', kode_satker:'' };
 
 function applyKualitas() {
+  COMBO_APPLIED['kual-satker'] = v('kual-satker');
   KUAL_F = {
     sumber_transaksi:     v('kual-real-transaksi'),
     metode_pengadaan:     v('kual-real-metode'),
