@@ -346,6 +346,11 @@ tr.row-override{
   padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;letter-spacing:.02em;
   background:#F3E8FF;color:#7E22CE;border:1px solid #E9D5FF;text-transform:uppercase;
 }
+.sand-final-tag{
+  display:inline-flex;align-items:center;gap:3px;margin-left:5px;cursor:help;
+  padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;letter-spacing:.02em;
+  background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA;white-space:nowrap;
+}
 .btn-edit-status{
   display:inline-flex;align-items:center;justify-content:center;
   width:22px;height:22px;margin-left:6px;border-radius:6px;border:1px solid #E2E8F0;
@@ -1487,6 +1492,15 @@ thead .col-sep-h{
         <span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#B45309">⏳ HPS OPD</span>
         Pagu paket Sedang Berjalan masih HPS OPD (indikatif) — efisiensi baru dihitung setelah paket Selesai
       </span>
+    </div>
+
+    <!-- Notifikasi status dipertahankan Selesai -->
+    <div id="sand-status-notice" style="display:none;margin:10px 0;padding:10px 14px;font-size:12px;color:#9A3412;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div id="sand-status-notice-text" style="line-height:1.5"></div>
+        <button type="button" class="btn btn-ghost" style="font-size:11px;padding:3px 10px;white-space:nowrap" onclick="toggleSandStatusNotice()" id="sand-status-notice-btn">Lihat daftar</button>
+      </div>
+      <div id="sand-status-notice-list" style="display:none;margin-top:10px;max-height:260px;overflow:auto;background:#fff;border:1px solid #FED7AA;border-radius:8px"></div>
     </div>
 
     <!-- KPI Summary -->
@@ -5667,6 +5681,12 @@ function sandStatusBadge(r) {
   else if (st === 'Campuran')         badge = `<span class="sand-status sand-berjalan" title="Kontrak-kontrak dalam grup ini statusnya belum seragam — lihat rincian per kontrak di kolom Penyedia">🔀 Campuran</span>`;
   else                                badge = `<span class="sand-status sand-belum">⏳ ${st||'Belum Berproses'}</span>`;
 
+  // Tag "Final" — status Selesai dipertahankan dari bulan lalu
+  if (r.status_dipertahankan) {
+    const sd = r.status_dipertahankan;
+    badge += `<span class="sand-final-tag" title="${('Sudah Selesai pada data ' + periodeLabel(sd.dari_periode) + '. Di data bulan ini tercatat: ' + (sd.status_sekarang || 'belum selesai') + '. Tetap dihitung Selesai.').replace(/"/g,'&quot;')}">↩ Selesai ${periodeLabel(sd.dari_periode).split(' ')[0]}</span>`;
+  }
+
   // Tag "diubah manual" — hanya muncul kalau baris ini punya override admin
   if (r.is_manual_status) badge += `<span class="sand-override-tag" title="${String(r.keterangan_override||'').replace(/"/g,'&quot;')}">🖊️ Manual</span>`;
 
@@ -5679,6 +5699,44 @@ function sandStatusBadge(r) {
       onclick='openStatusOverrideModal(${JSON.stringify(r).replace(/'/g,"&#39;")},"sandingan")'>✎</button>`;
   }
   return badge;
+}
+
+// ── Banner paket yang statusnya "mundur" dibanding bulan lalu ──
+function toggleSandStatusNotice() {
+  const list = document.getElementById('sand-status-notice-list');
+  const btn  = document.getElementById('sand-status-notice-btn');
+  const open = list.style.display === 'none';
+  list.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? 'Sembunyikan' : 'Lihat daftar';
+}
+function renderSandStatusNotice(n, periode) {
+  const box = document.getElementById('sand-status-notice');
+  if (!box) return;
+  const a = (n && n.dipertahankan) || [], b = (n && n.hilang) || [];
+  if (!periode || (!a.length && !b.length)) { box.style.display = 'none'; return; }
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const lalu = periodeLabel(n.periode_lalu), kini = periodeLabel(periode);
+  const parts = [];
+  if (a.length) parts.push(`<b>${a.length} paket</b> sudah <b>Selesai</b> pada data ${esc(lalu)}, tetapi di data ${esc(kini)} tercatat berjalan lagi. Paket ini <b>tetap dihitung Selesai</b> di angka bawah.`);
+  if (b.length) parts.push(`<b>${b.length} paket</b> Selesai pada data ${esc(lalu)} <b>tidak ada</b> di data ${esc(kini)} dan <b>tidak ikut dihitung</b>.`);
+  document.getElementById('sand-status-notice-text').innerHTML = '⚠️ ' + parts.join('<br>');
+  const rowsHtml = [
+    ...a.map(x => ({ t: 'Status mundur', c: '#C2410C', x })),
+    ...b.map(x => ({ t: 'Hilang dari data', c: '#B91C1C', x })),
+  ].map(({ t, c, x }) => `<tr>
+      <td style="padding:5px 8px;font-weight:700;color:${c};white-space:nowrap">${t}</td>
+      <td style="padding:5px 8px">${esc(x.nama_satker)}</td>
+      <td style="padding:5px 8px;min-width:200px">${esc((x.nama_paket||'').slice(0,90))}</td>
+      <td class="mono" style="padding:5px 8px;color:#2563EB">${esc(x.kode_rup || x.kode_paket)}</td>
+      <td style="padding:5px 8px;color:#64748B">${x.status_sekarang ? esc(x.status_sekarang) : '—'}</td>
+      <td class="text-right mono" style="padding:5px 8px">${IDRf(x.nilai_kontrak || 0)}</td>
+    </tr>`).join('');
+  document.getElementById('sand-status-notice-list').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:#FFEDD5;text-align:left">
+      <th style="padding:5px 8px">Keterangan</th><th style="padding:5px 8px">Satker / OPD</th><th style="padding:5px 8px">Nama Paket</th>
+      <th style="padding:5px 8px">Kode</th><th style="padding:5px 8px">Status di data ${esc(kini)}</th><th style="padding:5px 8px;text-align:right">Nilai Kontrak</th>
+    </tr></thead><tbody>${rowsHtml}</tbody></table>`;
+  box.style.display = 'block';
 }
 
 // ── Terapkan filter dan load ────────────────────────────────
@@ -6004,6 +6062,8 @@ async function loadSandingan(page=1) {
       st.pagu_berjalan > 0
         ? `Indikatif ${st.persen_efisiensi_berjalan.toFixed(2)}% • belum final`
         : 'Tidak ada paket berjalan';
+
+    renderSandStatusNotice(d.notif_status, bulan ? tahun + '-' + bulan : '');
 
     // ── Dropdown Satuan Kerja & Sumber Dana (populate sekali) ──
     if (d.enums?.satker && !COMBO_DATA['sand-satker']) {
