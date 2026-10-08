@@ -709,7 +709,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Nama Paket</label>
-            <input id="rup-nama" type="text" placeholder="Cari nama paket..." onkeydown="if(event.key==='Enter')applyRUP()"/>
+            <input id="rup-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applyRUP()"/>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-primary" onclick="applyRUP()">Terapkan</button>
@@ -867,7 +867,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Cari Nama Paket</label>
-            <input id="real-nama" type="text" placeholder="Nama paket..." onkeydown="if(event.key==='Enter')applyReal()"/>
+            <input id="real-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applyReal()"/>
           </div>
           <div class="fld">
             <label>Cari Kode Paket</label>
@@ -1451,7 +1451,7 @@ thead .col-sep-h{
           <!-- Search -->
           <div class="fld" style="grid-column:span 2">
             <label>Cari Nama Paket / Kode RUP</label>
-            <input id="sand-search" type="text" placeholder="Ketik nama paket atau kode RUP..." onkeydown="if(event.key==='Enter')applySand()"/>
+            <input id="sand-search" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket / kode RUP (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applySand()"/>
           </div>
         </div>
         <!-- Filter kasus "1 kode RUP dipakai banyak kontrak" — dikombinasikan
