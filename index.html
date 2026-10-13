@@ -709,7 +709,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Nama Paket</label>
-            <input id="rup-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applyRUP()"/>
+            <input id="rup-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (koma = atau; awalan - = kecualikan: keamanan, -rapat)" onkeydown="if(event.key==='Enter')applyRUP()"/>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-primary" onclick="applyRUP()">Terapkan</button>
@@ -867,7 +867,7 @@ thead .col-sep-h{
           </div>
           <div class="fld">
             <label>Cari Nama Paket</label>
-            <input id="real-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applyReal()"/>
+            <input id="real-nama" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket (koma = atau; awalan - = kecualikan: keamanan, -rapat)" onkeydown="if(event.key==='Enter')applyReal()"/>
           </div>
           <div class="fld">
             <label>Cari Kode Paket</label>
@@ -1451,7 +1451,7 @@ thead .col-sep-h{
           <!-- Search -->
           <div class="fld" style="grid-column:span 2">
             <label>Cari Nama Paket / Kode RUP</label>
-            <input id="sand-search" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket / kode RUP (pisahkan koma: outsourcing, alih daya)" onkeydown="if(event.key==='Enter')applySand()"/>
+            <input id="sand-search" type="text" title="Pisahkan dengan koma untuk mencari beberapa kata" placeholder="Nama paket / kode RUP (koma = atau; awalan - = kecualikan: keamanan, -rapat)" onkeydown="if(event.key==='Enter')applySand()"/>
           </div>
         </div>
         <!-- Filter kasus "1 kode RUP dipakai banyak kontrak" — dikombinasikan
@@ -4912,21 +4912,30 @@ async function fetchDetailData(type) {
       jenis_pengadaan:f.jenis_pengadaan||undefined, status_paket:f.status_paket||undefined,
       sumber_dana:f.sumber_dana||undefined, sumber_transaksi:f.sumber_transaksi||undefined,
       search:f.search||undefined,
+      hanya_gabungan:f.hanya_gabungan||undefined,
+      sort_by:SAND.sort.by||undefined, sort_dir:SAND.sort.dir||undefined,   // urutan sama dgn tabel
       page:1, per_page:99999,
     });
     if (res.status !== 'success') throw new Error(res.message);
     const items = res.data?.items || [];
-    headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Sumber Transaksi','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi'];
+    headers=['Kode Satker','Nama Satker','Nama Paket RUP','Kode RUP','Metode Pengadaan','Jenis Pengadaan','Sumber Dana','Sumber Transaksi','Pagu RUP','Status Realisasi','Nama Penyedia','Nilai Kontrak','Efisiensi','Keterangan'];
     paguColIdx = 8;
-    rows = items.map(r => [
-      r.kode_satker, r.nama_satker, r.nama_paket_rup, r.kode_rup,
-      r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
-      r.sumber_dana, r.sumber_transaksi||'',
-      r.pagu||0,
-      r.status_realisasi||'Belum Terealisasi', r.nama_penyedia||'',
-      r.nilai_kontrak||0,
-      r.ada_realisasi ? (r.pagu||0)-(r.nilai_kontrak||0) : '',
-    ]);
+    rows = items.map(r => {
+      const m = sandMetrik(r);
+      return [
+        r.kode_satker, r.nama_satker,
+        r.is_unmatched ? (r.nama_paket_realisasi || '') : r.nama_paket_rup,      // baris belum match: pakai nama paket realisasi
+        r.is_unmatched ? '(belum match)' : r.kode_rup,
+        r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
+        r.sumber_dana, r.sumber_transaksi||'',
+        m.paguDiketahui ? m.paguTampil : 'Pagu belum diketahui',                 // sama dgn kolom Pagu di tabel (total gabungan)
+        r.status_realisasi||'Belum Terealisasi',
+        r.is_realisasi_gabungan && r.realisasi_list ? r.realisasi_list.map(x => x.nama_penyedia).filter(Boolean).join(' | ') : (r.nama_penyedia||''),
+        r.nilai_kontrak||0,
+        m.efi !== null ? m.efi : (r.status_realisasi === 'Sedang Berjalan' ? 'Menunggu Selesai' : ''),   // efisiensi hanya utk paket Selesai
+        sandKeteranganCSV(r, m),
+      ];
+    });
     manualFlags = items.map(r => !!r.is_manual_pagu);
     filename=`Sandingan_RUP_${tahun}${bulan?'_'+bulan:''}.csv`;
   } else {
@@ -4939,7 +4948,7 @@ async function fetchDetailData(type) {
 }
 
 function exportRowsToCSV(headers, rows, filename) {
-  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
   a.download=filename; a.click();
 }
@@ -5475,6 +5484,31 @@ function renderRincianSatkerInline(kodeSatker) {
         </table>
       </div>
     </div>`;
+}
+
+// ── Angka per baris Sandingan: dipakai TABEL dan EXPORT CSV supaya selalu sama ──
+function sandMetrik(r) {
+  const hasReal = !!r.ada_realisasi;
+  const isSelesai = r.status_realisasi === 'Selesai';
+  const paguDiketahui = r.is_split_kontrak ? (Number(r.pagu) || 0) > 0 : (!r.is_unmatched || (r.pagu || 0) > 0);
+  const isSekunderGabungan = r.is_gabungan_kode_rup && !r.is_primary_gabungan;
+  const members = r.is_gabungan_kode_rup && Array.isArray(r.group_members) ? r.group_members : [];
+  const paguTampil = members.length ? (Number(r.pagu_efisiensi) || 0) : (Number(r.pagu) || 0);
+  const efi = (hasReal && isSelesai && paguDiketahui && !isSekunderGabungan)
+    ? (Number(r.pagu_efisiensi ?? r.pagu) || 0) - (Number(r.nilai_kontrak) || 0) : null;
+  return { paguDiketahui, paguTampil, efi, members };
+}
+function sandKeteranganCSV(r, m) {
+  const k = [];
+  if (m.members.length) k.push('Gabungan ' + (m.members.length + 1) + ' paket RUP: ' +
+    [r.kode_rup, ...m.members.map(x => x.kode_rup)].join(' + '));
+  if (r.is_realisasi_gabungan && r.realisasi_list) k.push(r.realisasi_list.length + ' kontrak');
+  if (r.status_dipertahankan) k.push('Status Selesai dipertahankan dari data ' + periodeLabel(r.status_dipertahankan.dari_periode) +
+    ' (data bulan ini: ' + (r.status_dipertahankan.status_sekarang || 'belum selesai') + ')');
+  if (r.is_unmatched) k.push('Belum match ke RUP');
+  if (r.is_manual_pagu) k.push('Pagu manual');
+  if (r.status_realisasi === 'Sedang Berjalan') k.push('Pagu masih HPS OPD (indikatif)');
+  return k.join('; ');
 }
 
 // ── Export CSV & Cetak PDF — mengikuti SAND_VIEW yang sedang aktif ────
@@ -6107,7 +6141,7 @@ async function loadSandingan(page=1) {
       const hasReal    = !!r.ada_realisasi;
       const isSelesai  = r.status_realisasi === 'Selesai';
       const isBerjalan = r.status_realisasi === 'Sedang Berjalan';
-      const paguDiketahui = r.is_split_kontrak ? (Number(r.pagu)||0) > 0 : (!r.is_unmatched || (r.pagu||0) > 0); // punya pagu asli, sudah diisi manual, atau (khusus split) sudah ketemu di data LPSE
+      const paguDiketahui = sandMetrik(r).paguDiketahui; // punya pagu asli, sudah diisi manual, atau (khusus split) sudah ketemu di data LPSE
       // Efisiensi murni HANYA dihitung utk paket berstatus "Selesai" (pagu &
       // nilai kontraknya sudah final). Paket "Sedang Berjalan" pagunya masih
       // HPS dari OPD (indikatif, belum tender/kontrak final) — jadi efisiensinya
@@ -6165,6 +6199,10 @@ async function loadSandingan(page=1) {
             ? `<div style="font-size:10px;color:#6366F1;margin-top:2px">
                  ↳ Real: ${r.nama_paket_realisasi}
                </div>`
+            : ''}
+          ${(r.kata_cocok && r.kata_cocok.length)
+            ? `<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px">${r.kata_cocok.map(k =>
+                `<span title="Ditemukan di: ${k.di}" style="font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;background:#EEF2FF;color:#4338CA;border:1px solid #C7D2FE">🔎 ${k.kata}</span>`).join('')}</div>`
             : ''}
         </td>
         <td class="col-koderup">${r.is_unmatched ? `<span style="color:#9A3412;font-style:italic" title="Kode paket realisasi: ${r.kode_paket||'—'} — tidak ada kode RUP yang cocok">— (belum match)</span>` : (r.kode_rup||'—')}</td>
