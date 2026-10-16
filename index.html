@@ -321,6 +321,7 @@ table.dt.dt-compact th,table.dt.dt-compact td{padding-left:8px;padding-right:8px
 .row-selesai    { background:#F0FDF4 }
 .row-berjalan   { background:#FFFBEB }
 .row-belum      { background:#fff }
+.row-kosong     { background:#F5F3FF }
 .row-dibatalkan { background:#FFF1F2 }
 
 /* Status indicator kolom sandingan */
@@ -331,6 +332,7 @@ table.dt.dt-compact th,table.dt.dt-compact td{padding-left:8px;padding-right:8px
 .sand-selesai   {background:#DCFCE7;color:#15803D}
 .sand-berjalan  {background:#FEF9C3;color:#A16207}
 .sand-belum     {background:#F1F5F9;color:#64748B}
+.sand-kosong    {background:#F5F3FF;color:#6D28D9}
 .sand-dibatalkan{background:#FEE2E2;color:#B91C1C}
 .sand-match     {background:#DBEAFE;color:#1D4ED8}
 
@@ -378,9 +380,9 @@ tr.row-override{
 
 /* Summary bar sandingan */
 .sand-summary{
-  display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px
+  display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px
 }
-@media(max-width:1000px){.sand-summary{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1200px){.sand-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px) {.sand-summary{grid-template-columns:repeat(2,1fr)}}
 .sand-scard{
   background:#fff;border:1px solid #E5E9F0;border-radius:10px;
@@ -391,6 +393,7 @@ tr.row-override{
 .sand-scard.run   {border-top-color:#CA8A04}
 .sand-scard.wait  {border-top-color:#94A3B8}
 .sand-scard.cancel{border-top-color:#DC2626}
+.sand-scard.empty{border-top-color:#7C3AED}
 .sand-scard-val{font-size:16px;font-weight:800;color:#0F1C2E;margin-top:2px}
 .sand-scard-pct{font-size:12.5px;color:#94A3B8;margin-top:1px}
 .sand-scard-lbl{font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.04em}
@@ -1431,7 +1434,8 @@ thead .col-sep-h{
               <option value="">Semua Status</option>
               <option value="Selesai">✅ Selesai</option>
               <option value="Sedang Berjalan">🔄 Sedang Berjalan</option>
-              <option value="Belum Berproses">⏳ Belum Berproses / Belum Terealisasi</option>
+              <option value="Belum Berproses">⏳ Belum Dilaksanakan (belum ada transaksi)</option>
+              <option value="Status Kosong">❔ Status Kosong (mis. Toko Daring)</option>
               <option value="Dibatalkan">❌ Dibatalkan</option>
             </select>
           </div>
@@ -1487,6 +1491,7 @@ thead .col-sep-h{
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#16A34A"></span>Sudah Dilaksanakan / Selesai</span>
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#CA8A04"></span>Sedang Berjalan</span>
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#CBD5E1"></span>Belum Dilaksanakan</span>
+      <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#7C3AED"></span>Status Kosong</span>
       <span class="sand-legend-item"><span class="sand-legend-dot" style="background:#DC2626"></span>Dibatalkan</span>
       <span class="sand-legend-item" style="border-left:1px solid #E2E8F0;padding-left:10px;margin-left:2px">
         <span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#FEF3C7;color:#B45309">⏳ HPS OPD</span>
@@ -1509,6 +1514,7 @@ thead .col-sep-h{
         <div class="sand-scard-lbl">Total Paket RUP</div>
         <div class="sand-scard-val" id="sand-kpi-total">—</div>
         <div class="sand-scard-pct" id="sand-kpi-pagu">—</div>
+        <div id="sand-kpi-rekon" style="font-size:10px;color:#64748B;margin-top:2px"></div>
         <div id="sand-kpi-unmatched-note" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ + <span id="sand-kpi-unmatched-n">0</span> transaksi realisasi belum match ke RUP (di luar angka ini)</div>
         <div style="font-size:10px;color:#64748B;margin-top:2px" title="Total baris di menu Realisasi utk periode yg sama — 1 paket RUP bisa mewakili banyak transaksi (lihat badge 🔗 di tabel), jadi angka ini bisa lebih besar dari Total Paket RUP di atas.">🔗 <span id="sand-kpi-transaksi-total">0</span> transaksi realisasi (sesuai menu Realisasi)</div>
       </div>
@@ -1530,6 +1536,13 @@ thead .col-sep-h{
         <div class="sand-scard-lbl">⏳ Belum Dilaksanakan</div>
         <div class="sand-scard-val" id="sand-kpi-belum">—</div>
         <div class="sand-scard-pct" id="sand-kpi-belum-pct">—</div>
+      </div>
+      <div class="sand-scard empty" title="Ada transaksi di data Realisasi tetapi statusnya kosong — umumnya Toko Daring. Bisa sedang berjalan, bisa juga sudah selesai.">
+        <div class="sand-scard-lbl">❔ Status Kosong</div>
+        <div class="sand-scard-val" id="sand-kpi-kosong">—</div>
+        <div class="sand-scard-pct" id="sand-kpi-kosong-pct">—</div>
+        <div style="font-size:10px;color:#64748B;margin-top:2px"><span id="sand-kpi-kosong-tx">0</span> transaksi · mis. Toko Daring</div>
+        <div id="sand-kpi-kosong-bm" style="display:none;font-size:10px;color:#9A3412;margin-top:2px">⚠ termasuk <span id="sand-kpi-kosong-bm-n">0</span> belum match RUP</div>
       </div>
       <div class="sand-scard cancel">
         <div class="sand-scard-lbl">❌ Dibatalkan</div>
@@ -1573,7 +1586,7 @@ thead .col-sep-h{
         <button class="sand-viewtab" id="sand-vt-rincian" onclick="setSandView('rincian')">🔍 Rincian Satker</button>
       </span>
       <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="btn btn-ghost" style="font-size:11.5px;padding:6px 12px" onclick="exportSandView()">⬇ Export CSV</button>
+        <button class="btn btn-ghost" style="font-size:11.5px;padding:6px 12px" onclick="exportSandView()">⬇ Export Excel</button>
         <button class="btn btn-ghost" style="font-size:11.5px;padding:6px 12px" onclick="printSandView()">🖨️ Cetak PDF</button>
         <button class="btn btn-ghost" onclick="rerunMatchingForPeriode()" title="Jalankan ulang mesin pencocokan RUP ↔ Realisasi untuk periode ini (perlu login admin)">
           ⚙ Jalankan Ulang Matching
@@ -4928,11 +4941,11 @@ async function fetchDetailData(type) {
         r.is_unmatched ? '(belum match)' : r.kode_rup,
         r.metode_pengadaan_rup||r.metode_pengadaan, r.jenis_pengadaan_rup||r.jenis_pengadaan,
         r.sumber_dana, r.sumber_transaksi||'',
-        m.paguDiketahui ? m.paguTampil : 'Pagu belum diketahui',                 // sama dgn kolom Pagu di tabel (total gabungan)
-        r.status_realisasi||'Belum Terealisasi',
+        m.paguDiketahui ? m.paguTampil : '',                                      // angka murni; alasannya ada di kolom Keterangan
+        r.status_realisasi ? (['Selesai','Sedang Berjalan','Dibatalkan','Campuran'].includes(r.status_realisasi) ? r.status_realisasi : 'Status Kosong') : 'Belum Terealisasi',
         r.is_realisasi_gabungan && r.realisasi_list ? r.realisasi_list.map(x => x.nama_penyedia).filter(Boolean).join(' | ') : (r.nama_penyedia||''),
-        r.nilai_kontrak||0,
-        m.efi !== null ? m.efi : (r.status_realisasi === 'Sedang Berjalan' ? 'Menunggu Selesai' : ''),   // efisiensi hanya utk paket Selesai
+        Number(r.nilai_kontrak)||0,
+        m.efi !== null ? m.efi : '',                                              // efisiensi hanya utk paket Selesai
         sandKeteranganCSV(r, m),
       ];
     });
@@ -4947,10 +4960,44 @@ async function fetchDetailData(type) {
   return {headers, rows, filename, manualFlags, paguColIdx};
 }
 
+// Export tabel ke file Excel (.xlsx). Dibuat langsung sbg XLSX (bukan CSV) supaya:
+//  - kolom angka (Pagu, Nilai Kontrak, Efisiensi, dst) tersimpan sbg ANGKA -> bisa dijumlah/di-pivot
+//  - kode satker "5.03.5.04.0.00.01.0000" & kode RUP tetap TEKS (tidak diubah Excel jadi angka/tanggal)
+// Nama fungsi dipertahankan agar semua pemanggil lama tetap jalan.
+const KOLOM_ANGKA_RE = /pagu|nilai|efisiensi|total|jumlah/i;
 function exportRowsToCSV(headers, rows, filename) {
-  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=filename; a.click();
+  const isNum = s => typeof s === 'string' && /^-?\d+(\.\d+)?$/.test(s.trim());
+  const data = rows.map(r => r.map((v, i) => {
+    if (v == null) return '';
+    if (KOLOM_ANGKA_RE.test(headers[i] || '') && isNum(v)) return Number(v);   // angka yg terkirim sbg teks
+    return v;
+  }));
+  if (typeof XLSX === 'undefined') {            // CDN SheetJS gagal dimuat -> cadangan CSV (angka tanpa tanda kutip)
+    const q = v => typeof v === 'number' ? String(v) : '"' + String(v).replace(/"/g, '""') + '"';
+    const csv = [headers.map(q), ...data.map(r => r.map(q))].map(r => r.join(',')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = filename; a.click(); return;
+  }
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);       // number -> sel angka, string -> sel teks
+  const ref = XLSX.utils.decode_range(ws['!ref']);
+  const lebar = [];
+  for (let c = ref.s.c; c <= ref.e.c; c++) {
+    let maxLen = String(headers[c] || '').length;
+    for (let r = ref.s.r + 1; r <= Math.min(ref.e.r, 300); r++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell) maxLen = Math.max(maxLen, String(cell.v).length);
+    }
+    for (let r = ref.s.r + 1; r <= ref.e.r; r++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (cell && cell.t === 'n') cell.z = '#,##0';
+    }
+    lebar.push({ wch: Math.min(Math.max(maxLen + 2, 10), 60) });
+  }
+  ws['!cols'] = lebar;
+  ws['!autofilter'] = { ref: ws['!ref'] };
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, filename.replace(/\.csv$/i, '') + '.xlsx');
 }
 
 // Export CSV multi-section (dipakai saat 1 file perlu memuat beberapa
@@ -5506,8 +5553,9 @@ function sandKeteranganCSV(r, m) {
   if (r.status_dipertahankan) k.push('Status Selesai dipertahankan dari data ' + periodeLabel(r.status_dipertahankan.dari_periode) +
     ' (data bulan ini: ' + (r.status_dipertahankan.status_sekarang || 'belum selesai') + ')');
   if (r.is_unmatched) k.push('Belum match ke RUP');
+  if (!m.paguDiketahui) k.push('Pagu belum diketahui');
   if (r.is_manual_pagu) k.push('Pagu manual');
-  if (r.status_realisasi === 'Sedang Berjalan') k.push('Pagu masih HPS OPD (indikatif)');
+  if (r.status_realisasi === 'Sedang Berjalan') k.push('Pagu masih HPS OPD (indikatif); efisiensi menunggu paket Selesai');
   return k.join('; ');
 }
 
@@ -5516,7 +5564,7 @@ async function exportSandView() {
   const tahun = v('g-tahun'), bulan = v('g-bulan');
   const label = tahun + (bulan ? '_' + bulan : '');
   if (SAND_VIEW === 'detail') {
-    Swal.fire({title:'Menyiapkan CSV...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    Swal.fire({title:'Menyiapkan file Excel...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
     try {
       const { headers, rows, filename } = await fetchDetailData('sand');
       Swal.close();
@@ -5592,7 +5640,7 @@ async function showDetailPaket(type) {
       width: 1000,
       showCloseButton: true,
       showDenyButton: true,
-      denyButtonText: '⬇ Export CSV',
+      denyButtonText: '⬇ Export Excel',
       confirmButtonText: 'Tutup',
       confirmButtonColor: '#64748B',
       denyButtonColor: '#2563EB',
@@ -5703,7 +5751,7 @@ function sandStatusClass(st) {
   if (st === 'Sedang Berjalan') return 'row-berjalan';
   if (st === 'Dibatalkan')      return 'row-dibatalkan';
   if (st === 'Campuran')        return 'row-berjalan'; // gabungan >1 kontrak, statusnya belum seragam
-  return 'row-belum';
+  return 'row-kosong';
 }
 function sandStatusBadge(r) {
   const st = r.status_realisasi;
@@ -5713,7 +5761,7 @@ function sandStatusBadge(r) {
   else if (st === 'Sedang Berjalan')  badge = '<span class="sand-status sand-berjalan">🔄 Sedang Berjalan</span>';
   else if (st === 'Dibatalkan')       badge = '<span class="sand-status sand-dibatalkan">❌ Dibatalkan</span>';
   else if (st === 'Campuran')         badge = `<span class="sand-status sand-berjalan" title="Kontrak-kontrak dalam grup ini statusnya belum seragam — lihat rincian per kontrak di kolom Penyedia">🔀 Campuran</span>`;
-  else                                badge = `<span class="sand-status sand-belum">⏳ ${st||'Belum Berproses'}</span>`;
+  else                                badge = `<span class="sand-status sand-kosong" title="Ada transaksi di data Realisasi tetapi statusnya kosong (umumnya Toko Daring) — bisa sedang berjalan atau sudah selesai">❔ Status Kosong</span>`;
 
   // Tag "Final" — status Selesai dipertahankan dari bulan lalu
   if (r.status_dipertahankan) {
@@ -6027,6 +6075,7 @@ async function loadSandingan(page=1) {
     const d = res.data || {};
 
     SAND.total      = d.total      || 0;
+    SAND.summary    = d.summary    || {};
     SAND.totalPages = d.total_pages || 1;
 
     // ── KPI summary ──
@@ -6066,7 +6115,7 @@ async function loadSandingan(page=1) {
     // Penyebut = paket RUP + transaksi belum match RUP (Selesai + Berjalan + Belum + Batal = 100%)
     const totalRup = st.total_paket_semua || st.total_paket_rup || 0;
     const pct = n => totalRup > 0 ? (n/totalRup*100).toFixed(1)+'%' : '—';
-    [['selesai', st.selesai_belum_match], ['berjalan', st.berjalan_belum_match]].forEach(([k, n]) => {
+    [['selesai', st.selesai_belum_match], ['berjalan', st.berjalan_belum_match], ['kosong', st.kosong_belum_match]].forEach(([k, n]) => {
       const box = document.getElementById('sand-kpi-' + k + '-bm');
       if (!box) return;
       box.style.display = n > 0 ? '' : 'none';
@@ -6075,7 +6124,19 @@ async function loadSandingan(page=1) {
     document.getElementById('sand-kpi-selesai-pct').textContent  = pct(st.selesai || 0);
     document.getElementById('sand-kpi-berjalan-pct').textContent = pct(st.sedang_berjalan || 0);
     document.getElementById('sand-kpi-belum-pct').textContent    = pct(st.belum_berproses || 0);
+    document.getElementById('sand-kpi-kosong').textContent       = fmt(st.status_kosong || 0);
+    document.getElementById('sand-kpi-kosong-pct').textContent   = pct(st.status_kosong || 0);
+    document.getElementById('sand-kpi-kosong-tx').textContent    = fmt(st.transaksi_kosong || 0);
     document.getElementById('sand-kpi-batal-pct').textContent    = pct(st.dibatalkan || 0);
+
+    // Rekonsiliasi: 4 kartu status harus berjumlah sama dgn paket RUP + transaksi belum match
+    const rekon = document.getElementById('sand-kpi-rekon');
+    if (rekon) {
+      const sumStatus = (st.selesai||0) + (st.sedang_berjalan||0) + (st.belum_berproses||0) + (st.status_kosong||0) + (st.dibatalkan||0);
+      const totSemua  = st.total_paket_semua || st.total_paket_rup || 0;
+      rekon.innerHTML = `Σ status = <b>${fmt(sumStatus)}</b> (${fmt(st.total_paket_rup||0)} RUP + ${fmt(st.jumlah_unmatched||0)} belum match)` +
+        (sumStatus !== totSemua ? ` <span style="color:#B91C1C;font-weight:700">⚠ selisih ${fmt(sumStatus - totSemua)}</span>` : ' ✓');
+    }
 
     document.getElementById('sand-kpi-pagu-rp').textContent    = IDRf(st.total_pagu    || 0);
     document.getElementById('sand-kpi-kontrak-rp').textContent  = IDRf(st.total_kontrak || 0);
@@ -6115,7 +6176,7 @@ async function loadSandingan(page=1) {
     const to   = Math.min(page*SAND.perPage, SAND.total);
     const pgTxt = `Hal ${page} / ${SAND.totalPages}`;
     document.getElementById('sand-tbl-info').textContent =
-      SAND.total ? `Menampilkan ${fmt(from)}–${fmt(to)} dari ${fmt(SAND.total)} paket RUP` : 'Tidak ada data';
+      SAND.total ? `Menampilkan ${fmt(from)}–${fmt(to)} dari ${fmt(SAND.total)} paket RUP` + (SAND.summary && SAND.summary.total_paket_semua > SAND.total ? ` · ${fmt(SAND.summary.total_paket_semua - SAND.total)} kode RUP anggota gabungan tampil di baris induknya` : '') : 'Tidak ada data';
     document.getElementById('sand-pg-num').textContent  = pgTxt;
     document.getElementById('sand-pg-num2').textContent = pgTxt;
     document.getElementById('sand-pg-info').textContent =
